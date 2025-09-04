@@ -1,0 +1,668 @@
+# Copyright 2022 DZS Inc
+
+{{- $nats_svc := include "nats.fqdn" . }}
+{{- $inas_svc := include "inas-be.fqdn" . }}
+{{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
+{{- $inventory_mgr := include "rnc-inventory-mgr.fqdn" . }}
+{{- $file_mgr := include "file-mgr.fqdn" . }}
+{{- $kafka_svc := include "kafkaBootstrap.fqdn" . }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $kafka_socket := include "kafka.socket" . }}
+{{- $enableKafka := .Values.global.enableKafka_alarmSvc }}
+{{- $transportpce_svc := include "rnc-transportpce.fqdn" . }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "rnc-alarm-svc.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | dzsi | sdn | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/alarmsvc</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/alarmsvc.log"
+                         filePattern="${APP_LOG_ROOT}/alarmsvc-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/alarm.log"
+                         filePattern="${APP_LOG}/alarm-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="DEFAULT"
+                         fileName="${APP_LOG_ROOT}/alarm-default.log"
+                         filePattern="${APP_LOG_ROOT}/alarm-default-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+            <Logger name="DEFAULT" level="info">
+                <AppenderRef ref="DEFAULT"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+    spring.jackson.parser.allow_comments=true
+    spring.jackson.serialization.FAIL_ON_EMPTY_BEANS=false
+    server.port = 8898
+    api.version = 1
+    serviceconfig.file = config/alarmsvcconfig.json
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+    feature.alarm.apis.query=true
+    feature.alarm.apis.sync=true
+
+
+  alarmsvcconfig.json: |
+    {
+      "serviceConfig": {
+        "serviceName": "alarm",
+        "reactionOnDeviceDeleted":  "remove-all-alarm",
+        "sbPlugin": {
+          "device": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "olt": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "zms": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": true
+          },
+          "roadm": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": false
+          },
+          "inas": {
+            "connection": {
+              "httpAddress": "http://{{- $inas_svc -}}:30522",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": false
+          }
+        },
+        "externalDb": {
+          "type": "mongo",
+          "mongo": {
+            "entries": [
+              {
+                "enabled": true,
+                "id": "default",
+                "mandatory": true,
+                "connectionString": "mongodb://{{- $mongo_db -}}:8006/alarm?retryWrites=false",
+                "dbName": "alarm",
+                "collections": [
+                  {
+                    "name": "alarm",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "alarm_key_idx",
+                        "fields": {
+                          "device-id": 1,
+                          "resource": 1,
+                          "alarm-type-id": 1,
+                          "component": 1,
+                          "alarm-type-qualifier": 1
+                        }
+                      },
+                      {
+                        "name": "device_component_idx",
+                        "fields": {
+                          "device-id": 1,
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "severity_idx",
+                        "fields": {
+                          "perceived-severity": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_1_idx",
+                        "fields": {
+                          "operator-state-value": 1,
+                          "severity-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_2_idx",
+                        "fields": {
+                          "operator-state-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_3_idx",
+                        "fields": {
+                          "severity-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "component_idx",
+                        "fields": {
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "operator_state_idx",
+                        "fields": {
+                          "operator-state": 1
+                        }
+                      },
+                      {
+                        "name": "resource_idx",
+                        "fields": {
+                          "resource": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_type_id_idx",
+                        "fields": {
+                          "alarm-type-id": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_type_qual_idx",
+                        "fields": {
+                          "alarm-type-qualifier": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_text_idx",
+                        "fields": {
+                          "alarm-text": 1
+                        }
+                      },
+                      {
+                        "name": "time_created_idx",
+                        "fields": {
+                          "time-created": -1
+                        }
+                      },
+                      {
+                        "name": "last_raised_idx",
+                        "fields": {
+                          "last-raised": -1
+                        }
+                      },
+                      {
+                        "name": "last_changed_idx",
+                        "fields": {
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "last_updated_time_idx",
+                        "fields": {
+                          "last-updated-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "clearedalarm",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "device_component_idx",
+                        "fields": {
+                          "device-id": 1,
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "severity_idx",
+                        "fields": {
+                          "perceived-severity": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_1_idx",
+                        "fields": {
+                          "operator-state-value": 1,
+                          "severity-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_2_idx",
+                        "fields": {
+                          "operator-state-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "alarm_sort_3_idx",
+                        "fields": {
+                          "severity-value": -1,
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "component_idx",
+                        "fields": {
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "resource_idx",
+                        "fields": {
+                          "resource": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_type_id_idx",
+                        "fields": {
+                          "alarm-type-id": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_type_qual_idx",
+                        "fields": {
+                          "alarm-type-qualifier": 1
+                        }
+                      },
+                      {
+                        "name": "alarm_text_idx",
+                        "fields": {
+                          "alarm-text": 1
+                        }
+                      },
+                      {
+                        "name": "time_created_idx",
+                        "fields": {
+                          "time-created": -1
+                        }
+                      },
+                      {
+                        "name": "last_raised_idx",
+                        "fields": {
+                          "last-raised": -1
+                        }
+                      },
+                      {
+                        "name": "last_changed_idx",
+                        "fields": {
+                          "last-changed": -1
+                        }
+                      },
+                      {
+                        "name": "last_updated_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "last-updated-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "synctaskhistory",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "finish_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "finish-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "note",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "alarm_id_idx",
+                        "fields": {
+                          "alarm-id": 1,
+                          "last-updated-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "clearednote",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "alarm_id_idx",
+                        "fields": {
+                          "alarm-id": 1,
+                          "last-updated-time": -1
+                        }
+                      },
+                      {
+                        "name": "alarm_cleared_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "alarm-cleared-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "syncstatus",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "device_id_idx",
+                        "fields": {
+                          "device-id": 1,
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "finish_time_idx",
+                        "fields": {
+                          "finish-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "syncstatushistory",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "device_id_idx",
+                        "fields": {
+                          "device-id": 1,
+                          "component": 1
+                        }
+                      },
+                      {
+                        "name": "finish_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "finish-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "allalarm",
+                    "type": "view",
+                    "view": {
+                      "unions": [
+                        "alarm",
+                        "clearedalarm"
+                      ]
+                    }
+                  },
+                  {
+                    "name": "allsyncstatus",
+                    "type": "view",
+                    "view": {
+                      "unions": [
+                        "syncstatus",
+                        "syncstatushistory"
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "syncConfig": {
+          "disableLastChangedVerify": true
+        },
+        "deviceModel": [
+          {
+            "vendor": "dzs",
+            "modelName": "V1-16XC",
+            "systemType": "olt",
+            "type": "pizza"
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "V6",
+            "systemType": "olt",
+            "type": "chassis"
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "V2",
+            "systemType": "olt",
+            "type": "chassis"
+          }
+        ],
+        "exportConfig": {
+          "fetchSize": {{ .Values.export.config.fetchSize }},
+          "exportDir": "{{ .Values.export.config.directory }}"
+        },
+        "consumerConfig": {
+          "maxIdleTimeMillis": 60000,
+          "maxBatchSize": 100,
+          "maxWaitForFullBatchMillis": 5000
+        },
+        "remoteHttpService":  {
+          "NetconfSvc": {
+            "service": "NetconfSvc",
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "TPCE": {
+            "service": "TPCE",
+            "connection": {
+              "httpAddress": "http://{{- $transportpce_svc -}}:8888",
+              "authType": "none"
+            }
+          }
+        },
+        "messagingClientConfig": {
+          "entries": [
+            {
+              "serviceIdentifier": "Logging_AEDO",
+              "enabled": true,
+              "serverType": "LOG",
+              "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+              "config": {
+                "type": "PUB",
+                "accepts": ["LOG"],
+                "targets": [
+                  {"classifier": "LOG", "target": "sdnc.alarm.default"}
+                ],
+                "defaultLogTag": "sdnc.alarm.default",
+                "adaptersConfig": {
+                  "file": {
+                    "appenderName": "APP"
+                  }
+                }
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_ALARM_CONSUMER",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.AlarmSvc",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.alarm",
+                "queueGroup": "alarmsvc",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_CONFIG_CONSUMER",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.AlarmSvc",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.config",
+                "queueGroup": "alarmsvc",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_ALARM",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "ALL",
+                "name": "SDNC.AlarmSvc",
+                "accepts": ["CANCEL_ALARM_SYNC", "ALARM_SYNC_RES", "ALARM"],
+                "targets": [
+                  { "classifier": "CANCEL_ALARM_SYNC", "target": "dzs.sdnc.int.cancelalarmsync" },
+                  { "classifier": "ALARM_SYNC_RES", "target": "dzs.sdnc.alarm.alarmsyncres" },
+                  { "classifier": "ALARM", "target": "dzs.sdnc.ext.alarm" }
+                ],
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.int.cancelalarmsync",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "KAFKA",
+              "enabled": "{{- $enableKafka -}}",
+              "serverType": "KAFKA",
+              "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+              "config": {
+                "type": "PUB",
+                "accepts": ["ALARM", "ALARM_SYNC_RES"],
+                "targets": [
+                  {"classifier": "ALARM", "target": "dzs.sdnc.ext.alarm"},
+                  {"classifier": "ALARM_SYNC_RES", "target": "dzs.sdnc.ext.alarm.alarmsyncres"}
+                ],
+                "producerConfig": {
+                  "bootstrap.servers": "{{- $kafka_socket -}}",
+                  "acks": "all",
+                  "client.dns.lookup": "use_all_dns_ips",
+                  "retries": 0,
+                  "linger.ms": 10,
+                  "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                  "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/alarm.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/alarm.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

@@ -1,0 +1,28 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "launchpad.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+spec:
+  {{- with .Values.launchpad.ports }}
+  ports:
+  {{- range $data := . }}
+  - name: {{ $data.name }}
+    port: {{ $data.port }}
+    targetPort: {{ $data.port }}
+    {{- if $data.nodePort }}
+    nodePort: {{ $data.nodePort }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+  type: {{ .Values.launchpad.service.type }}
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  #loadBalancerIP: {{ .Values.launchpad.service.loadBalancerIP }}
+  selector:
+    {{- include "launchpad.selectorLabels" . | nindent 4 }}

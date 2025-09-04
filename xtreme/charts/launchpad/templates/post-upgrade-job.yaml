@@ -1,0 +1,23 @@
+#Copyright 2020 RIFT Inc
+#Copyright 2021 DZS Inc
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-post-upgrade-job
+  namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+spec:
+  template:
+    spec:
+      containers:
+        - name: restart
+          image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Restarting HAProxy deployment..."
+              kubectl rollout restart deployment/rw-haproxy -n {{ .Values.global.namespace.name }}
+      restartPolicy: OnFailure

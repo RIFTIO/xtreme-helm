@@ -1,0 +1,532 @@
+# Copyright 2022 DZS Inc
+# Default values for sdnc.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+nameOverride: ""
+fullnameOverride: ""
+grafanafullnameOverride: ""
+prometheusfullnameOverride: ""
+redisfullnameOverride: ""
+natsfullnameOverride: ""
+
+global:
+  pvcmetadata:
+    storageClass: local-path
+
+    pceNetconfConfigmgr:
+      storageClass: null
+
+    logPceNetconfConfigmgr:
+      storageClass: null
+
+    persistence:
+      storageClass: null
+
+    persistenceFtp:
+      storageClass: null
+ 
+  sdncImgtag: master
+
+  # If switched to "true", Kafka service will be enabled; If switched to "false", Kafka service will be disabled.
+  enableKafka_netconf: true
+  enableKafka_configMgr: false
+  enableKafka_alarmSvc: true
+  enableKafka_inventoryMgr: true
+  enableKafka_pmCollector: true
+  enableKafka_taskMgr: false
+  enableKafka_tpce: true
+
+  # kafkaExtIp is combination of Ip address/host and port. To connect config mgr to external kafka server, kafkaExtIp can be passed in the host:port format.
+  kafkaExtIp: ""
+
+  # app names - appInventoryMgr, appTmfApiServer, appAlertMgr, appClusterLogger, appGrafana,
+  # appHaproxy, appHaproxyDefaultBackend, appLaunchpad, appMongodb, appNats, appPrometheus, appRedis
+  # appUpgradeJob
+
+  # kyverno warnings related
+  # If this is set to true, resources limits will be set on containers
+  # Resources limits are set in such a way that it allows deployment of LP in resources scarce nodes
+  ensureResourceQuota: false
+  excludeAppsInResourceQuota: []
+
+  # If this is set true, both spec.securityContext and spec.containers/initContainers are added
+  # with proper security hardening policies
+  ensureSecurityContext: false
+  excludeAppsInSecurityContext: []
+
+  # If this is set to true, liveness and readiness probes are added to containers
+  ensureContainerProbe: false
+  excludeAppsInContainerProbe: []
+
+  # This is needed for fixing readOnlyFileSystem issue, when set true
+  # A local volume of type emptyDir is added
+  ensureEmptyDirCreation: false
+  excludeAppsInEmptyDirCreation: []
+
+  # This is the simplest probe which fixes kyverno probe related warnings
+  commonProbe:
+    readinessProbe:
+      exec:
+        command:
+        - ls
+      initialDelaySeconds: 10
+      periodSeconds: 10
+    livenessProbe:
+      exec:
+        command:
+        - ls
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+  # special case of minimum securityContext attributes
+  # this is required for some previleged pods like inventory-mgr, tmf-api-server, clustter-logger
+  partialSecurityContextReducedCL:
+    capabilities:
+      drop:
+      - CAP_NET_RAW
+      - ALL
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+
+  partialSecurityContextReducedTMF:
+    capabilities:
+      drop:
+      - CAP_NET_RAW
+      - ALL
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    runAsUser: 3015
+    runAsGroup: 3064
+    readOnlyRootFilesystem: true
+
+  # security hardening parameters for containers/initContainers
+  partialSecurityContext:
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+
+  partialSecurityContextLp:
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+
+  # Same as partialSecurityContext except it excludes readOnlyFileSystem
+  partialSecurityContextWORoF:
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+
+  # Same as partialSecurityContext except it uses root User permission
+  partialSecurityContextWithRoot:
+    capabilities:
+      drop:
+      - ALL
+      - CAP_NET_RAW
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+
+  # ipv6Mode controls k8s resource level ipv6 attributes
+  # if set to true it will bring up k8s services as IPv6 Cluster IPs, make mongodb, redis listen on ipv6 address etc
+  ipv6Mode: false
+
+  # ipv6EnableHaproxy brings up load balancer ip as Ipv6 address
+  # RIFT-38504
+  ipv6EnableHaproxy: false
+
+  # This is for users to force launchpad process to listen on ipv4 address
+  onlyIPv4Support: true
+
+  # For adding fluxcd labels
+  customLabels: true
+
+  defaultGroup: 3064
+  defaultGroup2: 65534
+
+  namespace:
+    create: true
+    name: demo
+  # The imagePullSecrets is provided at both global and per chart level.
+  # If defined at per chart level, then that overrides the global value.
+  imagePullSecrets: []
+  #- name: gitlab-secret
+  # If not empty assigns a prefix for aeo services
+  aeoNamespacePrefix: "aeo"
+  # If not empty assigns a prefix for sdnc services
+  sdncNamespacePrefix: "aeo"
+  # If not empty assigns a prefix for zms service
+  zmsNamespacePrefix: "aeo"
+  # If not empty assigns a prefix for zms service
+  inasNamespacePrefix: "aeo"
+  # If not empty assign a prefix for explore related services
+  exploreNamespacePrefix: "aeo"
+
+  hostAliases: []
+  # - ip: "127.0.0.1"
+  #    hostnames:
+  #    - "foo.local"
+
+  # Configurations related to creation and managing of TLS certificates
+  certificateIssuer:
+
+    # cert-manager can reside in a Kubernetes cluster. Enable this flag if your
+    # system should use cert-manager for automatic issuance and renewal of TLS
+    # certificates. Otherwise, certificate management must be done manually.
+    certMgrEnabled: false
+
+    # TLS certificate is either self-signed or signed by an external CA
+    # true: self-signed
+    # false: CA signed
+    isSelfSigned: true
+
+    # Issuer is for a namespace or to be consumed in multiple namespace
+    # true  : ClusterIssuer, can be used to issue Certificates across all namepsaces
+    # false : Issuer for a specific namespace
+    clusterIssuer: false
+    # Assign an issuer name that shall be used by the ingress controller
+    # defaults to acme-issuer
+    #issuerName: "acme-issuer"
+    issuerName: "dzs-selfsigned-issuer"
+
+    # The issued certificates are stored in kubernetes secrets
+    # Name of the destined secret to store the certificates
+    secret: rw-tls-secret
+
+    issuerConfig:
+      # An issuer is a namespace resource, and an issuer obtains a TLS certificate in
+      # the namespace in which the issuer ran. The user must specify the name
+      # of the namespace in which to issue the certificate. Default is null
+      # , the issuer runs in the namespace where Launchpad is installed.
+      namespace: null
+
+      # URL used to access the ACME server’s ‘directory’ endpoint
+      server: "https://10.157.114.0:8443/acme/acme/directory"
+
+      # email address to be associated with the ACME account
+      issuerEmail: "dev@dzsi.com"
+
+      # The FQDN resolves to the IP address of the system's TLS endpoint.
+      # A certificate is unique to a common name. For the launchpad, the common
+      # name must match the RIFT_EXTERNAL_ADDRESS configured in the system.
+      commonName: "dev.lab.dzsi.local"
+
+      # Crytographic algorithm for certificate signing
+      algorithm: RSA
+
+      # Size of cryptographic key
+      size: 2048
+
+      # Subject - X509Subject Full X509 name specification
+      organizations:
+        - "DZS Inc"
+      organizationalUnits:
+        - "Engg"
+      countries:
+        - "US"
+      provinces:
+        - "Texas"
+      localities:
+        - "Plano"
+      dnsNames:
+        - "dev.lab.dzsi.local"
+
+      # The requested ‘duration’ (i.e. lifetime) of the Certificate.
+      duration: 2160h58m00s # 90d
+
+      # How long before the currently issued certificate’s expiry cert-manager
+      # should renew the certificate.
+      renewBefore: 48h00m00s
+
+  # If OCP Route needs to be created. Needs an externalAddress if true.
+  isOpenShiftRoute: false
+  # The nodeport service is needed for Cluster-IP to route traffic
+  nodeportService: false # if set to true, nodePort values can be configured
+
+  # Ingress related global configuration options.
+  ingress:
+    class:
+      name: "haproxy"
+      controller: "haproxy-ingress.github.io/controller"
+      # When true, ingressClass resource is created per namespace by implicitly prefixing the ingress class name
+      # with the namespace. When set to false, it will create only a single resource at cluster scope i.e without prefixing.
+      # To reuse an existing ingress class resource, set it to false and set disable to true.
+      namespaced: true
+      disable: false
+    createClusterRole: true
+    service:
+      type: LoadBalancer
+
+    # externalAddress: possible values can be null, ip address, or fqdn
+    # This is the FQDN or IP address using which launchpad can be externally accessed.
+    # This value is mandatory except if service type is "LoadBalancer".
+    # If externalAddress is set as FQDN, then it is passed to the ingress host definition.
+    # dsoProxyAddress overrides some behavior of externalAddress when the DSOs are sitting behind a proxy.
+    externalAddress: null #dso1.dzsi.com
+
+    # dsoProxyAddress: possible values can be null or fqdn.
+    # dsoProxyAddress is to be set when the DSOs are behind a proxy, and when UI or NB API clients
+    # use the proxy address to reach the DSO instance. The proxy is expected to forward the requests by
+    # changing the HOST from Proxy FQDN to one that is expected by DSO's Ingress (i.e. externalAddress)
+    # This is the address which shall be used by browsers/scripts etc to access the DSO,
+    # i.e. all external access to DSO shall be done using the dsoProxyAddress(if present).
+    # If the FQDN is set for dsoProxy, then it will forward requests to either DSO instance.
+    # When this is set as null (which is the default), it is assumed that proxy is not configured and
+    # the laucnhpad can be accessed using the externalAddress.
+    # If there is a need to bypass the proxy, set dsoProxyAddress to null and do a helm upgrade.
+    dsoProxyAddress: null #dso.dzsi.com
+
+    # Ports exposed by Ingress Controller
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+      #nodePort: 30000
+      #proxyPort: 5000
+
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+      #nodePort: 30000
+      #proxyPort: 5000
+
+    - name: mongo
+      port: 8006
+      protocol: TCP
+      targetPort: 8006
+      #nodePort: 30001
+      #proxyPort: 5001
+
+    - name: redis-tunnel
+      port: 8014
+      protocol: TCP
+      targetPort: 8014
+      #nodePort: 30002
+      #proxyPort: 5002
+
+  # List of charts to be installed
+  install:
+    explore: false
+    inas: false
+    orchestrator: true
+    sdnc: true
+    ftp: true
+    sftp: true
+    zms: false
+    aeo: true
+    kafka: true
+    deviceSimulator: false
+    # For NFVO cluster-logger is by default disabled
+    # Enable it while running AEO
+    clusterLogger: true
+
+  # Authentication for events DB in mongo
+  eventsDB:
+    username: riftio
+    password: riftio
+
+  # Uncomment lines below for setting following users
+  #securityContext:
+  #  runAsUser: 3015
+  #  runAsGroup: 3064
+
+  #podSecurityContext:
+  #  fsGroup: 3064
+
+  # Details of the clickhouse database, used when explore is enabled
+  chiDb:
+    host: smi-database-svc
+    port: 9000
+    httpPort: 8123
+
+  # sdnc related global configuration options.
+  sdnc:
+    sdnc-file-mgr:
+      createClusterRole: true
+  # Global config ends here
+
+storage:
+  storageClassName: null
+  capacity: 80Gi
+  localStore: {}
+  manual: {}
+  nfs: {}
+mongodb:
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+  # tolerations: []  # uncomment to remove tolerations warning in mongodb
+
+prometheus:
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+redis:
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+
+launchpad:
+  launchpad:
+    appSelector: aeo
+    image:
+      pullPolicy: Always
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 13.3.0.1010164
+    # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
+    # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
+    # version: 13.3.0.1010164
+    securityContext:
+      enabled: False
+      # Set this to secondary group id that is being used by the
+      # underlying storage.
+      fsGroup: 1001
+      # The user with which all processes will run as.
+      runAsUser: 1001
+      # The primary group for the user.
+      runAsGroup: 1001
+    upgradeFrom: 13.3.0.1010164
+  aeo:
+    image:
+      controller:
+        pullPolicy: Always
+        tag: 13.3.0.1010164
+      serviceWorker:
+        pullPolicy: Always
+        tag: 13.3.0.1010164
+      resourceWorker:
+        pullPolicy: Always
+        tag: 13.3.0.1010164
+      tmfServer:
+        pullPolicy: Always
+        tag: 13.3.0.1010164
+  storage:
+    accessMode: ReadWriteOnce
+    capacity: 80Gi
+    storageClassName: null
+  haproxy-ingress:
+    bindPort:
+      http: :8080
+      https: :8443
+  cluster_logger:
+    createClusterRole: true
+    # runnableOnMaster: false  # Uncomment to remove tolerations warnings
+
+sdnc:
+  sdnc-netconf-svc:
+    nodePort:
+      useNodePort: false
+      restconfNodePort: 32120
+    image:
+      pullPolicy: Always
+    daexim:
+      volume:
+        pvc:
+          storageClassName: null
+
+  sdnc-config-mgr:
+    nodePort:
+      useNodePort: false
+      restconfNodePort: 32121
+    image:
+      pullPolicy: Always
+    daexim:
+      volume:
+        pvc:
+          storageClassName: null
+ 
+  sdnc-alarm-svc:
+    service:
+      useNodePort: false
+      nodePort: 32122
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
+
+  sdnc-inventory-mgr:
+    service:
+      useNodePort: false
+      nodePort: 32123
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
+
+  sdnc-file-mgr:
+    createClusterRole: true
+    service:
+      useNodePort: false
+      nodePort: 32124
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
+
+
+  sdnc-task-mgr:
+    service:
+      useNodePort: false
+      nodePort: 32125
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
+
+  sdnc-pm-collector:
+    service:
+      useNodePort: false
+      nodePort: 32126
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
+
+  sdnc-transportpce:
+    nodePort:
+      useNodePort: false
+      restconfNodePort: 32127
+    image:
+      pullPolicy: Always
+    daexim:
+      volume:
+        pvc:
+          storageClassName: null
+
+  sdnc-gnpy:
+    service:
+      useNodePort: false
+      nodePort: 32128
+    image:
+      pullPolicy: Always
+  sdnc-artifactory:
+    sdnc-artifactory-postgresql:
+      nodeSelector: {}

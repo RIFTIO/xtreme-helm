@@ -1,0 +1,195 @@
+# Copyright 2022 DZS Inc
+
+{{- $artifactory_svc := include "artifactory.fqdn" . }}
+{{- $sftp_svc := include "sftp.fqdn" . }}
+{{- $ftp_svc := include "ftp.fqdn" . }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "file-mgr.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | dzsi | sdn | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/filemgr</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/filemgr.log"
+                         filePattern="${APP_LOG_ROOT}/filemgr-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/file.log"
+                         filePattern="${APP_LOG}/file-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="DEFAULT"
+                         fileName="${APP_LOG_ROOT}/file-default.log"
+                         filePattern="${APP_LOG_ROOT}/file-default-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+            <Logger name="DEFAULT" level="info">
+                <AppenderRef ref="DEFAULT"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+    server.sessionTimeout=30
+    server.port = 8897
+    api.version = 1
+    serviceconfig.file = config/filemgrconfig.json
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+
+  filemgrconfig.json: |
+    {
+       "serviceConfig":{
+          "serviceName":"filemgr",
+          "repoList":[
+             {
+                "credential":{
+                   "password":"password",
+                   "user-id":"admin"
+                },
+                "remoteAddress":"http://artifactory-external-ip:8082/artifactory/xtreme",
+                "repo-id":"dzslocal",
+                "repo-type":"artifactory"
+             },
+             {
+                "credential":{
+                   "password":"ftpuser123",
+                   "user-id":"ftpuser"
+                },
+                "remoteAddress":"ftp-external-ip",
+                "remotePort":21,
+                "repo-id":"dzslocal",
+                "repo-type":"ftp"
+             },
+             {
+                "credential":{
+                   "password":"sftp",
+                   "user-id":"sftp"
+                },
+                "remoteAddress":"sftp-external-ip",
+                "remotePort":{{ default 22 .Values.sftp.port }},
+                "repo-id":"dzslocal",
+                "repo-type":"sftp"
+             }
+          ],
+          "scheduleList":[
+             {
+                "schedule-id":"retention-schedule",
+                "frequency":{
+                   "interval":1,
+                   "unit":"day"
+                },
+                "active":true
+             }
+          ],
+          "retentionPolicyList":[
+             {
+                "file-type":"firmware",
+                "retention-type":"number",
+                "retention-count":5,
+                "schedule-ref":"retention-schedule"
+             },
+             {
+                "file-type":"device-backup",
+                "retention-type":"month",
+                "retention-count":1,
+                "schedule-ref":"retention-schedule"
+             }
+          ],
+          "messagingClientConfig":{
+             "entries":[
+
+             ]
+          },
+          "externalDb": {
+             "type": "mongo",
+             "mongo": {
+             "entries": [
+               {
+                 "enabled": true,
+                 "id": "default",
+                 "mandatory": true,
+                 "connectionString": "mongodb://{{- $mongo_db -}}:8006/filemgr?retryWrites=false",
+                 "dbName": "filemgr",
+                 "collections": [ {"name": "repo"}, {"name": "file"}, {"name": "schedule"}, {"name": "retention"} ]
+               }],
+             "codecProviderClass" : "com.dzsi.sdn.filemgr.mongo.CustomCodecProvider"
+             }
+          }
+       }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/file.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/file.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

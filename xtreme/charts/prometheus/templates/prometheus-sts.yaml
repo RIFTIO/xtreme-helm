@@ -1,0 +1,242 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rw-prometheus
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.prometheus
+spec:
+  selector:
+    matchLabels:
+      app: rw.prometheus
+  replicas: 1
+  serviceName: {{ include "prometheus.fullname" . }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: 'metrics'
+        prometheus.io/port: '9008'
+      labels:
+        app: rw.prometheus
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+        runAsUser: {{ .Values.containerSecurityContext.runAsUser }}
+        {{- if and .Values.global.ensureSecurityContext (not (has "appPrometheus" .Values.global.excludeAppsInSecurityContext)) }}
+        seccompProfile:
+          type: RuntimeDefault
+        runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+      {{- if .Values.enableVolumePermissions }}
+      initContainers:
+      - name: prometheus-prelaunch
+        image: {{ .Values.prometheus.busybox.image.repository }}
+        imagePullPolicy: {{ .Values.prometheus.busybox.image.pullPolicy }}
+        command: ["chown", "-R", "{{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }}", /data]
+        securityContext:
+          runAsUser: 0
+          capabilities:
+            drop:
+            - CAP_NET_RAW
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+      {{- end }}
+
+      containers:
+      - name: replicator
+        image: {{ .Values.replicator.image.repository -}}:{{- .Values.replicator.image.tag }}
+        imagePullPolicy: {{ .Values.replicator.image.pullPolicy | quote }}
+        command: ["/replicator/replicator"]
+        args:
+          - "/config/config.json"
+        env:
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+             fieldRef:
+              fieldPath: metadata.namespace
+        volumeMounts:
+          - name: replicator-config
+            mountPath: /config
+            readOnly: false
+          - name: tmp-dir
+            mountPath: /tmp
+            readOnly: false
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appPrometheus" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.average.ephemeral" . }}
+        {{- end }}
+
+        ports:
+          - name: metrics
+            containerPort: 9008
+
+        readinessProbe:
+          tcpSocket:
+            port: 9008
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9008
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appPrometheus" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.prometheus.runAsUser }}
+          runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+      - name: prometheus
+        image: {{ .Values.prometheus.image.repository -}} : {{- .Values.prometheus.image.tag }}
+        imagePullPolicy: {{ .Values.prometheus.image.pullPolicy }}
+        ports:
+        {{- range $name, $port := .Values.prometheus.ports }}
+        - name: {{ $name }}
+          containerPort: {{ $port }}
+        {{- end }}
+
+        args:
+          - '--storage.tsdb.path=/data'
+          - '--web.enable-lifecycle'
+          - '--config.file=/etc/prometheus/prometheus.yaml'
+        env:
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+             fieldRef:
+              fieldPath: metadata.namespace
+        command:
+        - /bin/prometheus
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appPrometheus" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.average" . }}
+        {{- end }}
+
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+        - name: config
+          mountPath: /etc/prometheus
+
+        readinessProbe:
+          tcpSocket:
+            port: 9090
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appPrometheus" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.prometheus.runAsUser }}
+          runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+      - name: config-watch
+        image: {{ .Values.prometheus.configWatch.image.repository -}} : {{- .Values.prometheus.configWatch.image.tag }}
+        imagePullPolicy: {{ .Values.prometheus.configWatch.image.pullPolicy }}
+        args: ["-v", "-t", "-p=/etc/prometheus", "curl", "-X", "POST", "--fail", "-o", "-", "-sS", "http://localhost:9090/-/reload"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appPrometheus" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.prometheus.runAsUser }}
+          runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appPrometheus" .Values.global.excludeAppsInContainerProbe)) }}
+        {{- toYaml .Values.global.commonProbe | nindent 8 }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appPrometheus" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.average" . }}
+        {{- end }}
+
+      - name: pushgateway
+        image: {{ .Values.prometheus.pushGateway.image.repository -}} : {{- .Values.prometheus.pushGateway.image.tag }}
+        imagePullPolicy: {{ .Values.prometheus.pushGateway.image.pullPolicy }}
+        args: ["--web.listen-address", ":9091"]
+        readinessProbe:
+          tcpSocket:
+            port: 9091
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9091
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appPrometheus" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.prometheus.runAsUser }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appPrometheus" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.average" . }}
+        {{- end }}
+
+      {{- with .Values.prometheus.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.prometheus.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.prometheus.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 0644
+            name: rw-prometheus-conf
+        - name: script
+          configMap:
+            defaultMode: 0755
+            name: prometheus-prelaunch
+        - name: replicator-config
+          configMap:
+            name: rw-prometheus-replicator-config
+        - name: tmp-dir
+          emptyDir:
+            sizeLimit: 500Mi
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.prometheusStorage.capacity }}
+      storageClassName: {{ .Values.prometheusStorage.storageClassName }}

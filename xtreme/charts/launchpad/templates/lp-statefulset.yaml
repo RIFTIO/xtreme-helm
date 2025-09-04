@@ -1,0 +1,549 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rw-launchpad
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+  namespace: {{ .Values.global.namespace.name }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "launchpad.selectorLabels" . | nindent 6 }}
+  replicas: 1
+  serviceName: {{ include "launchpad.fullname" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "launchpad.selectorLabels" . | nindent 8 }}
+        release: {{ .Release.Name }}
+        app-type: {{ .Values.global.namespace.name }}-launchpad
+    spec:
+      imagePullSecrets:
+        {{ if .Values.launchpad.image.imagePullSecrets }}
+        {{- toYaml .Values.launchpad.image.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      {{- if .Values.launchpad.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.launchpad.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.launchpad.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.launchpad.securityContext.fsGroup }}
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        seccompProfile:
+          type: RuntimeDefault
+         {{- end }}
+      {{- end }}
+
+      hostAliases:
+      {{- range $i, $value := .Values.global.hostAliases }}
+      - ip: {{ $value.ip | quote }}
+        hostnames:
+        {{- range $value.hostnames }}
+        - {{ . }}
+        {{- end }}
+      {{- end }}
+
+      containers:
+      {{- if .Values.loki.enabled }}
+      - name: promtail
+        image: grafana/promtail:master
+        args:
+          - "-config.file=/etc/promtail/promtail.yaml"
+          - '-client.url={{ .Values.loki.serviceScheme }}://{{ include "loki.fullname" . }}:{{ .Values.loki.servicePort }}/api/prom/push'
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+        - name: promtail-config
+          mountPath: /etc/promtail
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContextWORoF | nindent 10 }}
+      {{- end }}
+
+      - name: launchpad
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+
+        {{- if eq .Values.launchpad.appSelector "aeo" }}
+        command: ["/usr/rift/rift-shell", "--", "python3", "/usr/rift/demos/aeo.py", {{.Values.launchpad.env.LAUNCHPAD_PY_OPTS}}]
+        {{- else if eq .Values.launchpad.appSelector "nfvo" }}
+        command: ["bash", "/scripts/start.sh", {{- include "launchpad.coreDir" . -}}]
+        {{- else }}
+        command: ["bash", "/scripts/start.sh", {{- include "launchpad.coreDir" . -}}]
+        {{- end }}
+
+        env:
+        {{- if .Values.launchpad.securityContext.enabled }}
+        - name: RIFT_NO_SUDO_REAPER
+          value: "1"
+        {{- end }}
+        - name: RIFT_IMAGE_VERSION
+        {{- if .Values.launchpad.version }}
+          value: {{ .Values.launchpad.version }}
+        {{- else }}
+          value: {{ .Values.launchpad.image.tag }}
+        {{- end }}
+        - name: RW_RELEASE_NAME
+          value: {{ .Release.Name }}
+        - name: RIFT_VAR_ROOT
+          value: /usr/rift/var/rift
+        - name: RIFT_EXTERNAL_ADDRESS
+          value: {{ .Values.global.ingress.externalAddress }}
+        - name: RIFT_DSOPROXY_ADDRESS
+          value: {{ .Values.global.ingress.dsoProxyAddress }}
+        - name: RW_LAUNCHPAD_SVC_FQDN
+          value: {{ include "launchpad.fqdn" . }}
+        - name: RW_PROMETHEUS_SVC_NAME
+          value: {{ include "prometheus.fullname" . }}
+        - name: RW_ALERTMGR_SVC_NAME
+          value: {{ include "alertmgr.fullname" . }}
+        - name: RW_REDIS_SVC_NAME
+          value: {{ include "redis.fullname" . }}
+        - name: RW_REDTUNNEL_SVC_NAME
+          value: {{ include "redis-tunnel.fullname" . }}
+        - name: RW_NATS_SVC_NAME
+          value: {{ include "nats.fullname" . }}
+        - name: RW_MONGODB_SVC_NAME
+          value: {{ include "mongodb.fqdn" . }}
+        - name: RW_HAPROXY_METRICS_SVC_NAME
+          value: {{ include "haproxy-metrics.fullname" . }}
+        - name: START_FLUXCD_ADAPTOR
+          value: {{ .Values.launchpad.fluxcdAdaptor.enabled | quote }}
+        - name: FLUXCD_ADAPTOR_PROJECT
+          value: {{ .Values.launchpad.fluxcdAdaptor.project }}
+        - name: OMP_NUM_THREADS
+          value: "1"
+        - name: OPENBLAS_NUM_THREADS
+          value: "1"
+        - name: MKL_NUM_THREADS
+          value: "1"
+        - name: VECLIB_MAXIMUM_THREADS
+          value: "1"
+        - name: NUMEXPR_NUM_THREADS
+          value: "1"
+        - name: RW_LP_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: RW_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- if .Values.global.install.aeo }}
+        - name: RW_AEO_NAMESPACE
+          value: {{ include "aeo.namespace" . }}
+        {{- end }}
+        {{- if .Values.global.install.sdnc }}
+        - name: DEFAULT_SDNC_SVC_NAME
+          value: {{ include "sdnc-connector.fqdn" . }}
+        - name: DEFAULT_SDNC_SVC_PORT
+          value: "30635"
+        {{- end }}
+        {{- if .Values.global.install.sdnc }}
+        - name: SDNC_ALARM_SVC_NAME
+          value: {{ include "rnc-alarm-svc.fqdn" . }}
+        - name: SDNC_ALARM_SVC_PORT
+          value: "8898"
+        - name: SDNC_CONFIG_SVC_NAME
+          value: {{ include "rnc-config-mgr.fqdn" . }}
+        - name: SDNC_CONFIG_SVC_PORT
+          value: "8888"
+        - name: SDNC_NETCONF_SVC_NAME
+          value: {{ include "rnc-netconf-svc.fqdn" . }}
+        - name: SDNC_NETCONF_SVC_PORT
+          value: "8888"
+        - name: SDNC_INVENTORY_MGR_NAME
+          value: {{ include "rnc-inventory-mgr.fqdn" . }}
+        - name: SDNC_INVENTORY_MGR_PORT
+          value: "8899"
+        - name: SDNC_TASK_MGR_NAME
+          value: {{ include "task-mgr.fqdn" . }}
+        - name: SDNC_TASK_MGR_PORT
+          value: "8888"
+        - name: SDNC_FILE_MGR_NAME
+          value: {{ include "file-mgr.fqdn" . }}
+        - name: SDNC_FILE_MGR_PORT
+          value: "8897"
+        - name: SDNC_PM_COLLECTOR_NAME
+          value: {{ include "pm-collector.fqdn" . }}
+        - name: SDNC_PM_COLLECTOR_PORT
+          value: "8888"
+        - name: SDNC_TPCE_NAME
+          value: {{ include "rnc-transportpce.fqdn" . }}
+        - name: SDNC_TPCE_PORT
+          value: "8888"
+        {{- end }}
+        {{- if .Values.global.install.explore }}
+        - name: EXPLORE_APP_HOST
+          value: {{ include "explore-application.fqdn" . }}
+        - name: EXPLORE_APP_PORT
+          value: "8008"
+        {{- end }}
+        {{- range $name, $value := .Values.launchpad.env }}
+        - name: {{ $name }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- if .Values.global.onlyIPv4Support }}
+        - name: SUPPORT_ONLY_IPV4
+          value: "True"
+        {{- else }}
+        - name: SUPPORT_ONLY_IPV4
+          value: "False"
+        {{- end }}
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        - name: TMPDIR
+          value: /tmp/rift
+        {{- end }}
+        {{- with .Values.launchpad.ports }}
+        ports:
+        {{- range $data := . }}
+        - name: {{ $data.name }}
+          containerPort: {{ $data.port }}
+        {{- end }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appLaunchpad" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.big" . }}
+        {{- else }}
+        resources:
+          {{- toYaml .Values.launchpad.resources | nindent 10 }}
+        {{- end }}
+
+        readinessProbe:
+          tcpSocket:
+            port: 8443
+          initialDelaySeconds: 30
+          periodSeconds: 10
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appLaunchpad" .Values.global.excludeAppsInContainerProbe)) }}
+        livenessProbe:
+          exec:
+            command:
+            - ls
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        {{- end }}
+
+        volumeMounts:
+        {{- with .Values.launchpad.devSetup }}
+        {{- range $k, $v := .volumes }}
+        - name: {{ $k }}
+          mountPath: {{ $v }}
+          readOnly: false
+        {{- end }}
+        - name: rift-install
+          mountPath: /usr/rift
+          readOnly: false
+        {{- end }}
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+        - name: config-dir
+          mountPath: /config
+          readOnly: false
+        - name: hostid-dir
+          mountPath: /hostid
+          readOnly: true
+        - name: prelaunch-scripts
+          mountPath: /scripts
+          readOnly: false
+        - name: tls-cert
+          mountPath: /rift/cert_store
+        - name: ca-bundle
+          mountPath: /usr/local/share/ca-certificates
+          readOnly: false
+        - name: trusted-ca
+          mountPath: /etc/ssl/certs
+          readOnly: false
+
+        {{- if and .Values.global.ensureEmptyDirCreation (not (has "appLaunchpad" .Values.global.excludeAppsInEmptyDirCreation)) }}
+        - name: cache-volume
+          mountPath: /tmp
+          readOnly: false
+        {{- end }}
+
+        securityContext:
+          {{- with .Values.launchpad.capabilities }}
+          capabilities:
+            add:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+          {{- end }}
+
+      - name: primitive-exec
+        image: {{ .Values.launchpad.primitiveExec.image.repository -}} : {{- .Values.launchpad.primitiveExec.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.primitiveExec.image.pullPolicy }}
+        command: ["bash", "/scripts/side_car.sh"]
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appLaunchpad" .Values.global.excludeAppsInContainerProbe)) }}
+        {{- toYaml .Values.global.commonProbe | nindent 8 }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appLaunchpad" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.small" . }}
+        {{- end }}
+
+        env:
+        {{- range $name, $value := .Values.launchpad.env }}
+        - name: {{ $name }}
+          value: {{ $value | quote }}
+        {{- end }}
+        - name: RW_LAUNCHPAD_SVC_FQDN
+          value: {{ include "launchpad.fqdn" . }}
+        - name: RW_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: RIFT_VAR_ROOT
+          value: "/usr/rift/var/rift"
+
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var/rift/log/cfgmgr
+          subPath: rift/log/cfgmgr
+          readOnly: false
+        - name: rift-var-root
+          mountPath: /usr/rift/var/rift/cfgmgr/tmp
+          subPath: rift/cfgmgr/tmp
+          readOnly: false
+        - name: rift-var-root
+          mountPath: /usr/rift/var/rift/cache
+          subPath: rift/cache
+          readOnly: false
+        - name: prelaunch-scripts
+          mountPath: /scripts
+          readOnly: false
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+        {{- end }}
+
+
+      initContainers:
+      - name: wait-for-deps
+        image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+        imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+        env:
+          - name: RW_NATS_SVC_NAME
+            value: {{ include "nats.fqdn" . }}
+          - name: RW_MONGODB_SVC_NAME
+            value: {{ include "mongodb.fqdn" . }}
+          - name: RW_REDIS_SVC_NAME
+            value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_PROMETHEUS_SVC_NAME
+            value: {{ include "prometheus.fullname" . -}}.{{- .Values.global.namespace.name }}
+        command:
+          - /wait-for
+        args:
+          - --host="$(RW_NATS_SVC_NAME):4222"
+          - --host="$(RW_MONGODB_SVC_NAME):8006"
+          - --host="$(RW_REDIS_SVC_NAME):8012"
+          - --host="$(RW_PROMETHEUS_SVC_NAME):9090"
+          - --timeout=120s
+          - --verbose
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+        {{- end }}
+
+      {{- if .Values.enableVolumePermissions }}
+      - name: set-rvr-ownership
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["chown", "-R", "{{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }}", "/usr/rift/var"]
+        securityContext:
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+        {{- else }}
+          runAsUser: 0
+        {{- end }}
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+
+      - name: set-rvr-perm
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["chmod", "-R", "775", "/usr/rift/var"]
+        securityContext:
+          {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+          {{- else }}
+            runAsUser: 0
+          {{- end }}
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+      {{- end }}
+
+      - name: set-ca-bundle
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["/bin/bash", "-c"]
+        args:
+          - echo "Copying files from image ca bundle to pod";
+            cp --preserve=timestamps -r /etc/ssl/certs/* /etc/ssl/certs_pod;
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContextLp | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+        {{- else }}
+        securityContext:
+          runAsUser: 0
+        {{- end }}
+
+        volumeMounts:
+        - name: trusted-ca
+          mountPath: /etc/ssl/certs_pod
+          readOnly: false
+
+      - name: prelaunch
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", "/usr/rift/rift-shell -- python3 /scripts/prelaunch.py"]
+        env:
+        - name: RIFT_EXTERNAL_ADDRESS
+          value: {{ .Values.global.ingress.externalAddress }}
+        - name: RIFT_DSOPROXY_ADDRESS
+          value: {{ .Values.global.ingress.dsoProxyAddress }}
+        - name: RW_LAUNCHPAD_SVC_FQDN
+          value: {{ include "launchpad.fqdn" . }}
+        - name: RIFT_IMAGE_VERSION
+        {{- if .Values.launchpad.version }}
+          value: {{ .Values.launchpad.version }}
+        {{- else }}
+          value: {{ .Values.launchpad.image.tag }}
+        {{- end }}
+        - name: RW_REDIS_SVC_NAME
+          value: {{ include "redis.fullname" . }}
+        - name: RW_K8S_NAMESPACE
+          value: {{ .Values.global.namespace.name }}
+        - name: RW_TRIAL_LICENSE_EXPIRY_DAYS
+          value: {{ .Values.launchpad.trialLicenseExpiry | quote }}
+        {{- if .Values.global.install.aeo }}
+        - name: RW_AEO_NAMESPACE
+          value: {{ include "aeo.namespace" . }}
+        {{- end }}
+        {{- range $name, $value := .Values.launchpad.env }}
+        - name: {{ $name }}
+          value: {{ $value | quote }}
+        {{- end }}
+        volumeMounts:
+        {{- with .Values.launchpad.devSetup }}
+        {{- range $k, $v := .volumes }}
+        - name: {{ $k }}
+          mountPath: {{ $v }}
+          readOnly: false
+        {{- end }}
+        - name: rift-install
+          mountPath: /usr/rift
+          readOnly: false
+        {{- end }}
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+        - name: prelaunch-scripts
+          mountPath: /scripts
+          readOnly: false
+        - name: config-dir
+          mountPath: /config
+          readOnly: false
+        - name: hostid-dir
+          mountPath: /hostid
+          readOnly: true
+        {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+        {{- end }}
+        {{- if and .Values.global.ensureResourceQuota (not (has "appLaunchpad" .Values.global.excludeAppsInResourceQuota)) }}
+        resources:
+          limits:
+            ephemeral-storage: "5000Mi"
+          requests:
+            ephemeral-storage: "5000Mi"
+        {{- end }}
+      nodeSelector:
+        {{ if .Values.launchpad.nodeSelector }}
+        {{- toYaml .Values.launchpad.nodeSelector | nindent 8 }}
+        {{ end }}
+        {{ if .Values.launchpad.hostNameSelector }}
+        kubernetes.io/hostname: {{ .Values.launchpad.hostNameSelector | quote }}
+        {{ end }}
+      {{- with .Values.launchpad.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.launchpad.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      {{- with .Values.launchpad.devSetup }}
+      {{- range $k, $v := .volumes }}
+        - name: {{ $k }}
+          hostPath:
+            path: {{ $v }}
+            type: Directory
+      {{- end }}
+        - name: rift-install
+          hostPath:
+            path: {{ .riftInstall }}
+            type: Directory
+      {{- end }}
+        - name: prelaunch-scripts
+          configMap:
+            name: prelaunch
+            defaultMode: 0644
+        - name: config-dir
+          emptyDir:
+            sizeLimit: 5000Mi
+        - name: hostid-dir
+          secret:
+            secretName: hostid
+        - name: tls-cert
+          secret:
+            secretName: rw-tls-secret
+        - name: ca-bundle
+          emptyDir:
+            sizeLimit: 5000Mi
+        - name: trusted-ca
+          emptyDir:
+            sizeLimit: 5000Mi
+      {{- if .Values.loki.enabled }}
+        - name: promtail-config
+          configMap:
+            name: promtail-config
+            defaultMode: 0755
+      {{- end }}
+      {{- if and .Values.global.ensureEmptyDirCreation (not (has "appLaunchpad" .Values.global.excludeAppsInEmptyDirCreation)) }}
+        - name: cache-volume
+          emptyDir:
+            sizeLimit: 2000Mi
+      {{- end }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: rift-var-root
+    spec:
+      accessModes:
+        - {{ .Values.storage.accessMode }}
+      resources:
+        requests:
+          storage: {{ .Values.storage.capacity }}
+      storageClassName: {{ .Values.storage.storageClassName }}

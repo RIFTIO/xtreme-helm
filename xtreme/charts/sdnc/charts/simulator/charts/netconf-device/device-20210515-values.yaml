@@ -1,0 +1,1088 @@
+replicaCount: 1
+
+image:
+  repository: dzs-netconf-device-20210515
+  pullPolicy: Always
+  version: latest
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: "device-20210515"
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  type: NodePort
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+serverconfig:
+  servers:
+    - 30430
+    - 30431
+  json:
+    '{
+       "servers": [
+         {
+           "port": 30430,
+           "configId": "device-20210515"
+         },
+         {
+           "port": 30431,
+           "configId": "device-20210128"
+         }
+       ],
+       "configs": [
+         {
+           "configId": "device-20210515",
+           "credential": {
+             "user": "admin",
+             "password": "admin"
+           },
+           "models": [
+             {
+               "nameSpace": "http://www.ipinfusion.com/CMLSchema/dasan",
+               "name": "dasan",
+               "revision": "2021-05-15"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:ietf-netconf-notifications-trigger",
+               "name": "dzsi-ietf-netconf-notifications-trigger",
+               "revision": "2021-07-23"
+             },
+             {
+               "nameSpace": "urn:TBD:params:xml:ns:yang:network-topology",
+               "name": "network-topology",
+               "revision": "2013-10-21"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:netconf:simulator:alarm-type-id-def",
+               "name": "alarm-type-id-def",
+               "revision": "2021-10-20"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:netconf:notification:1.0",
+               "name": "notifications",
+               "revision": "2008-07-14"
+             },
+             {
+               "nameSpace": "http://netconfcentral.org/ns/yuma-ncx",
+               "name": "yuma-ncx",
+               "revision": "2012-01-13"
+             }
+           ],
+           "rpcProcessors": [
+             "com.dzsi.netconf.device.processors.SendNotificationProc"
+           ],
+           "initDataStores": [
+             {
+               "type": "CONFIGURATION",
+               "dataFile": "config/initial-config-datastore.xml"
+             }
+           ]
+         },
+         {
+           "configId": "device-20210128",
+           "credential": {
+             "user": "admin",
+             "password": "admin"
+           },
+           "models": [
+             {
+               "nameSpace": "http://www.ipinfusion.com/CMLSchema/dasan",
+               "name": "dasan",
+               "revision": "2021-01-28"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:ietf-netconf-notifications-trigger",
+               "name": "dzsi-ietf-netconf-notifications-trigger",
+               "revision": "2021-07-23"
+             },
+             {
+               "nameSpace": "urn:TBD:params:xml:ns:yang:network-topology",
+               "name": "network-topology",
+               "revision": "2013-10-21"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:netconf:simulator:alarm-type-id-def",
+               "name": "alarm-type-id-def",
+               "revision": "2021-10-20"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:netconf:notification:1.0",
+               "name": "notifications",
+               "revision": "2008-07-14"
+             },
+             {
+               "nameSpace": "http://netconfcentral.org/ns/yuma-ncx",
+               "name": "yuma-ncx",
+               "revision": "2012-01-13"
+             }
+           ],
+           "rpcProcessors": [
+             "com.dzsi.netconf.device.processors.SendNotificationProc"
+           ]
+         }
+       ]
+     }'
+  datastore:
+    configuration:
+      - name: initial-config-datastore.xml
+        data:
+          '<?xml version="1.0" encoding="UTF-8"?>
+           <data>
+           <vr xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <vrId>0</vrId>
+            <vrf>
+                <vrfName>default</vrfName>
+            </vrf>
+            <interface>
+                <ifName>eth0/1</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/10</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/11</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/12</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/13</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/14</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/15</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/16</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/17</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/18</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/19</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/2</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/20</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/21</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/22</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/23</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/24</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/25</ifName>
+                <speed>25000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/26</ifName>
+                <speed>25000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/27</ifName>
+                <speed>25000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/28</ifName>
+                <speed>25000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/3</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <cpuStormControl />
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/4</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <cpuStormControl />
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/5</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <cpuStormControl />
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/6</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/7</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/8</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>eth0/9</ifName>
+                <speed>10000</speed>
+                <mtu>1500</mtu>
+                <autoNeg>off</autoNeg>
+                <maxHosts>32767</maxHosts>
+                <switchportStatus>true</switchportStatus>
+                <mac>
+                    <move>enable</move>
+                </mac>
+                <switchportInterface>
+                    <nsmVlanPort>
+                        <portMode>access</portMode>
+                    </nsmVlanPort>
+                </switchportInterface>
+                <qosInterface>
+                    <mlsQosTrustPassThroughDscp />
+                    <mlsQosTrust>cos</mlsQosTrust>
+                </qosInterface>
+            </interface>
+            <interface>
+                <ifName>lo</ifName>
+                <prefixlen>8</prefixlen>
+                <ipAddr>127.0.0.1</ipAddr>
+            </interface>
+            <interface>
+                <ifName>mgmt</ifName>
+                <prefixlen>24</prefixlen>
+                <ipAddr>10.153.1.72</ipAddr>
+            </interface>
+            <interface>
+                <ifName>vlan1.1</ifName>
+                <igs>
+                    <version>3</version>
+                </igs>
+            </interface>
+            <bridge>
+                <bridgeId>1</bridgeId>
+                <topologyType>topology-none</topologyType>
+                <bridgeType>ieee-vlan-bridge</bridgeType>
+                <interface>
+                    <ifName>eth0/1</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/10</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/11</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/12</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/13</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/14</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/15</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/16</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/17</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/18</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/19</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/2</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/20</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/21</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/22</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/23</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/24</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/25</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/26</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/27</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/28</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/3</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/4</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/5</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/6</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/7</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/8</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <interface>
+                    <ifName>eth0/9</ifName>
+                    <spanningTreeStatus>disable</spanningTreeStatus>
+                </interface>
+                <mstpBridge>
+                    <bridgeShutdown>bridge-forward</bridgeShutdown>
+                </mstpBridge>
+            </bridge>
+            <rib>
+                <ribIpv4>
+                    <destPrefix>0.0.0.0/0</destPrefix>
+                    <ribStaticGwAddr>
+                        <gwAddr>10.153.1.254</gwAddr>
+                    </ribStaticGwAddr>
+                </ribIpv4>
+            </rib>
+            <featuredhcp>
+                <dhcp>true</dhcp>
+            </featuredhcp>
+            <qos />
+           </vr>
+           <dns xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <domainlookup>true</domainlookup>
+            <vrfName>default</vrfName>
+           </dns>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>auth</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>hsl</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>lag</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>l2mrib</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>mstp</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>mrib</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>nsm</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>onm</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>oam</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>ospf</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>ospf6</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>rmon</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>rib</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>sflow</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>cml</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <logginglevel xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <loggingmodule>ndd</loggingmodule>
+            <logginglevel>2</logginglevel>
+           </logginglevel>
+           <log xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <monitorseverity>7</monitorseverity>
+           </log>
+           <fan xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <operation>auto</operation>
+           </fan>
+           <userList xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <userName>admin</userName>
+            <level>15</level>
+            <role>network-admin</role>
+            <description>admin_user</description>
+           </userList>
+           <terminalLine xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <type>LINE_TYPE_CONSOLE</type>
+            <lineConfig>
+                <line>0</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+           </terminalLine>
+           <terminalLine xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <type>LINE_TYPE_VTY</type>
+            <lineConfig>
+                <line>0</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>1</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>2</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>3</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>4</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>5</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>6</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+            <lineConfig>
+                <line>7</line>
+                <login>config</login>
+                <exec-timeoutSeconds>0</exec-timeoutSeconds>
+                <exec-timeoutMinutes>10</exec-timeoutMinutes>
+            </lineConfig>
+           </terminalLine>
+           <timezone xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <timezone>GMT</timezone>
+           </timezone>
+           <loginglobal xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <count>8</count>
+            <radius>
+                <radiusInterface>mgmt</radiusInterface>
+            </radius>
+            <tacacs>
+                <tacacsInterface>mgmt</tacacsInterface>
+            </tacacs>
+           </loginglobal>
+           <serviceConfig xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <serviceFtp />
+            <serviceTftp />
+            <serviceTelnet />
+           </serviceConfig>
+           <hostname xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <hostname>SWITCH</hostname>
+           </hostname>
+           <syslog xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <output>
+                <severity>info</severity>
+                <local>
+                    <enableNonVolatile />
+                    <enableVolatile />
+                </local>
+            </output>
+           </syslog>
+           <snmp xmlns="http://www.ipinfusion.com/CMLSchema/dasan">
+            <trapHostV2c>172.16.89.81</trapHostV2c>
+            <communityReadWrite>private</communityReadWrite>
+            <communityReadOnly>public</communityReadOnly>
+           </snmp>
+           </data>
+          '
+    operational:
+      - name: initial-operational-datastore.xml
+        data:
+          '
+          '

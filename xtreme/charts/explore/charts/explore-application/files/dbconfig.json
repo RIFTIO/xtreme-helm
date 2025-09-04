@@ -1,0 +1,13 @@
+{
+  "databases": {
+      "click": {
+          "type": "clickhouse",
+          "host": "{{- tpl .Values.clickhouse.host . -}}",
+          "port": {{ tpl .Values.clickhouse.port . }},
+          "username": "{{- .Values.clickhouse.username -}}",
+          "password": "{{- .Values.clickhouse.password -}}",
+          "connections_min": 2,
+          "connections_max": 4
+      }
+  }
+}

@@ -1,0 +1,55 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021-2023 DZS Inc
+#
+# external IP address used for the template function
+{{- $ipAddress := .Values.global.ingress.externalAddress -}}
+# Pathtype support is only available from 1.18 version onwards
+{{- $canUsePathType :=  (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- $ingressApiGA := (semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion) }}
+---
+{{- if $ingressApiGA }}
+apiVersion: networking.k8s.io/v1
+{{- else }}
+apiVersion: networking.k8s.io/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: rw-auth-ingress
+  namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    ingress.kubernetes.io/rewrite-target: "/"
+spec:
+  {{- if .Values.global.ingress.class.name }}
+  {{- if eq .Values.global.ingress.class.namespaced true }}
+  ingressClassName: {{ .Values.global.namespace.name }}-{{ .Values.global.ingress.class.name }}
+  {{- else }}
+  ingressClassName: {{ .Values.global.ingress.class.name }}
+  {{- end }}
+  {{- end }}
+  rules:
+  {{- $isIPValid := true -}}
+  {{ if .Values.global.ingress.externalAddress }}
+  {{- $isIPValid = include "isIPchk" $ipAddress -}}
+  {{- end }}
+  {{- if or (eq (toString $isIPValid) "true") (not .Values.global.ingress.externalAddress) }}
+  - http:
+  {{- else }}
+  - host: {{ .Values.global.ingress.externalAddress }}
+    http:
+  {{- end }}
+      paths:
+      # Use of auth path is blocked by RIFT-31195
+      - path: /authRESERVED
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ftp.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.ftp
+{{- if .Values.service.annotations }}
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      name: ftp
+    - port: 20
+      targetPort: 20
+      name: dataport
+    - port: 21100
+      targetPort: 21100
+      name: pasvport1
+    - port: 21101
+      targetPort: 21101
+      name: pasvport2
+    - port: 21102
+      targetPort: 21102
+      name: pasvport3
+    - port: 21103
+      targetPort: 21103
+      name: pasvport4
+    - port: 21104
+      targetPort: 21104
+      name: pasvport5
+    - port: 21105
+      targetPort: 21105
+      name: pasvport6
+    - port: 21106
+      targetPort: 21106
+      name: pasvport7
+    - port: 21107
+      targetPort: 21107
+      name: pasvport8
+    - port: 21108
+      targetPort: 21108
+      name: pasvport9
+    - port: 21109
+      targetPort: 21109
+      name: pasvport10
+    - port: 21110
+      targetPort: 21110
+      name: pasvport11
+    - port: 21111
+      targetPort: 21111
+      name: pasvport12
+  selector:
+    app: rw.ftp

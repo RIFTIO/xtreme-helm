@@ -1,0 +1,167 @@
+# Default values for inas2-be.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+initContainer:
+  waitForDep:
+    image:
+      repository: rt.cloud.dzsi.local/docker/ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+      tag: "v1.0.0"
+
+image:
+  repository: rt.cloud.dzsi.local/docker/inas/inas2-be
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets:
+  - name: harbor
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 2997
+
+securityContext:
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+  runAsGroup: 2997
+  runAsUser: 3015
+
+service:
+  type: ClusterIP
+  port1: 30522
+  name1: nbi
+  protocal1: TCP
+  nodeport1: 30722
+
+  port2: 30521
+  name2: nbi-soap
+  protocal2: TCP
+  nodeport2: 30721
+
+  port3: 30523
+  name3: nbi-tl1
+  protocal3: TCP
+  nodeport3: 30723
+
+  port4: 161
+  name4: nbi-snmp-agent
+  protocal4: UDP
+  nodeport4: 30761
+
+  port5: 20000
+  name5: nbi-corbe-namingservice
+  protocal5: TCP
+  nodeport5: 30700
+
+  port6: 60000
+  name6: nbi-corba-inas-server
+  protocal6: TCP
+  nodeport6: 30600
+
+  port7: 162
+  name7: snmptrap
+  protocal7: UDP
+  nodeport7: 30762
+
+  port8: 514
+  name8: syslog
+  protocal8: UDP
+  nodeport8: 30714
+
+  port9: 30540
+  name9: systemcluster
+  protocal9: TCP
+  nodeport9: 30540
+
+  port10: 60500
+  name10: command-tracer
+  protocal10: TCP
+  nodeport10: 30750
+
+  port11: 30800
+  name11: sync
+  protocal11: TCP
+  nodeport11: 30780
+
+  port12: 30535
+  name12: be-server
+  protocal12: TCP
+  nodeport12: 30735
+
+  port13: 30836
+  name13: sync-webhook
+  protocal13: TCP
+  nodeport13: 30736
+
+  port14: 30838
+  name14: holder
+  protocal14: TCP
+  nodeport14: 30738
+
+ingress:
+  enabled: false
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths: []
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+persistence:
+  enabled: true
+  name: dzs-inas2-be-volume
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  storageClass: null
+  volumeMode: Filesystem
+

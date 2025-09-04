@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rnc-alarm-svc.fullname" . }}
+  labels:
+    {{- include "alarm-svc.labels" . | nindent 4 }}
+  namespace: {{ include "sdnc.namespace" . }}
+spec:
+  {{- if .Values.service.useNodePort }}
+  type: NodePort
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      {{- if .Values.service.useNodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "alarm-svc.selectorLabels" . | nindent 4 }}

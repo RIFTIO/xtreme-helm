@@ -1,0 +1,12 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-nats-config
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  rw-nats.conf: |
+    max_payload: 67108864
+    write_deadline: 5s
+    debug: True
+    trace: false

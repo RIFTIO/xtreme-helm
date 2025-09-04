@@ -1,0 +1,83 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+{{- $storageClassName := .Values.prometheusStorage.storageClassName -}}
+{{- $capacity := .Values.prometheusStorage.capacity -}}
+{{- $namespace := .Values.global.namespace.name -}}
+{{- with .Values.prometheusStorage.localStore }}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ $storageClassName }}
+  namespace: {{ $namespace }}
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $storageClassName }}-{{ $namespace }}-prom-pv-new
+  namespace: {{ $namespace }}
+spec:
+  capacity:
+    storage: {{ $capacity }}
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: {{ $storageClassName }}
+  claimRef:
+    namespace: {{ $namespace }}
+    name: 'data-rw-prometheus-0'
+  local:
+    path: {{ .mountPath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - {{ .nodeName }}
+{{- end }}
+{{- with .Values.prometheusStorage.manual }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $storageClassName }}-{{ $namespace }}-prom-pv-new
+  namespace: {{ $namespace }}
+  labels:
+    type: local
+spec:
+  storageClassName: {{ $storageClassName }}
+  capacity:
+    storage: {{ $capacity }}
+  accessModes:
+    - ReadWriteOnce
+  claimRef:
+    namespace: {{ $namespace }}
+    name: 'data-rw-prometheus-0'
+  hostPath:
+    path: {{ .mountPath }}
+{{- end }}
+{{- with .Values.prometheusStorage.nfs }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ $storageClassName }}-{{ $namespace }}-prom-pv-new
+  namespace: {{ $namespace }}
+spec:
+  capacity:
+    storage: {{ $capacity }}
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  claimRef:
+    namespace: {{ $namespace }}
+    name: 'data-rw-prometheus-0'
+  mountOptions:
+  - hard
+  - nfsvers=3.0
+  nfs:
+    path: {{ .mountPath }}
+    server: {{ .server }}
+{{- end }}

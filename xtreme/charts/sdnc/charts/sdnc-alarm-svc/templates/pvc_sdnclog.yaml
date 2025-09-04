@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: {{ .Values.sdnc.volume.log.kind }}
+metadata:
+  name: {{ .Values.sdnc.volume.log.pvc.name }}
+  namespace: {{ include "sdnc.namespace" . }}
+spec:
+  accessModes:
+    - {{ .Values.sdnc.volume.log.pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.sdnc.volume.log.pvc.storage }}
+  {{- include "parent-chart.resolveStorageClass" (dict "local" .Values.volume.log.pvc.storageClassName "Values" .Values) | nindent 2 }}

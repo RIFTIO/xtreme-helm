@@ -1,0 +1,25 @@
+apiVersion: v2
+appVersion: 10.2.0
+dependencies:
+- name: alertmgr
+  repository: file://./charts/alertmgr
+  version: 0.21.0
+- condition: loki.enabled
+  name: loki
+  repository: file://./charts/loki
+  version: 1.6.0
+- name: haproxy-ingress
+  repository: file://./charts/haproxy-ingress
+  version: "0.1"
+- condition: global.install.aeo
+  name: aeo
+  repository: file://./charts/aeo
+  version: 0.1.0
+- condition: global.install.clusterLogger
+  name: cluster_logger
+  repository: file://./charts/cluster_logger
+  version: 0.1.0
+description: A Helm chart for RIFT.ware Launchpad
+name: launchpad
+type: application
+version: 10.2.0

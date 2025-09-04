@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inas2-be.fullname" . }}
+  namespace: {{ include "inas.namespace" . }}
+  labels:
+    {{- include "inas2-be.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port1 }}
+      protocol: {{ .Values.service.protocal1 }}
+      name: {{ .Values.service.name1 }}
+      targetPort: {{ .Values.service.port1 }}
+      #nodePort: {{ .Values.service.nodeport1 }}
+    - port: {{ .Values.service.port2 }}
+      protocol: {{ .Values.service.protocal2 }}
+      name: {{ .Values.service.name2 }}
+      targetPort: {{ .Values.service.port2 }}
+      #nodePort: {{ .Values.service.nodeport2 }}
+    - port: {{ .Values.service.port3 }}
+      protocol: {{ .Values.service.protocal3 }}
+      name: {{ .Values.service.name3 }}
+      targetPort: {{ .Values.service.port3 }}
+      #nodePort: {{ .Values.service.nodeport3 }}
+    - port: {{ .Values.service.port4 }}
+      protocol: {{ .Values.service.protocal4 }}
+      name: {{ .Values.service.name4 }}
+      targetPort: {{ .Values.service.port4 }}
+      #nodePort: {{ .Values.service.nodeport4 }}
+    - port: {{ .Values.service.port5 }}
+      protocol: {{ .Values.service.protocal5 }}
+      name: {{ .Values.service.name5 }}
+      targetPort: {{ .Values.service.port5 }}
+      #nodePort: {{ .Values.service.nodeport5 }}
+    - port: {{ .Values.service.port6 }}
+      protocol: {{ .Values.service.protocal6 }}
+      name: {{ .Values.service.name6 }}
+      targetPort: {{ .Values.service.port6 }}
+      #nodePort: {{ .Values.service.nodeport6 }}
+      #- port: {{ .Values.service.port7 }}
+      #protocol: {{ .Values.service.protocal7 }}
+      #name: {{ .Values.service.name7 }}
+      #targetPort: {{ .Values.service.port7 }}
+      #nodePort: {{ .Values.service.nodeport7 }}
+    - port: {{ .Values.service.port8 }}
+      protocol: {{ .Values.service.protocal8 }}
+      name: {{ .Values.service.name8 }}
+      targetPort: {{ .Values.service.port8 }}
+      #nodePort: {{ .Values.service.nodeport8 }}
+    - port: {{ .Values.service.port9 }}
+      protocol: {{ .Values.service.protocal9 }}
+      name: {{ .Values.service.name9 }}
+      targetPort: {{ .Values.service.port9 }}
+      #nodePort: {{ .Values.service.nodeport9 }}
+    - port: {{ .Values.service.port10 }}
+      protocol: {{ .Values.service.protocal10 }}
+      name: {{ .Values.service.name10}}
+      targetPort: {{ .Values.service.port10 }}
+      #nodePort: {{ .Values.service.nodeport10 }}
+    - port: {{ .Values.service.port11 }}
+      protocol: {{ .Values.service.protocal11 }}
+      name: {{ .Values.service.name11}}
+      targetPort: {{ .Values.service.port11 }}
+      #nodePort: {{ .Values.service.nodeport11 }}
+    - port: {{ .Values.service.port12 }}
+      protocol: {{ .Values.service.protocal12 }}
+      name: {{ .Values.service.name12}}
+      targetPort: {{ .Values.service.port12 }}
+      #nodePort: {{ .Values.service.nodeport12 }}
+    - port: {{ .Values.service.port13 }}
+      protocol: {{ .Values.service.protocal13 }}
+      name: {{ .Values.service.name13}}
+      targetPort: {{ .Values.service.port13 }}
+      #nodePort: {{ .Values.service.nodeport13 }}
+    - port: {{ .Values.service.port14 }}
+      protocol: {{ .Values.service.protocal14 }}
+      name: {{ .Values.service.name14 }}
+      targetPort: {{ .Values.service.port14 }}
+      #nodePort: {{ .Values.service.nodeport14 }}
+  selector:
+    {{- include "inas2-be.selectorLabels" . | nindent 4 }}

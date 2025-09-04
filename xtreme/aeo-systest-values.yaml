@@ -1,0 +1,56 @@
+# Copyright 2022 DZS Inc
+
+global:
+  namespace:
+    name: TPL_NAMESPACE
+  install:
+    explore: false
+    zms: false
+    inas: false
+    sdnc: true
+    ftp: true
+    sftp: true
+    aeo: true
+    orchestrator: true
+    deviceSimulator: true
+  ingress:
+    createClusterRole: true
+
+launchpad:
+  cluster_logger:
+    createClusterRole: true
+
+  launchpad:
+    appSelector: aeo
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: TPL_IMG_TAG
+      pullPolicy: Always     # This is only for images tagged based on branch
+
+    env:
+      RW_RUNTIME_PROFILE: systest
+
+    capabilities: [ NET_ADMIN, SYS_RESOURCE, SYS_PTRACE ]
+    securityContext:
+      enabled: False
+
+    coreDir: null   # Default goes to RIFT_VAR_ROOT
+
+  aeo:
+    image:
+      controller:
+        tag: TPL_IMG_TAG
+        pullPolicy: Always
+      serviceWorker:
+        tag: TPL_IMG_TAG
+        pullPolicy: Always
+      resourceWorker:
+        tag: TPL_IMG_TAG
+        pullPolicy: Always
+      tmfServer:
+        tag: TPL_IMG_TAG
+        pullPolicy: Always
+      scriptExec:
+        pullPolicy: Always
+
+  externalAddress: null

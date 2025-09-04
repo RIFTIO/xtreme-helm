@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rw-ftp
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.ftp
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: rw.ftp
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: rw.ftp
+    spec:
+      serviceAccountName: rw-ftp-sa
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          #args: ["{{ .Values.ftp.user }}:{{ .Values.ftp.passwd }}:{{ .Values.securityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }}:{{ .Values.ftp.incoming }},{{ .Values.ftp.outgoing }}"]
+          env:
+            - name: PASV_PROMISCUOUS
+              value: "YES"
+            - name: FTP_USER
+              value: {{ .Values.ftp.user | quote }}
+            - name: FTP_PASS
+              value: {{ .Values.ftp.passwd | quote }}
+            - name: PASV_MIN_PORT
+              value: "21100"
+            - name: PASV_MAX_PORT
+              value: "21111"
+            - name: PASV_ENABLE
+              value: "YES"
+            - name: PASV_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: RELEASE_NAME
+              value: {{ .Release.Name }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: ftp
+              containerPort: 21
+              protocol: TCP
+            - name: dataport
+              containerPort: 20
+              protocol: TCP
+            - name: pasvport1
+              containerPort: 21100
+              protocol: TCP
+            - name: pasvport2
+              containerPort: 21101
+              protocol: TCP
+            - name: pasvport3
+              containerPort: 21102
+              protocol: TCP
+            - name: pasvport4
+              containerPort: 21103
+              protocol: TCP
+            - name: pasvport5
+              containerPort: 21104
+              protocol: TCP
+            - name: pasvport6
+              containerPort: 21105
+              protocol: TCP
+            - name: pasvport7
+              containerPort: 21106
+              protocol: TCP
+            - name: pasvport8
+              containerPort: 21107
+              protocol: TCP
+            - name: pasvport9
+              containerPort: 21108
+              protocol: TCP
+            - name: pasvport10
+              containerPort: 21109
+              protocol: TCP
+            - name: pasvport11
+              containerPort: 21110
+              protocol: TCP
+            - name: pasvport12
+              containerPort: 21111
+              protocol: TCP
+            #- name: pasvmin
+            #  containerPort: 21100
+            #  protocol: TCP
+            #- name: pasvmax
+            #  containerPort: 21111
+            #  protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - mountPath: /usr/sbin/run-vsftpd.sh
+              name: scripts
+              subPath: run-vsftpd.sh
+          {{- if .Values.persistence.enabled }}
+            - name: {{ .Values.persistence.name }}
+              mountPath: /home/vsftpd
+          {{- end }}
+      volumes:
+      - configMap:
+          defaultMode: 493
+          name: rw-ftp-cm
+        name: scripts
+      {{- if .Values.persistence.enabled }}
+      - name: {{ .Values.persistence.name }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.name }}
+      {{- end }}
+      dnsPolicy: ClusterFirst
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,159 @@
+#
+# Copyright 2022 DZS Inc
+#
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rw-aeo-resource-worker
+  labels:
+    {{- include "aeo.labels" . | nindent 4 }}
+    app: rw.aeo.res.worker
+  namespace: {{ include "aeo.namespace" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "aeo.selectorLabels" . | nindent 6 }}
+      app: rw.aeo.res.worker
+  serviceName: rw-aeo-resource-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: 'rw-worker-metrics'
+        prometheus.io/port: '11001'
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "aeo.selectorLabels" . | nindent 8 }}
+        app: rw.aeo.res.worker
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      serviceAccountName: default
+
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+            - name: RW_REDIS_SVC_NAME
+              value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+            - name: RW_PROMETHEUS_SVC_NAME
+              value: {{ include "prometheus.fullname" . -}}.{{- .Values.global.namespace.name }}
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(RW_REDIS_SVC_NAME):8012"
+            - --host="$(RW_PROMETHEUS_SVC_NAME):9090"
+            - --timeout=120s
+            - --verbose
+
+      containers:
+        - name: resource-worker
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+
+          image: "{{ .Values.image.resourceWorker.repository }}:{{ .Values.image.resourceWorker.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.resourceWorker.pullPolicy }}
+          command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/resource_worker.py"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          env:
+          {{- if .Values.global.install.sdnc }}
+          - name: RW_INTERNAL_SDNC
+            value: http://{{- include "rnc-config-mgr.fqdn" . }}:8888
+          - name: RW_INTERNAL_SDNC_NETCONF
+            value: http://{{- include "rnc-netconf-svc.fqdn" . }}:8888
+          - name: RW_INTERNAL_SDNC_TASKMGR
+            value: http://{{- include "task-mgr.fqdn" . }}:8888
+          - name: RW_INTERNAL_SDNC_INVMGR
+            value: http://{{ include "rnc-inventory-mgr.fqdn" . }}:8899
+          {{- end }}
+          - name: RW_LP_CONTAINER_NAME
+            value: resource-worker
+          - name: RW_WORKER_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: RW_LP_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: RW_REDIS_SVC_NAME
+            value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_NATS_SVC_NAME
+            value: {{ include "nats.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: RW_LAUNCHPAD_SVC_FQDN
+            value: {{ include "launchpad.fqdn" . }}
+          ports:
+          - containerPort: 11011
+            name: prom-metrics
+
+          volumeMounts:
+          {{- with .Values.devSetup }}
+          - name: localdisk
+            mountPath: /localdisk
+            readOnly: false
+          - name: rift-install
+            mountPath: /usr/rift
+            readOnly: false
+          {{- end }}
+          - name: config-dir
+            mountPath: /config
+            readOnly: false
+          - name: var-config
+            mountPath: /config/worker
+            readOnly: false
+
+      nodeSelector:
+        {{ if .Values.nodeSelector }}
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+        {{ end }}
+
+      volumes:
+      {{- with .Values.devSetup }}
+      - name: localdisk
+        hostPath:
+          path: /localdisk
+          type: Directory
+      - name: rift-install
+        hostPath:
+          path: {{ .riftInstall }}
+          type: Directory
+      {{- end }}
+      - name: var-config
+        configMap: 
+          name: worker-config
+      - name: config-dir
+        configMap:
+          name: sd-config
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

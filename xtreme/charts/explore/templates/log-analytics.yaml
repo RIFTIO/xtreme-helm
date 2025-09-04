@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-analytics-cm
+  namespace: {{ include "explore.namespace" . }}
+data:
+  config.ini: |
+    [schedule]
+    # after how long, training should start
+    # format - <int>[s|m|h|d|w]
+    training=1w
+
+    [database]
+    host={{ .Values.global.chiDb.host }}
+    port={{ .Values.global.chiDb.port }}
+    http_port={{ .Values.global.chiDb.httpPort }}
+    username=demo
+    password=demo
+    database=logdata
+    raw_table=platform_log_events
+    failure_table=failure_details
+    rootcause_table=rootcause_details
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-analytics
+  namespace: {{ include "explore.namespace" . }}
+spec:
+  selector:
+    app: log-analytics
+  ports:
+    - protocol: "TCP"
+      port: 8003
+      targetPort: http
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-analytics
+  namespace: {{ include "explore.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: log-analytics
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: log-analytics
+    spec:
+      containers:
+        - name: log-analytics
+          image: {{ .Values.logAnalytics.image.repository }}:{{ .Values.logAnalytics.image.tag }}
+          imagePullPolicy: {{ .Values.logAnalytics.image.pullPolicy }}
+          env:
+          - name: MONGO_DB_HOST
+            value: {{ include "mongodb.fqdn" . }}
+          - name: MONGO_DB_PORT
+            value: "8006"
+          ports:
+            - containerPort: 8003
+          volumeMounts:
+          - name: config
+            mountPath: /config
+      volumes:
+      - name: config
+        configMap:
+          name: log-analytics-cm

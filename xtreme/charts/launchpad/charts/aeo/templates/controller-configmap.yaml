@@ -1,0 +1,38 @@
+#
+# Copyright 2022 DZS Inc
+#
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: manager-config
+  namespace: {{ include "aeo.namespace" . }}
+data:
+  env_variable.conf: |
+    {
+      "global": {
+        "RW_MANAGER_DEFAULT_ASYNCIO_THREADS" : "4", 
+        "RW_MANAGER_TASK_REASSGN_PERIOD_SECS" : "30",
+        "RW_MANAGER_ENABLE_METRICS_COLLECTION" : "true",
+        "RW_MANAGER_WAIT_REPROC_WORKER_SECS" : "30",
+        "RW_MANAGER_PROMETHEUS_METRICS_PORT" : "11000"
+      },
+      "rw-aeo-controller-0": {
+        "service-controller": {
+          "RW_MANAGER_PROMETHEUS_METRICS_PORT" : "11000"
+          
+        },
+        "resource-controller": {
+          "RW_MANAGER_PROMETHEUS_METRICS_PORT" : "11010"
+        }
+      }
+    }
+
+# The variables in the global are the environment variables with default values.  
+# To override these values you have to define the same variable inside pod 
+# dictionary or container dictionary defined above.
+#
+# If the variable is defined inside pod dictionary it will update that value in all the containers. 
+# If the variable is defined inside container dictionary it will update that value inside that container only. 
+#
+# Please note env_variable.conf should be in json format

@@ -1,0 +1,24 @@
+{{- if .Values.global.nodeportService }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.global.nodeportService.name | default "nodeport-rm" }}
+  namespace: {{ .Values.global.namespace.name | default "dzs-route" }}
+  labels:
+    app: {{ .Values.global.nodeportService.appLabel | default "dzs" }}
+spec:
+  type: NodePort
+  selector:
+    run: haproxy-ingress
+  ports:
+    - name: redis-8014
+      port: 8014
+      targetPort: 8014
+      protocol: TCP
+      nodePort: {{ .Values.global.nodeportService.nodePorts.redis | default 31015 }}
+    - name: mongo-8006
+      port: 8006
+      targetPort: 8006
+      protocol: TCP
+      nodePort: {{ .Values.global.nodeportService.nodePorts.mongo | default 32015 }}
+{{- end }}

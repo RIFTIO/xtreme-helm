@@ -1,0 +1,20 @@
+# Global values for sdnc
+
+## InfluxDB
+global:
+  inflxdb:
+    password: "dzs123!!"
+
+install:
+  artifactory: true
+  fileManager: true
+  pmCollector: true
+  alarmSvc: true
+  inventoryMgr: true
+  taskMgr: true
+  netconfSvc: true
+  configMgr: true
+  transportpce: true
+  sdncConnector: true
+  envoy: false
+  gnpy: true

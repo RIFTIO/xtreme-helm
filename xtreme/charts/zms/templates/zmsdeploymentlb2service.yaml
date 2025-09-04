@@ -1,0 +1,184 @@
+# Copyright 2022 DZS Inc
+apiVersion: v1
+kind: Service
+metadata:
+  name: zmsapp-tcp
+  namespace: {{ include "zms.namespace" . }}
+  labels:
+    app: zmsapp
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "zmsapp_shared_ip"
+spec:
+  {{- if .Values.service.zmsHostNetwork }}
+  type: ClusterIP
+  {{- else }}
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  {{- end }}
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 15002
+    targetPort: 15002
+    protocol: TCP
+    name: app
+  - port: 9990
+    targetPort: 9990
+    protocol: TCP
+    name: jboss
+  - port: 20
+    targetPort: 20
+    protocol: TCP
+    name: ftpdata
+  - port: 21
+    targetPort: 21
+    protocol: TCP
+    name: ftpcontrol
+  - port: 830
+    targetPort: 830
+    protocol: TCP
+    name: netconf
+  {{- if eq .Values.vsftp.sslEnable "YES" }}
+  - port: 22
+    targetPort: 22
+    protocol: TCP
+    name: sftp
+  {{- end }}
+  {{- if eq .Values.vsftp.pasvEnable "YES" }}
+  - port: {{ .Values.vsftp.pasvMinNodePort }}
+    targetPort: {{ .Values.vsftp.pasvMinNodePort }}
+    protocol: TCP
+    name: pasvmin
+  - port: {{ .Values.vsftp.pasvMaxNodePort }}
+    targetPort: {{ .Values.vsftp.pasvMaxNodePort }}
+    protocol: TCP
+    name: pasvmax
+  {{- end }}
+  selector:
+    app: zmsapp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zmsapp-udp
+  namespace: {{ include "zms.namespace" . }}
+  labels:
+    app: zmsapp
+  annotations:
+    metallb.universe.tf/allow-shared-ip: "zmsapp_shared_ip"
+spec:
+  {{- if .Values.service.zmsHostNetwork }}
+  type: ClusterIP
+  {{- else }}
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  {{- end }}
+  ports:
+  - port: 162
+    targetPort: 162
+    protocol: UDP
+    name: snmp
+  - port: 69
+    targetPort: 69
+    protocol: UDP
+    name: tftp
+  selector:
+    app: zmsapp
+---
+apiVersion: apps/v1
+kind: StatefulSet # what to create?
+metadata:
+  name: dzs-zmsapp
+  namespace: {{ include "zms.namespace" . }}
+spec: # specification for deployment resource
+  replicas: 1 # how many replicas of pods we want to create
+  serviceName: zmsapp
+  selector:
+    matchLabels:
+      app: zmsapp
+  template: # blueprint for pods
+    metadata:
+      labels:
+        app: zmsapp # service will look for this label
+    spec: # specification for pods
+      {{- if .Values.service.zmsHostNetwork }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      initContainers:
+        - name: wait-for-db
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: MARIADB_IP
+              value: "mariadbservice"
+          command:
+            - /wait-for
+          args:
+            - --host="$(MARIADB_IP):3306"
+            - --verbose
+
+      containers: # we can have one or more containers
+      - name: zmsapp
+        image: {{ .Values.image.repository -}} : {{- .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+        - containerPort: 15002
+        - containerPort: 830
+        - containerPort: 9990
+        - containerPort: 162
+        - containerPort: 69
+        {{- if eq .Values.vsftp.sslEnable "YES"}}
+        - containerPort: 22
+        {{- end }}
+        - containerPort: 21
+        - containerPort: 20
+        - containerPort: 20020
+        - containerPort: 20021
+        env:
+        - name: MARIADB_IP
+          value: "mariadbservice" # name of the mariadb service passed in environment variadble
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /wildfly/standalone/deployments/zmsapp.ear.deployed
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+          - name: zms-logs
+            mountPath: /wildfly/standalone/log
+            subPath: log
+          - name: zms-logs
+            mountPath: /opt/zmsftp
+            subPath: zmsftp
+          - name: vsftp-config
+            mountPath: /etc/vsftpd.conf
+            subPath: vsftpd.conf
+          - name: vsftp-certs
+            mountPath: /certs
+      volumes:
+        - name: vsftp-config
+          configMap:
+            name: vsftp-cmap
+        - name: vsftp-certs
+          secret:
+            secretName: vsftp-secret
+  volumeClaimTemplates:
+  - metadata:
+      name: zms-logs
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.storage.capacity }}
+      storageClassName: {{ .Values.storage.storageClassName }}

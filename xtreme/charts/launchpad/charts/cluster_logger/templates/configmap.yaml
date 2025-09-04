@@ -1,0 +1,127 @@
+#
+# Copyright 2022 DZS Inc
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-logger-conf
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  fluentd.conf: |
+    <source>
+      @type tail
+      @id in_tail_container_logs
+      path /var/log/containers/rw-aeo-*_aeo-{{- .Values.global.namespace.name }}_*.log
+      exclude_path ["/var/log/containers/*wait\-for\-deps*"]
+      pos_file /var/log/{{- .Values.global.namespace.name }}-dzs-fluentd-containers.log.pos
+      tag mongo.*
+      read_from_head true
+
+      # Handle encoding conversion errors
+      encoding UTF-8
+      from_encoding UTF-8
+
+      {{- if ne .Values.containerRuntimeParser "docker" }}
+      <parse>
+        @type regexp
+        expression /^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<flags>[^ ]+) (?<log>.*)$/
+        time_format %Y-%m-%dT%H:%M:%S.%N%:z
+      </parse>
+      {{- end }}
+    </source>
+
+    <source>
+      @type tail
+      @id dzsx_tail_container_logs
+      path /var/log/containers/dzsx-*_{{- .Values.global.namespace.name }}_*.log
+      exclude_path ["/var/log/containers/*wait\-for\-deps*"]
+      pos_file /var/log/{{- .Values.global.namespace.name }}-dzsx-fluentd-containers.log.pos
+      tag dzsx.*
+      read_from_head true
+
+      # Handle encoding conversion errors
+      encoding UTF-8
+      from_encoding UTF-8
+
+      {{- if ne .Values.containerRuntimeParser "docker" }}
+      <parse>
+        @type regexp
+        expression /^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<flags>[^ ]+) (?<log>.*)$/
+        time_format %Y-%m-%dT%H:%M:%S.%N%:z
+      </parse>
+      {{- end }}
+    </source>
+
+    <filter **>
+      @type parser
+      key_name log
+      reserve_data true
+      remove_key_name_field true
+      emit_invalid_record_to_error false
+      format json
+    </filter>
+
+    <filter **>
+      @type parser
+      key_name stream
+      reserve_data true
+      remove_key_name_field true
+      emit_invalid_record_to_error false
+      format json
+    </filter>
+
+    <match mongo**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection aeo
+
+      # for capped collection
+      # capped
+      # capped_size 1024m
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        # key name of timestamp
+        time_key time
+      </inject>
+
+      <buffer>
+        # flush
+        flush_interval 5s
+      </buffer>
+    </match>
+
+    <match dzsx**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection events
+
+      # for capped collection
+      # capped
+      # capped_size 1024m
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        # key name of timestamp
+        time_key time
+      </inject>
+
+      <buffer>
+        # flush
+        flush_interval 5s
+      </buffer>
+    </match>
+
+    <match fluent.**>
+      @type null
+    </match>

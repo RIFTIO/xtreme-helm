@@ -1,0 +1,248 @@
+# Copyright 2024 DZS Inc
+# Copyright 2025 Zhone Inc
+
+# values file to force the xtreme helm chart to get all container images 
+# from public repositories
+
+global:
+  imagePullSecrets:
+    - name: dzs-secret
+
+initContainer:
+  waitForDep:
+    image:
+      repository: ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+
+mongodb:
+  image:
+    registry: docker.io
+    repository: bitnami/mongodb
+  busybox:
+    image:
+      repository: busybox
+  replicator:
+    image:
+      repository: dzscloudadmin/rw-replicator
+  metrics:
+    image:
+      registry: docker.io
+      repository: bitnami/mongodb-exporter
+
+prometheus:
+  replicator:
+    image:
+      repository: dzscloudadmin/rw-replicator
+  prometheus:
+    image:
+      repository: quay.io/prometheus/prometheus
+    busybox:
+      image:
+        repository: dzscloudadmin/busybox:dzs
+    configWatch:
+      image:
+        repository: weaveworks/watch
+    pushGateway:
+      image:
+        repository: quay.io/prometheus/pushgateway
+
+grafana:
+  grafana:
+    image:
+      repository: dzscloudadmin/rw.grafana
+
+launchpad:
+  aeo:
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    image:
+      controller:
+        repository: dzscloudadmin/rw.aeo
+      serviceWorker:
+        repository: dzscloudadmin/rw.aeo
+      resourceWorker:
+        repository: dzscloudadmin/rw.aeo
+      tmfServer:
+        repository: dzscloudadmin/rw.aeo
+      scriptExec:
+        repository: dzscloudadmin/rw.aeo-script-exec
+  imagePullSecrets:
+    - name: dzs-secret
+  initContainer:
+    waitForDep:
+      image:
+        repository: ghcr.io/patrickdappollonio/wait-for
+        pullPolicy: IfNotPresent
+
+  launchpad:
+    image:
+      repository: dzscloudadmin/rw.aeo
+      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
+    # copied from 11.1
+    primitiveExec:
+      image:
+        repository: dzscloudadmin/rw-primitive-exec
+        pullPolicy: IfNotPresent
+  redis:
+    image:
+      repository: redis/redis-stack-server
+    redTunnel:
+      image:
+        repository: dzscloudadmin/rw-redtunnel
+    exporter:
+      image:
+        repository: oliver006/redis_exporter
+    busybox:
+      image:
+        repository: busybox
+
+  grafana:
+    image:
+      repository: dzscloudadmin/rw.grafana
+
+  haproxy-ingress:
+    image:
+      repository: dzscloudadmin/haproxy-ingress
+      repository_latest: dzscloudadmin/haproxy-ingress
+    defaultbackend:
+      image:
+        repository: dzscloudadmin/defaultbackend
+        pullPolicy: IfNotPresent
+    exporter:
+      image:
+        repository: quay.io/prometheus/haproxy-exporter
+        pullPolicy: IfNotPresent
+  cluster_logger:
+    image:
+      repository: dzscloudadmin/rw.cluster-logger
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    imagePullSecrets:
+      - name: dzs-secret
+
+  alertmgr:
+    alertmgr:
+      image:
+        repository: prom/alertmanager
+
+nats:
+  image:
+    repository: nats
+  exporter:
+    image:
+      repository: bitnami/nats-exporter
+
+redis:
+  image:
+    repository: redis/redis-stack-server
+  redTunnel:
+    image:
+      repository: dzscloudadmin/rw-redtunnel
+  exporter:
+    image:
+      repository: oliver006/redis_exporter
+  busybox:
+    image:
+      repository: dzscloudadmin/busybox:dzs
+
+sdnc:
+  initContainer:
+    waitForDep:
+      image:
+        repository: ghcr.io/patrickdappollonio/wait-for
+  sdnc-alarm-svc:
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+  sdnc-pm-collector:
+    image:
+      repository: dzscloudadmin/dzs-pm-collector
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-netconf-svc:
+    image:
+      name: dzscloudadmin/dzs-netconf-svc
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-transportpce:
+    image:
+      name: dzscloudadmin/dzs-transportpce
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-alarm-svc:
+    image:
+      repository: dzscloudadmin/dzs-alarm-svc
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-file-mgr:
+    image:
+      repository: dzscloudadmin/dzs-file-mgr
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-task-mgr:
+    image:
+      repository: dzscloudadmin/dzs-task-mgr
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-inventory-mgr:
+    image:
+      repository: dzscloudadmin/dzs-inventory-mgr
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-config-mgr:
+    image:
+      name: dzscloudadmin/dzs-config-mgr
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
+    fluentd:
+      image:
+        repository: dzscloudadmin/rw.fluentd
+  sdnc-connector:
+    image:
+      repository: dzscloudadmin/sdnc_connector  
+  sdnc-gnpy:
+    image:
+      repository: dzscloudadmin/dzs-gnpy
+

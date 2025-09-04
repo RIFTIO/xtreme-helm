@@ -1,0 +1,24 @@
+# Copyright 2020 RIFT Inc
+{{- $namespace := .Values.global.namespace.name -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "alertmgr.fullname" . }}
+  namespace: {{ $namespace }}
+  labels:
+    app: rw.alertmgr
+spec:
+  ports:
+  {{- range $name, $port := .Values.alertmgr.ports }}
+  - name: {{ $name }}
+    port: {{ $port }}
+    targetPort: {{ $port }}
+  {{- end }}
+  type: {{ .Values.alertmgr.service.type }}
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  selector:
+    app: rw.alertmgr

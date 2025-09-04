@@ -1,0 +1,39 @@
+#
+# Copyright 2022 DZS Inc
+#
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-config
+  namespace: {{ include "aeo.namespace" . }}
+data:
+  env_variable.conf: |
+    {
+      "global" : {
+        "RW_WORKER_DEFAULT_ASYNCIO_THREADS" : "4",
+        "RW_WORKER_PRESENCE_PERIOD_SECS" : "10",
+        "RW_WORKER_IGNORE_METAINFO_STATE" : "true",
+        "RW_WORKER_RATE_FC_TASKS_NUM" : "8",
+        "RW_WORKER_RATE_FC_QUEUE_SZ" : "500",
+        "RW_WORKER_RATE_FC_LWM_PCNT" : "0",
+        "RW_WORKER_RATE_FC_HWM_PCNT" : "100",
+        "RW_WORKER_DELETE_FINISHED_JOBS_SEC" : "600",
+        "RW_WORKER_ENABLE_METRICS_COLLECTION" : "true",
+        "RW_WORKER_PROMETHEUS_METRICS_PORT" : "11001"
+      },
+      "rw-aeo-service-worker-0" : {
+        "RW_WORKER_PROMETHEUS_METRICS_PORT" : "11001",
+        "service-worker" : {},
+        "script-executor" : {}
+      }
+    }
+
+# The variables in the global are the environment variables with default values.  
+# To override these values you have to define the same variable inside pod 
+# dictionary or container dictionary defined above.
+#
+# If the variable is defined inside pod dictionary it will update that value in all the containers. 
+# If the variable is defined inside container dictionary it will update that value inside that container only. 
+#
+# Please note env_variable.conf should be in json format

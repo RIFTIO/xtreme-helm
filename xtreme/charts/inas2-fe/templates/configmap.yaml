@@ -1,0 +1,28 @@
+{{- $inas_svc := include "inas-be.fqdn" . }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "inas2-fe.fullname" . }}
+  namespace: {{ include "inas.namespace" . }}
+kind: ConfigMap
+
+data:
+  proxy.config.json: |
+    {
+        "/api/*": {
+                "context": "/api",
+                "target": "http://{{- $inas_svc -}}:30535",
+                "secure": false,
+                "changeOrigin": true,
+                "xfwd": true,
+                "pathRewrite": { "^/api": "" }
+        },
+        "/websocket": {
+                "context": "/websocket",
+                "target": "ws://{{- $inas_svc -}}:30535",
+                "secure": false,
+                "ws": true,
+                "changeOrigin": true
+        }
+    }

@@ -1,0 +1,53 @@
+# Copyright 2020 RIFT Inc
+# Default values for alertmgr.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+alertmgrfullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+alertmgr:
+  image:
+    repository: rt.cloud.dzsi.local/docker-hub/prom/alertmanager
+    tag: "v0.21.0-rc.0"
+    pullPolicy: IfNotPresent
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  capabilities: []
+  service:
+    type: ClusterIP
+  ports:
+    rwalert: 9093
+  coreDir: null
+  runAsUser: 65534
+
+# Hostname or IP address through which launchpad can be externally accessed
+# This value is mandatory except if service type is "LoadBalancer"
+externalAddress: null
+
+imagePullSecrets: []
+
+alertmgrStorage:
+  storageClassName: null
+  capacity: 20Gi
+  localStore: {}
+  manual: {}
+  nfs: {}

@@ -1,0 +1,455 @@
+# Copyright 2022 DZS Inc
+# Default values for lighty-rnc-app-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: "dzs-sdnc-config-mgr"
+svcName: "config"
+moduleName: "config-mgr"
+
+initContainer:
+  waitForDep:
+    image:
+      repository: rt.cloud.dzsi.local/ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+      tag: "v1.0.0"
+
+image:
+  name: rt.cloud.dzsi.local/docker/sdnc/dzs-config-mgr
+  #tag: master
+  pullPolicy: IfNotPresent
+
+lighty:
+  # Must be same as defined in Docker image
+  workdir: "/lighty-rnc"
+  configDirectoryName: "k8s-config"
+  # Name of the config file must be same as property in configmap
+  configFilename: "lighty-config.json"
+  # Name of the config file for initial logger configuration, must be same as property in configmap
+  loggerConfigFilename: "log4j2.xml"
+  # Addtional Yang models for Config Manager
+  configModel:
+    '{ "nameSpace": "http://dzsi.com/device-2022-03-08", "name": "dzs-olt-2022-03-08", "revision": "2022-03-08" },
+      { "nameSpace": "http://dzsi.com/device-2023-08-07", "name": "dzs-olt-2023-08-07", "revision": "2023-08-07" },
+      { "nameSpace": "http://dzsi.com/sdnc/config-mgr", "name": "config-mgr", "revision": "2022-06-27" },
+      { "nameSpace": "http://dzsi.com/sdnc/schedule", "name": "schedule", "revision": "2021-09-29" },
+      { "nameSpace": "http://dzsi.com/sdnc/task", "name": "task", "revision": "2021-09-29" },
+      { "nameSpace": "http://dzsi.com/sdnc/ext-yang-patch", "name": "ext-yang-patch", "revision": "2021-11-23" },
+      { "nameSpace": "yang:dzsi:sdnc:netconf-inventory", "name": "dzsi-sdnc-netconf-inventory", "revision": "2021-06-06" },
+      { "nameSpace": "http://dzsi.com/sdnc/topology-node-ext", "name": "topology-node-ext", "revision": "2021-08-17" },
+      { "nameSpace": "http://dzsi.com/zms-2021-12-29", "name":"dzs-zms-2021-12-29", "revision": "2021-12-29" },
+      { "nameSpace": "http://dzsi.com/inas-2022-02-22", "name":"dzs-inas-2022-02-22", "revision": "2022-02-22" },
+      { "nameSpace": "http://dzsi.com/openroadm-2020-05-29", "name": "dzs-roadm-2020-05-29", "revision": "2020-05-29" },
+      { "nameSpace": "http://dzsi.com/openroadm-2023-05-26", "name": "dzs-roadm-2023-05-26", "revision": "2023-05-26" },
+      { "nameSpace": "urn:opendaylight:daexim-internal", "name": "data-export-import-internal", "revision": "2016-09-21" },
+      { "nameSpace": "urn:opendaylight:daexim", "name": "data-export-import", "revision": "2016-09-21" }'
+  # If using cluster (not single-node deployment), don't forget to increase replica count
+  replicaCount: 1
+  restconf:
+    restconfPort: 8888
+    restconfPath: "/restconf"
+    useHttps: false
+    keyStorePassword: "8pgETwat"
+    keyStoreType: "JKS"
+    keyStoreDirectory: "keystore"
+    keyStoreFileName: "lightyio.jks"
+  volume:
+    name: config-mgr-volume
+    kind: PersistentVolumeClaim
+    mountPath: "target"
+    pvc:
+      name: config-mgr-volume-claim
+      accessMode: ReadWriteOnce
+      storage: 1Gi
+      storageClassName: null
+  serviceConfig:
+    '"serviceConfig" : {
+        "serviceName": "config-mgr",
+        "defaultSourceOfTruth" : "device",
+        "defaultAuditState" : "enabled",
+        "topologyId": "device-topology",
+        "southBoundSvcList": {
+            "netconf": {"default": "netconf-svc-dzs-rnc"},
+            "snmp":{"inas": "inas2-be"}
+        },
+        "scheduleAudit": false,
+        "scheduleSnapshot": false,
+        "configMgrBaseUrl": "http://localhost:8888/",
+        "deepDiveScanModuleContainer":  {
+          "dzs": {
+            "2022-03-08": {
+                 "ietf-system:system" : ["contact", "hostname", "location", "clock", "dns-resolver", "radius", "subscriber-management"]
+            },
+            "2023-08-07": {
+                 "ietf-system:system" : ["contact", "hostname", "location", "clock", "dns-resolver", "radius", "subscriber-management"]
+            }
+          }
+        },
+        "modelIdentifiers":  [
+            {
+                "identifierClass":  "com.dzsi.sdnc.config.model.identifier.impl.DzsZms20211229",
+                "description": "ZMS server Yang revision"
+            },
+            {
+                "identifierClass":  "com.dzsi.sdnc.config.model.identifier.impl.DzsInas20220222",
+                "description": "INAS Yang revision"
+            },
+            {
+                "identifierClass": "com.dzsi.sdnc.config.model.identifier.impl.DzsOlt20220308",
+                "description": "DZS V1-16XC Yang models"
+            },
+            {
+                "identifierClass": "com.dzsi.sdnc.config.model.identifier.impl.DzsOlt20230807",
+                "ctrlDefNode": ["card"],
+                "profileToCardType": [
+                  {"module":"bbf-ldra","node":"dhcpv6-ldra-profiles","namespace":"urn:bbf:yang:bbf-ldra","cardType":["LC"]},
+                  {"module":"bbf-l2-dhcpv4-relay","node":"l2-dhcpv4-relay-profiles","namespace":"urn:bbf:yang:bbf-l2-dhcpv4-relay","cardType":["LC"]},
+                  {"module":"bbf-pppoe-intermediate-agent","node":"pppoe-profiles","namespace":"urn:bbf:yang:bbf-pppoe-intermediate-agent","cardType":["LC"]},
+                  {"module":"bbf-qos-classifiers","node":"classifiers","namespace":"urn:bbf:yang:bbf-qos-classifiers","cardType":["LC"]},
+                  {"module":"bbf-qos-traffic-mngt","node":"tm-profiles","namespace":"urn:bbf:yang:bbf-qos-traffic-mngt","cardType":["LC"]},
+                  {"module":"bbf-qos-policies","node":"policies","namespace":"urn:bbf:yang:bbf-qos-policies","cardType":["LC"]},
+                  {"module":"bbf-qos-policies","node":"qos-policy-profiles","namespace":"urn:bbf:yang:bbf-qos-policies","cardType":["LC"]},
+                  {"module":"bbf-xpongemtcont","node":"xpongemtcont","namespace":"urn:bbf:yang:bbf-xpongemtcont","cardType":["LC"]},
+                  {"module":"bbf-subscriber-profiles","node":"subscriber-profiles","namespace":"urn:bbf:yang:bbf-subscriber-profiles","cardType":["LC"]},
+                  {"module":"bbf-xpon","node":"xpon","namespace":"urn:bbf:yang:bbf-xpon","cardType":["LC"]},
+                  {"module":"bbf-qos-composite-filters","node":"composite-filters","namespace":"urn:bbf:yang:bbf-qos-composite-filters","cardType":["LC"]},
+                  {"module":"bbf-qos-filters","node":"filters","namespace":"urn:bbf:yang:bbf-qos-filters","cardType":["LC"]},
+                  {"module":"bbf-qos-policer-envelope-profiles","node":"envelope-profiles","namespace":"urn:bbf:yang:bbf-qos-policer-envelope-profiles","cardType":["LC"]},
+                  {"module":"bbf-qos-policing","node":"policing-profiles","namespace":"urn:bbf:yang:bbf-qos-policing","cardType":["LC"]},
+                  {"module":"bbf-mgmd","node":"multicast","namespace":"urn:bbf:yang:bbf-mgmd","cardType":["LC"]},
+                  {"module":"ietf-ntp","node":"ntp","namespace":"urn:ietf:params:xml:ns:yang:ietf-ntp","cardType":["LC","FC"]},
+                  {"module":"dzs-external-alarm","node":"external-alarm","namespace":"urn:vendor:dzs-external-alarm","cardType":["MC"]}
+                ],
+                "description": "DZS V6 Yang models"
+            },
+            {
+                "identifierClass": "com.dzsi.sdnc.config.model.identifier.impl.OpenRoadm20200529",
+                "description": "dzs-roadm-2020-05-29"
+            },
+            {
+                "identifierClass": "com.dzsi.sdnc.config.model.identifier.impl.OpenRoadm20230526",
+                "description": "dzs-roadm-2023-05-26"
+            }
+        ],
+	"deviceConnectionProperties" : {
+	   "netconfConnection":{
+	      	  "username" : "admin",
+	      	  "password" : "admin",
+	      	  "port" : 830,
+	          "reconnectOnChangedSchema":false,
+	          "connectionTimeout":20000,
+	          "tcpOnly":false,
+	          "sleepFactor":1,
+	          "attemptsTimeout":30000,
+	          "keepAliveDelay":120,
+	          "requestTimeout":120000
+	       },
+	       "snmpConnection":{
+	          "roCommunity":"public",
+	          "rwCommunity":"private",
+	          "zmsCommunity":"ZhonePrivate"
+	       }
+	},
+        "remoteHttpService": {
+          "TPCE": {
+            "service": "TPCE",
+            "connection": {
+              "httpAddress": "http://transportpce-svc:8888",
+              "authType": "none"
+            }
+          },
+          "NetconfSvc": {
+            "service": "NetconfSvc",
+            "connection": {
+              "httpAddress": "http://netconf-svc-dzs-rnc:8888",
+              "authType": "none"
+            }
+          },
+          "InventoryMgr": {
+            "service": "InventoryMgr",
+            "connection": {
+              "httpAddress": "http://inventory-mgr-dzs-rnc:8899",
+              "authType": "none"
+            }
+          }
+        },
+        "externalDb": {
+           "type": "mongo",
+           "mongo": {
+           "entries": [
+            {
+              "enabled": true,
+              "id": "default",
+              "mandatory": true,
+              "connectionString": "mongodb://mongodb-host:8006/configmgr?retryWrites=false",
+              "dbName": "configmgr",
+              "collections": [ {"name": "snapshot"} ]
+            }]
+          }
+        },
+        "messagingClientConfig": {
+           "entries": [
+                {
+                    "serviceIdentifier": "Logging_AEDO",
+                    "enabled": true,
+                    "serverType": "LOG",
+                    "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+                    "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+                    "config": {
+                        "type": "PUB",
+                        "accepts": ["LOG", "PROVISION", "CONFIG_CHANGE", "SYNC"],
+                        "defaultLogTag": "sdnc.config.default",
+                        "adaptersConfig": {
+                            "file": {
+                                "appenderName": "APP"
+                            }
+                        }
+                    }
+                },
+                {
+                    "serviceIdentifier": "Logging_Provision_Result",
+                    "enabled": true,
+                    "serverType": "LOG",
+                    "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+                    "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+                    "config": {
+                        "type": "PUB",
+                        "accepts": ["PROVISION"],
+                        "defaultLogTag": "dzs.sdnc.provision",
+                        "adaptersConfig": {
+                            "file": {
+                                "appenderName": "PROVISION"
+                            }
+                        }
+                    }
+                },
+                {
+                    "serviceIdentifier": "Logging_Config_Change",
+                    "enabled": true,
+                    "serverType": "LOG",
+                    "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+                    "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+                    "config": {
+                        "type": "PUB",
+                        "accepts": ["CONFIG_CHANGE"],
+                        "defaultLogTag": "dzs.sdnc.config_change",
+                        "adaptersConfig": {
+                            "file": {
+                                "appenderName": "CONFIG_CHANGE"
+                            }
+                        }
+                    }
+                },
+                {
+                    "serviceIdentifier": "Logging_SYNC",
+                    "enabled": true,
+                    "serverType": "LOG",
+                    "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+                    "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+                    "config": {
+                        "type": "PUB",
+                        "accepts": ["SYNC"],
+                        "defaultLogTag": "dzs.sdnc.sync",
+                        "adaptersConfig": {
+                            "file": {
+                                "appenderName": "SYNC"
+                            }
+                        }
+                    }
+                },
+                {
+                  "serviceIdentifier": "NATS_AEDO",
+                  "enabled": true,
+                  "serverType": "NATS",
+                  "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+                  "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+                  "config": {
+                    "type": "ALL",
+                    "accepts": [
+                      "SYNC",
+                      "CONFIG_CHANGE",
+                      "PROVISION",
+                      "MAINTENANCE"
+                    ],
+                    "targets": [
+                      {
+                        "classifier": "SYNC",
+                        "target": "dzs.sdnc.sync"
+                      },
+                      {
+                        "classifier": "CONFIG_CHANGE",
+                        "target": "dzs.sdnc.config_change"
+                      },
+                      {
+                        "classifier": "PROVISION",
+                        "target": "dzs.sdnc.provision"
+                      },
+                      {
+                        "classifier": "MAINTENANCE",
+                        "target": "dzs.sdnc.maintenance"
+                      }
+                    ],
+                    "name": "SDNC.ConfigMgr",
+                    "useEnvVarToGetNatsSvcName": true,
+                    "envNatsSvcName": "RW_NATS_SVC_NAME",
+                    "natsPort": 4222,
+                    "servers": "nats://nats-svc-name:4222",
+                    "subject": "dzs.sdnc.config",
+                    "defaultSubject": "dzs.sdnc.event",
+                    "connectionTimeoutSeconds": 10,
+                    "maxReconnects": -1,
+                    "reconnectWaitSeconds": 2,
+                    "reconnectBufferSize": -1
+                  }
+                },
+                {
+                  "serviceIdentifier": "KAFKA",
+                  "enabled": enableKafka,
+                  "serverType": "KAFKA",
+                  "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+                  "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+                  "config": {
+                    "type": "PUB",
+                    "accepts": [
+                      "SYNC",
+                      "CONFIG_CHANGE",
+                      "PROVISION"
+                    ],
+                    "targets": [
+                      {
+                        "classifier": "SYNC",
+                        "target": "dzs.sdnc.sync"
+                      },
+                      {
+                        "classifier": "CONFIG_CHANGE",
+                        "target": "dzs.sdnc.config_change"
+                      },
+                      {
+                        "classifier": "PROVISION",
+                        "target": "dzs.sdnc.provision"
+                      }
+                    ],
+                    "producerConfig": {
+                      "bootstrap.servers": "kafka-headless",
+                      "acks": "all",
+                      "client.dns.lookup": "use_all_dns_ips",
+                      "retries": 0,
+                      "linger.ms": 10,
+                      "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                      "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+                    }
+                  }
+                }
+           ]
+       }
+    }'
+
+  initData:
+    hasInitData: false
+
+  jmx:
+    # Port on which JMX server in image is listening, should be same as defined in dockerfile
+    # If true, allow remote connections to JMX server running in container image, useful for debugging
+    enableJmxRemoting: true
+    jmxPort: 1099
+
+  akka:
+    # If true, overrides akka cluster configuration with default single-node
+    isSingleNode: true
+    isPersistence: "false"
+    # Name of the config file must be same as property in configmap
+    akkaNodeConfigFilename: "akka-node-k8s.conf"
+    # At least three nodes are required for akka voting
+    minimumClusterNodes: 3
+    # Prefix for akka member name; in configmap POD IP address will be appended to prefix
+    memberNamePrefix: "member-"
+    remotingPort: 2552
+    managementPort: 8558
+    discovery:
+      # Where should akka look for other members to form cluster
+      podSelectorName: "app"
+      podSelectorValue: "lighty-k8s-cluster"
+      portName: "management"
+      podNamespace: "default"
+
+  aaa:
+    # If true, AAA lighty.io component will be enabled
+    enableAAA: false
+  log4j:
+    logDir: configmgr
+    fileName: config.log
+    provisionFileName: config-provision.log
+    configChangeFileName: config-change.log
+    syncFileName: config-sync.log
+
+sdnc:
+  log:
+    appLogFile: config
+  volume:
+    log:
+      name: config-mgr-log-volume
+      kind: PersistentVolumeClaim
+      pvc:
+        name: config-mgr-log-volume-claim
+        accessMode: ReadWriteOnce
+        storage: 1Gi
+        mountPath: /data/log/configmgr
+        log4j2Version: true
+        storageClassName: null
+    plugins:
+      enableExtPlugins: true
+      name: configmgr-plugins
+      mountPath: /lighty-rnc/plugins/configmgr
+      hostPath: /data/plugins/configmgr
+
+fluentd:
+  image:
+    repository: rt.cloud.dzsi.local/docker/rw.fluentd
+    pullPolicy: IfNotPresent
+    tag: "0.1"
+
+nodePort:
+  # If switched to "true", NodePort service will be created; If switched to "false", ClusterIp service will be created
+  useNodePort: false
+  restconfNodePort: 32017
+  exposeManagement: false
+  managementNodePort: 32011
+
+sftp:
+  port: 22
+
+ingress:
+  useIngress: false
+  prefix: "/config"
+  restconfHost: "restconf.config.sdnc.dzsi.com"
+  exposeManagement: false
+  managementHost: "management.config.sdnc.dzsi.com"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   memory: 512Mi
+  #   cpu: 1000m
+  # requests:
+  #   memory: 256Mi
+#   cpu: 500m
+
+daexim:
+  enable: true
+  volume:
+    name: daexim-volume
+    kind: PersistentVolumeClaim
+    pvc:
+      name: daexim-volume-claim
+      accessMode: ReadWriteOnce
+      storage: 1Gi
+      mountPath: /lighty-rnc/daexim/daexim
+      storageClassName: null
+
+java:
+  opts:
+    xmx: "-Xmx2g"  
+    

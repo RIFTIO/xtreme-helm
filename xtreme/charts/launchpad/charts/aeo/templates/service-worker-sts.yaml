@@ -1,0 +1,174 @@
+#
+# Copyright 2022 DZS Inc
+#
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rw-aeo-service-worker
+  labels:
+    app: rw.aeo.svc.worker
+  namespace: {{ include "aeo.namespace" . }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: rw.aeo.svc.worker
+  serviceName: rw-aeo-service-worker
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: 'rw-worker-metrics'
+        prometheus.io/port: '11001'
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: rw.aeo.svc.worker
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      serviceAccountName: default
+
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+            - name: RW_REDIS_SVC_NAME
+              value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+            - name: RW_PROMETHEUS_SVC_NAME
+              value: {{ include "prometheus.fullname" . -}}.{{- .Values.global.namespace.name }}
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(RW_REDIS_SVC_NAME):8012"
+            - --host="$(RW_PROMETHEUS_SVC_NAME):9090"
+            - --timeout=120s
+            - --verbose
+
+      containers:
+        - name: service-worker
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.serviceWorker.repository }}:{{ .Values.image.serviceWorker.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.serviceWorker.pullPolicy }}
+          command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/service_worker.py"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          - name: RW_WORKER_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: RW_REDIS_SVC_NAME
+            value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_NATS_SVC_NAME
+            value: {{ include "nats.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_LP_CONTAINER_NAME
+            value: service-worker
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: RW_LP_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: RW_LAUNCHPAD_SVC_FQDN
+            value: {{ include "launchpad.fqdn" . }}
+          volumeMounts:
+          {{- with .Values.devSetup }}
+          - name: localdisk
+            mountPath: /localdisk
+            readOnly: false
+          - name: rift-install
+            mountPath: /usr/rift
+            readOnly: false
+          {{- end }}
+          - name: worker-config
+            mountPath: /config/worker
+            readOnly: false
+          - name: flow-storage
+            mountPath: /data/flow
+          - name: script-storage
+            mountPath: /scripts
+          ports:
+          - containerPort: 11001
+            name: metrics
+
+        - name: script-executor
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.scriptExec.repository }}:{{ .Values.image.scriptExec.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.scriptExec.pullPolicy }}
+          command: ["sleep", "infinity"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+          - name: RW_REDIS_SVC_NAME
+            value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_NATS_SVC_NAME
+            value: {{ include "nats.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_LP_CONTAINER_NAME
+            value: script-executor
+          - name: RW_LP_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          volumeMounts:
+          - name: flow-storage
+            mountPath: /data/flow
+
+      nodeSelector:
+        {{ if .Values.nodeSelector }}
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+        {{ end }}
+
+      volumes:
+      {{- with .Values.devSetup }}
+      - name: localdisk
+        hostPath:
+          path: /localdisk
+          type: Directory
+      - name: rift-install
+        hostPath:
+          path: {{ .riftInstall }}
+          type: Directory
+      {{- end }}
+      - name: flow-storage
+        emptyDir: {}
+      - name: script-storage
+        configMap:
+          name: scripts
+          defaultMode: 0644
+      - name: worker-config
+        configMap: 
+          name: worker-config
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

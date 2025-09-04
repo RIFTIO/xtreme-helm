@@ -1,0 +1,19 @@
+apiVersion: v2
+appVersion: 1.16.0
+dependencies:
+- name: common
+  repository: file://./charts/common
+  version: 0.1.0
+- condition: install.airflow
+  name: airflow
+  repository: file://./charts/airflow
+- condition: install.clickhouse
+  name: clickhouse
+  repository: file://./charts/clickhouse
+- condition: install.exploreApplication
+  name: explore-application
+  repository: file://./charts/explore-application
+description: A Helm chart for Kubernetes
+name: explore
+type: application
+version: 0.1.0

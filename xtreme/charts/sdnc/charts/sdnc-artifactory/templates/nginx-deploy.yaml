@@ -1,0 +1,112 @@
+{{- if .Values.nginx.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dzs-sdnc-artifactory-nignx
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+  {{- include "sdnc-artifactory.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.nginx.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sdnc-artifactory.selectorLabels" . | nindent 6 }}-nginx
+  template:
+    metadata:
+      labels:
+        {{- include "sdnc-artifactory.selectorLabels" . | nindent 8 }}-nginx
+      {{- if .Values.nginx.podAnnotations }}
+      annotations:
+        {{ toYaml .Values.nginx.podAnnotations | indent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.nginx.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.nginx.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end}}
+      {{- end}}
+      {{- if .Values.nginx.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nginx.nodeSelector | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ template "sdnc-artifactory.fullname" . }}-nginx
+        image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+        imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+        ports:
+        {{- if .Values.nginx.http }}
+        {{- if .Values.nginx.http.enabled }}
+        - containerPort: {{ .Values.nginx.http.internalPort }}
+          name: http
+        {{- end }}
+        {{- else }}
+        - containerPort: {{ .Values.nginx.internalPortHttp }}
+          name: http-internal
+        {{- end }}
+        {{- if .Values.nginx.https }}
+        {{- if .Values.nginx.https.enabled }}
+        - containerPort: {{ .Values.nginx.https.internalPort }}
+          name: https
+        {{- end }}
+        {{- else }} 
+        - containerPort: {{ .Values.nginx.internalPortHttps }}
+          name: https-internal
+        {{- end }}
+        {{- if .Values.nginx.ssh.enabled }}
+        - containerPort: {{ .Values.nginx.ssh.internalPort }}
+          name: tcp-ssh
+        {{- end }}
+        {{- if .Values.nginx.startupProbe.enabled }}
+        startupProbe:
+{{ tpl .Values.nginx.startupProbe.config . | indent 10 }}
+        {{- end }}
+        {{- if .Values.nginx.readinessProbe.enabled }}
+        readinessProbe:
+{{ tpl .Values.nginx.readinessProbe.config . | indent 10 }}
+        {{- end }}
+        {{- if .Values.nginx.livenessProbe.enabled }}
+        livenessProbe:
+{{ tpl .Values.nginx.livenessProbe.config . | indent 10 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.nginx.securityContext | nindent 10 }}
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-artifactory-conf
+          mountPath: "{{ .Values.nginx.persistence.mountPath }}/conf.d/"
+        {{- if .Values.nginx.https.enabled }}  
+        - name: ssl-certificates
+          mountPath: "{{ .Values.nginx.persistence.mountPath }}/ssl"
+        {{- end }}
+      securityContext:
+        {{- toYaml .Values.nginx.podSecurityContext | nindent 8 }}
+      volumes:
+      - name: nginx-conf
+        configMap:
+        {{- if .Values.nginx.customConfigMap }}
+          name: {{ .Values.nginx.customConfigMap }}
+        {{- else }}
+          name: {{ template "sdnc-artifactory.fullname" . }}-nginx-conf
+        {{- end }}
+      - name: nginx-artifactory-conf
+        configMap:
+      {{- if .Values.nginx.customArtifactoryConfigMap }}
+          name: {{ .Values.nginx.customArtifactoryConfigMap }}
+      {{- else }}
+          name: {{ template "sdnc-artifactory.fullname" . }}-nginx-artifactory-conf
+      {{- end }}
+      {{- if .Values.nginx.https.enabled }}
+      - name: ssl-certificates
+        secret:
+      {{- if .Values.nginx.tlsSecretName }}
+          secretName: {{ .Values.nginx.tlsSecretName }}
+      {{- else }}
+          secretName: {{ template "sdnc-artifactory.fullname" . }}-nginx-certificate
+      {{- end }}
+      {{- end }}
+{{- end }}

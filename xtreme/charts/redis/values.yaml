@@ -1,0 +1,84 @@
+# Copyright 2020 RIFT Inc
+# Default values for redis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+image:
+  repository: rt.cloud.dzsi.local/docker/redis-stack-server
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "7.2.0-v6"
+busybox:
+  image:
+    repository: rt.cloud.dzsi.local/docker-hub/busybox
+    pullPolicy: IfNotPresent
+redTunnel:
+  image:
+    repository: rt.cloud.dzsi.local/docker/rw-redtunnel
+    tag: "1.4"
+    pullPolicy: IfNotPresent
+exporter:
+  image:
+    repository: rt.cloud.dzsi.local/docker-hub/oliver006/redis_exporter
+    tag: "v1.12.0"
+    pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+podAnnotations: {}
+podSecurityContext:
+  fsGroup: 1001
+containerSecurityContext:
+  runAsUser: 1001
+
+redis:
+  runAsUser: 1024
+
+securityContext: {}
+
+enableVolumePermissions: false
+
+redisCustomNetworking:
+  bindToAllAddresses: false
+
+service:
+  type: ClusterIP
+  port: 8012
+resources: {}
+# We usually recommend not to specify default resources and to leave this as a conscious
+# choice for the user. This also increases chances charts run on environments with little
+# resources, such as Minikube. If you do want to specify resources, uncomment the following
+# lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+# limits:
+#   cpu: 100m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+# Storage for the databases.
+# For better performance, it is expected that
+# we are provided with two different volumes
+# backed by different persistent disks (and controllers ?).
+# Keeping the database files together with the same volume
+# where logging is done along with writing other artifact objects
+# may impact performance of the system.
+#
+# For regular use, one can provide the same storage class as
+# that for the regular storage (See above).
+#
+# Possible `storageClassName` values:
+#   - local-storage
+#   - manual
+#   - null
+#   - fast (Provided by the provider)
+redisStorage:
+  storageClassName: null
+  capacity: 80Gi
+  localStore: {}
+  manual: {}
+  nfs: {}

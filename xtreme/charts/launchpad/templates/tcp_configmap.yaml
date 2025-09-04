@@ -1,0 +1,11 @@
+# Copyright 2020 RIFT Inc
+# Configures TCP proxying for HAProxy ingress controller
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-tcp-configmap
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  "8006": {{ .Values.global.namespace.name }}/{{ include "mongodb.fullname" . }}:8006
+  "8014": {{ .Values.global.namespace.name }}/{{ include "redis-tunnel.fullname" . }}:8014

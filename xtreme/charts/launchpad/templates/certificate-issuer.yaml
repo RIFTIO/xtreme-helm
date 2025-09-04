@@ -1,0 +1,106 @@
+# external IP address used for the template function
+{{- $ipAddress := .Values.global.ingress.externalAddress -}}
+#if external address is an IP address or provided as null ( Loadbalancer IP), then issuer is defined here
+#else ingress will handle this
+
+{{- $isIPValid := true -}}
+{{ if .Values.global.ingress.externalAddress }}
+{{- $isIPValid = include "isIPchk" $ipAddress -}}
+{{- end }}
+
+{{- if or (eq (toString $isIPValid) "true") (not .Values.global.ingress.externalAddress) }}
+{{ if eq .Values.global.certificateIssuer.certMgrEnabled true }}
+{{- $ns := .Values.global.namespace.name -}}
+{{- if .Values.global.certificateIssuer.issuerConfig.namespace }}
+{{- $ns = .Values.global.certificateIssuer.issuerConfig.namespace -}}
+{{- end}}
+
+{{ if eq .Values.global.certificateIssuer.isSelfSigned true }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: dzs-selfsigned-issuer
+  namespace: {{ $ns }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dzs-ca
+  namespace: {{ $ns }}
+spec:
+  isCA: true
+  commonName: {{ .Values.global.certificateIssuer.issuerConfig.commonName }}
+  secretName: {{ .Values.global.certificateIssuer.secret }}
+  privateKey:
+    algorithm: {{ .Values.global.certificateIssuer.issuerConfig.algorithm }}
+    size: {{ .Values.global.certificateIssuer.issuerConfig.size }}
+  issuerRef:
+    name: dzs-selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: dzs-ca-issuer
+  namespace: {{ $ns }}
+spec:
+  ca:
+    secretName: {{ .Values.global.certificateIssuer.secret }}
+{{ else }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: acme-issuer
+  namespace: {{ $ns }}
+spec:
+  acme:
+    email: {{ .Values.global.certificateIssuer.issuerConfig.issuerEmail }}
+    server: {{ .Values.global.certificateIssuer.issuerConfig.server }}
+    privateKeySecretRef:
+      name: {{ .Values.global.certificateIssuer.secret }}
+    solvers:
+    - http01:
+        ingress: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: rw-tls-cert
+  namespace: {{ $ns }}
+spec:
+  duration: {{ .Values.global.certificateIssuer.issuerConfig.duration }}
+  renewBefore: {{ .Values.global.certificateIssuer.issuerConfig.renewBefore }}
+  secretName: {{ .Values.global.certificateIssuer.secret }}
+  issuerRef:
+    name: acme-issuer
+  dnsNames:
+    {{- range $dns := .Values.global.certificateIssuer.issuerConfig.dnsNames }}
+    - {{ $dns }}
+    {{- end }}
+  subject:
+    organizations:
+      {{- range $org := .Values.global.certificateIssuer.issuerConfig.organizations }}
+      - {{ $org }}
+      {{- end }}
+    organizationalUnits:
+      {{- range $ou := .Values.global.certificateIssuer.issuerConfig.organizationalUnits }}
+      - {{ $ou }}
+      {{- end }}
+    countries:
+      {{- range $con := .Values.global.certificateIssuer.issuerConfig.countries }}
+      - {{ $con }}
+      {{- end }}
+    provinces:
+      {{- range $prov := .Values.global.certificateIssuer.issuerConfig.provinces }}
+      - {{ $prov }}
+      {{- end }}
+    localities:
+      {{- range $locality := .Values.global.certificateIssuer.issuerConfig.localities }}
+      - {{ $locality }}
+      {{- end }}
+{{ end }}
+{{- end }}
+{{- end }}

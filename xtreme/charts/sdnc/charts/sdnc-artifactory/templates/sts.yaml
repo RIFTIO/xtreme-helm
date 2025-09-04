@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dzs-sdnc-artifactory
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+  {{- include "sdnc-artifactory.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sdnc-artifactory.selectorLabels" . | nindent 6 }}
+  serviceName: "{{ include "sdnc-artifactory.fullname" . }}"
+  template:
+    metadata:
+      labels:
+        {{- include "sdnc-artifactory.selectorLabels" . | nindent 8 }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end}}
+      {{- end}}
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - |
+          set -e; if [ -d /artifactory_extra_conf ] && [ -d /artifactory_bootstrap ]; then
+            echo "Copying bootstrap config from /artifactory_extra_conf to /artifactory_bootstrap";
+            cp -Lrfv /artifactory_extra_conf/ /artifactory_bootstrap/;
+          fi; exec /entrypoint-artifactory.sh
+        env:
+        - name: JF_SHARED_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: "{{ include "sdnc-artifactory-postgresql.fullname" . }}-postgresql"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl -s -k --fail --max-time 5 http://localhost:8091/artifactory/api/v1/system/liveness
+          failureThreshold: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: {{ template "sdnc-artifactory.fullname" . }}
+        ports:
+        - containerPort: 8082
+          name: http
+          protocol: TCP
+        - containerPort: 8081
+          name: http-internal
+          protocol: TCP
+        resources: 
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        startupProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - curl -s -k --fail --max-time 5 http://localhost:8091/artifactory/api/v1/system/readiness
+          failureThreshold: 90
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 5
+        volumeMounts:
+        - mountPath: /var/opt/jfrog/artifactory
+          name: artifactory-volume
+      initContainers:
+      - command:
+        - bash
+        - -c
+        - rm -fv /var/opt/jfrog/artifactory/etc/db.properties
+        image: {{ .Values.initContainerImage }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: delete-db-properties
+        resources: 
+          {{- toYaml .Values.initresources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        volumeMounts:
+        - mountPath: /var/opt/jfrog/artifactory
+          name: artifactory-volume
+      - command:
+        - bash
+        - -c
+        - rm -rfv /var/opt/jfrog/artifactory/lost+found /var/opt/jfrog/artifactory/data/.lock
+        image: {{ .Values.initContainerImage }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: remove-lost-found
+        resources:
+          {{- toYaml .Values.initresources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        volumeMounts:
+        - mountPath: /var/opt/jfrog/artifactory
+          name: artifactory-volume
+      - command:
+        - /bin/bash
+        - -c
+        - |
+          echo "Waiting for postgresql to come up"
+          ready=false;
+          while ! $ready; do echo waiting;
+            timeout 2s bash -c "</dev/tcp/{{ template "sdnc-artifactory.fullname" . }}-postgresql/5432"; exit_status=$?;
+            if [[ $exit_status -eq 0 ]]; then ready=true; echo "database ok"; fi; sleep 1;
+          done
+        image: {{ .Values.initContainerImage }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        name: wait-for-db
+        resources:
+          {{- toYaml .Values.initresources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+  volumeClaimTemplates:
+  - metadata:
+      name: artifactory-volume
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.artifactoryStorage.capacity }}
+      storageClassName: {{ .Values.artifactoryStorage.storageClassName }}

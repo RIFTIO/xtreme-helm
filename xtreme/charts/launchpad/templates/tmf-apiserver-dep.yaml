@@ -1,0 +1,252 @@
+#
+# Copyright 2023 DZS Inc
+#
+{{- if eq .Values.global.install.aeo false }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dzsx-tmf-apiserver
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: dzsx-tmf-apiserver
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: dzsx-tmf-apiserver
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: 'metrics'
+        prometheus.io/port: '9031'
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: dzsx-tmf-apiserver
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: default
+
+      {{- if and .Values.global.ensureSecurityContext (not (has "appTmfApiServer" .Values.global.excludeAppsInSecurityContext)) }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- include "runAsFsGroup" . | nindent 6 }}
+      {{- else }}
+      {{- $podSecurityContext := .Values.podSecurityContext }}
+      {{- if $podSecurityContext }}
+      securityContext:
+      {{-   toYaml $podSecurityContext | nindent 8 }}
+      {{- else }}
+      {{- $globalPodSecurityContext := .Values.global.podSecurityContext }}
+      {{- if $globalPodSecurityContext }}
+      securityContext:
+      {{-   toYaml $globalPodSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: {{ .Values.initContainer.waitForDep.image.repository -}} : {{- .Values.initContainer.waitForDep.image.tag }}
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+            - name: RW_REDIS_SVC_NAME
+              value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+            - name: RW_PROMETHEUS_SVC_NAME
+              value: {{ include "prometheus.fullname" . -}}.{{- .Values.global.namespace.name }}
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(RW_REDIS_SVC_NAME):8012"
+            - --host="$(RW_PROMETHEUS_SVC_NAME):9090"
+            - --timeout=120s
+            - --verbose
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appTmfApiServer" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContextReducedTMF | nindent 12 }}
+          {{- end }}
+
+      containers:
+        - name: tmf-apiserver
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appTmfApiServer" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContextReducedTMF | nindent 12 }}
+          {{- else }}
+          {{- $securityContext := .Values.tmfApiserver.securityContext }}
+          {{- if $securityContext }}
+          securityContext:
+          {{-   toYaml $securityContext | nindent 12 }}
+          {{- else }}
+          {{- end }}
+          {{- end }}
+
+          image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+          command: ["bash", "-c", "/usr/rift/usr/bin/start_tmf_apiserver.sh"]
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appTmfApiServer" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.small.ephemeral2" . | nindent 2 }}
+          {{- else }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+
+          env:
+          - name: RW_REDIS_SVC_NAME
+            value: {{ include "redis.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_NATS_SVC_NAME
+            value: {{ include "nats.fullname" . -}}.{{- .Values.global.namespace.name }}
+          - name: RW_K8S_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          ports:
+          - containerPort: 9031
+            name: tmf-server
+
+          {{- if and .Values.global.ensureContainerProbe (not (has "appTmfApiServer" .Values.global.excludeAppsInContainerProbe)) }}
+          {{- toYaml .Values.global.commonProbe | nindent 10 }}
+          {{- end }}
+
+          volumeMounts:
+          {{- with .Values.launchpad.devSetup }}
+          {{- range $k, $v := .volumes }}
+          - name: {{ $k }}
+            mountPath: {{ $v }}
+            readOnly: false
+          {{- end }}
+          - name: rift-install
+            mountPath: /usr/rift
+            readOnly: false
+          {{- end }}
+          {{- if and .Values.global.ensureEmptyDirCreation (not (has "appTmfApiServer" .Values.global.excludeAppsInEmptyDirCreation)) }}
+          - name: rift-build-dir
+            mountPath: /usr/rift/var/.build
+            readOnly: false
+          {{- end }}
+          - name: rift-log-dir
+            mountPath: /usr/rift/var/log
+            readOnly: false
+          - name: rift-tmp-dir
+            mountPath: /tmp
+            readOnly: false
+
+        - name: rw-logger
+          image: {{ .Values.image.repository -}} : {{- .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/usr/bin/ruby", "-Eascii-8bit:ascii-8bit", "/usr/bin/fluentd", "-c", "/dzs/fluentd/conf/fluentd.conf", "-p", "/fluentd/plugins", "--under-supervisor"]
+          env:
+          - name: RW_MONGODB_SVC_NAME
+            value: {{ include "mongodb.fqdn" . }}
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appTmfApiServer" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.small.ephemeral2" . | nindent 2 }}
+          {{- end }}
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appTmfApiServer" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContextReducedTMF | nindent 12 }}
+          {{- end }}
+
+          livenessProbe:
+            exec:
+              command:
+              - cat
+              - /dzs/fluentd/conf/fluentd.conf
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - cat
+              - /dzs/fluentd/conf/fluentd.conf
+            initialDelaySeconds: 30
+            periodSeconds: 5
+
+          volumeMounts:
+          - name: conf
+            mountPath: /dzs/fluentd/conf
+          - name: rift-log-dir
+            mountPath: /usr/rift/var/log
+
+      nodeSelector:
+        {{ if .Values.nodeSelector }}
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+        {{ end }}
+
+      volumes:
+      {{- with .Values.launchpad.devSetup }}
+      {{- range $k, $v := .volumes }}
+        - name: {{ $k }}
+          hostPath:
+            path: {{ $v }}
+            type: Directory
+      {{- end }}
+        - name: rift-install
+          hostPath:
+            path: {{ .riftInstall }}
+            type: Directory
+      {{- end }}
+      {{- if and .Values.global.ensureEmptyDirCreation (not (has "appTmfApiServer" .Values.global.excludeAppsInEmptyDirCreation)) }}
+        - name: rift-build-dir
+          emptyDir:
+            sizeLimit: 5000Mi
+      {{- end }}
+        - name: rift-log-dir
+          emptyDir:
+            sizeLimit: 5000Mi
+        - name: rift-tmp-dir
+          emptyDir:
+            sizeLimit: 2000Mi
+        - name: conf
+          configMap:
+            name: rw-logger-conf-dzsx
+            defaultMode: 0644
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+# Service for
+apiVersion: v1
+kind: Service
+metadata:
+  name: dzsx-tmf-apiserver-svc
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: dzsx-tmf-apiserver
+spec:
+  type: ClusterIP
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  ports:
+    - port: 9031
+      targetPort: 9031
+      protocol: TCP
+      name: tmf-api
+  selector:
+    app: dzsx-tmf-apiserver
+{{- end }}

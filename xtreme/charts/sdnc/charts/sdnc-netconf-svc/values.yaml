@@ -1,0 +1,1337 @@
+# Copyright 2022 DZS Inc
+# Default values for lighty-rnc-app-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: "dzs-sdnc-netconf-svc"
+svcName: "netconf"
+moduleName: "netconf-svc"
+fullnameOverride: ""
+nameOverride: ""
+
+initContainer:
+  waitForDep:
+    image:
+      repository: rt.cloud.dzsi.local/ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+      tag: "v1.0.0"
+
+image:
+  name: rt.cloud.dzsi.local/docker/sdnc/dzs-netconf-svc
+  #tag: master
+  pullPolicy: IfNotPresent
+
+lighty:
+  # Must be same as defined in Docker image
+  workdir: "/lighty-rnc"
+  configDirectoryName: "k8s-config"
+  # Name of the config file must be same as property in configmap
+  configFilename: "lighty-config.json"
+  # Name of the config file for initial logger configuration, must be same as property in configmap
+  loggerConfigFilename: "log4j2.xml"
+  # If using cluster (not single-node deployment), don't forget to increase replica count
+  netconfModel:
+     '{ "nameSpace": "http://dzsi.com/sdnc/topology-node-ext", "name": "topology-node-ext", "revision": "2021-08-17" },
+      { "nameSpace": "http://dzsi.com/sdnc/netconf-svc", "name": "netconf-svc", "revision": "2023-07-04" },
+      { "nameSpace": "urn:opendaylight:daexim-internal", "name": "data-export-import-internal", "revision": "2016-09-21" },
+      { "nameSpace": "urn:opendaylight:daexim", "name": "data-export-import", "revision": "2016-09-21" },
+      { "nameSpace": "http://dzsi.com/sdnc/historical-event", "name": "historical-event", "revision": "2024-02-29" }'
+  replicaCount: 1
+  restconf:
+    restconfPort: 8888
+    restconfPath: "/restconf"
+    useHttps: false
+    keyStorePassword: "8pgETwat"
+    keyStoreType: "JKS"
+    keyStoreDirectory: "keystore"
+    keyStoreFileName: "lightyio.jks"
+  volume:
+    name: netconf-svc-volume
+    kind: PersistentVolumeClaim
+    mountPath: "target"
+    pvc:
+      name: netconf-svc-volume-claim
+      accessMode: ReadWriteOnce
+      storage: 1Gi
+      storageClassName: null
+  serviceConfig:
+    '"serviceConfig" : {
+       "serviceName": "netconf-svc",
+       "topologyId": "device-topology",
+       "defaultUnknownValue": "unknown",
+       "vendorRealization": {
+         "mapping": {
+           "dzs": [
+             {
+               "namespace": "http://www.ipinfusion.com/CMLSchema/dasan",
+               "module": "dasan",
+               "system-type": "device",
+               "notification-stream": "NETCONF"
+             },
+             {
+               "namespace": "http://www.ipinfusion.com/CMLSchema/dzs",
+               "module": "dzs",
+               "system-type": "device",
+               "notification-stream": "NETCONF"
+             },
+             {
+               "namespace": "http://dzsi.com/zms",
+               "module": "zms",
+               "system-type": "zms",
+               "notification-stream": "NETCONF"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-hardware",
+               "module": "bbf-hardware",
+               "system-type": "olt",
+               "notification-stream": "NETCONF"
+             },
+             {
+               "namespace": "http://org/openroadm/device",
+               "module": "org-openroadm-device",
+               "system-type": "roadm",
+               "notification-stream": "NETCONF"
+             }
+           ]
+         }
+       },
+       "configChangeReaction": {
+         "saveDeviceConfig": true,
+         "acceptChangedBy": [ "controller" ],
+         "waitPeriodMillis": 30000,
+         "unsupportHwModel": ["SABER-4400", "MXK-F", "Device"]
+       },
+       "remoteHttpService": {
+         "TPCE": {
+           "service": "TPCE",
+           "connection": {
+             "httpAddress": "http://transportpce-svc:8888",
+             "authType": "none"
+           }
+         },
+         "NetconfSvc": {
+           "service": "NetconfSvc",
+           "connection": {
+             "httpAddress": "http://localhost:8888",
+             "authType": "none"
+           }
+         }
+       },
+       "deviceModel": [
+         {
+           "vendor": "dzs",
+           "modelName": "V1-16XC",
+           "systemType": "olt",
+           "type": "pizza",
+           "chassisName": "V1-16XC",
+           "boardName": "V1-16XC_board"
+         },
+         {
+           "vendor": "dzs",
+           "modelName": "V6-SIM",
+           "systemType": "olt",
+           "type": "chassis",
+           "chassisName": "chassis",
+           "slotConfig": {
+             "slotMap": {
+               "slot-lc1": {
+                 "name": "slot-lc1",
+                 "port": 30994,
+                 "type": "LC"
+               },
+               "slot-lc2": {
+                 "name": "slot-lc2",
+                 "port": 30995,
+                 "type": "LC"
+               },
+               "slot-lc3": {
+                 "name": "slot-lc3",
+                 "port": 30996,
+                 "type": "LC"
+               },
+               "slot-lc4": {
+                 "name": "slot-lc4",
+                 "port": 30997,
+                 "type": "LC"
+               },
+               "slot-lc5": {
+                 "name": "slot-lc5",
+                 "port": 30998,
+                 "type": "LC"
+               },
+               "slot-lc6": {
+                 "name": "slot-lc6",
+                 "port": 30999,
+                 "type": "LC"
+               },
+               "slot-fc1": {
+                 "name": "slot-fc1",
+                 "port": 30992,
+                 "type": "FC"
+               },
+               "slot-fc2": {
+                 "name": "slot-fc2",
+                 "port": 30993,
+                 "type": "FC"
+               },
+               "slot-mc1": {
+                 "name": "slot-mc1",
+                 "port": 30990,
+                 "type": "MC"
+               },
+               "slot-mc2": {
+                 "name": "slot-mc2",
+                 "port": 30991,
+                 "type": "MC"
+               }
+             }
+           }
+         },
+         {
+           "vendor": "dzs",
+           "modelName": "V6",
+           "systemType": "olt",
+           "type": "chassis",
+           "chassisName": "chassis",
+           "slotConfig": {
+             "slotMap": {
+               "slot-1": {
+                 "name": "slot-1",
+                 "port": 50100,
+                 "type": "LC"
+               },
+               "slot-2": {
+                 "name": "slot-2",
+                 "port": 50200,
+                 "type": "LC"
+               },
+               "slot-3": {
+                 "name": "slot-3",
+                 "port": 50300,
+                 "type": "LC"
+               },
+               "slot-4": {
+                 "name": "slot-4",
+                 "port": 50400,
+                 "type": "LC"
+               },
+               "slot-5": {
+                 "name": "slot-5",
+                 "port": 50500,
+                 "type": "LC"
+               },
+               "slot-6": {
+                 "name": "slot-6",
+                 "port": 50600,
+                 "type": "LC"
+               },
+               "slot-30": {
+                 "name": "slot-30",
+                 "port": 53000,
+                 "type": "FC"
+               },
+               "slot-31": {
+                 "name": "slot-31",
+                 "port": 53100,
+                 "type": "FC"
+               },
+               "slot-28": {
+                 "name": "slot-28",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-29": {
+                 "name": "slot-29",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-lc1": {
+                 "name": "slot-lc1",
+                 "port": 50100,
+                 "type": "LC"
+               },
+               "slot-lc2": {
+                 "name": "slot-lc2",
+                 "port": 50200,
+                 "type": "LC"
+               },
+               "slot-lc3": {
+                 "name": "slot-lc3",
+                 "port": 50300,
+                 "type": "LC"
+               },
+               "slot-lc4": {
+                 "name": "slot-lc4",
+                 "port": 50400,
+                 "type": "LC"
+               },
+               "slot-lc5": {
+                 "name": "slot-lc5",
+                 "port": 50500,
+                 "type": "LC"
+               },
+               "slot-lc6": {
+                 "name": "slot-lc6",
+                 "port": 50600,
+                 "type": "LC"
+               },
+               "slot-fca": {
+                 "name": "slot-fca",
+                 "port": 53000,
+                 "type": "FC"
+               },
+               "slot-fcb": {
+                 "name": "slot-fcb",
+                 "port": 53100,
+                 "type": "FC"
+               },
+               "slot-mc1": {
+                 "name": "slot-mc1",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-mc2": {
+                 "name": "slot-mc2",
+                 "port": 830,
+                 "type": "MC"
+               }
+             }
+           }
+         },
+         {
+           "vendor": "dzs",
+           "modelName": "V2-SIM",
+           "systemType": "olt",
+           "type": "chassis",
+           "chassisName": "chassis",
+           "slotConfig": {
+             "slotMap": {
+               "slot-lc1": {
+                 "name": "slot-lc1",
+                 "port": 30794,
+                 "type": "LC"
+               },
+               "slot-lc2": {
+                 "name": "slot-lc2",
+                 "port": 30795,
+                 "type": "LC"
+               },
+               "slot-mc1": {
+                 "name": "slot-mc1",
+                 "port": 30790,
+                 "type": "MC"
+               },
+               "slot-mc2": {
+                 "name": "slot-mc2",
+                 "port": 30791,
+                 "type": "MC"
+               }
+             }
+           }
+         },
+         {
+           "vendor": "dzs",
+           "modelName": "V2",
+           "systemType": "olt",
+           "type": "chassis",
+           "chassisName": "chassis",
+           "slotConfig": {
+             "slotMap": {
+               "slot-1": {
+                 "name": "slot-1",
+                 "port": 50100,
+                 "type": "LC"
+               },
+               "slot-2": {
+                 "name": "slot-2",
+                 "port": 50200,
+                 "type": "LC"
+               },
+               "slot-28": {
+                 "name": "slot-28",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-29": {
+                 "name": "slot-29",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-lc1": {
+                 "name": "slot-lc1",
+                 "port": 30994,
+                 "type": "LC"
+               },
+               "slot-lc2": {
+                 "name": "slot-lc2",
+                 "port": 30995,
+                 "type": "LC"
+               },
+               "slot-mc1": {
+                 "name": "slot-mc1",
+                 "port": 830,
+                 "type": "MC"
+               },
+               "slot-mc2": {
+                 "name": "slot-mc2",
+                 "port": 830,
+                 "type": "MC"
+               }
+             }
+           }
+         }
+       ],
+       "externalDb": {
+         "type": "mongo",
+         "mongo": {
+           "entries": [
+             {
+               "enabled": true,
+               "id": "default",
+               "mandatory": true,
+               "connectionString": "mongodb://mongodb-host:8006/netconfsvc?retryWrites=false",
+               "dbName": "netconfsvc",
+               "collections": [
+                 {
+                   "name": "his_tcanotification",
+                   "removeIndexIfNotListed": true,
+                   "indexes": [
+                     {
+                       "name": "device_id_idx",
+                       "fields": {
+                         "device-id": 1
+                       }
+                     },
+                     {
+                       "name": "log_time_idx",
+                       "expireAfterSeconds": 7776000,
+                       "fields": {
+                         "log-time": -1
+                       }
+                     }
+                   ]
+                 }
+               ]
+             }
+           ]
+         }
+       },
+       "messagingClientConfig": {
+         "entries": [
+           {
+             "serviceIdentifier": "Logging_AEDO",
+             "enabled": true,
+             "serverType": "LOG",
+             "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+             "config": {
+               "type": "PUB",
+               "accepts": [
+                 "LOG"
+               ],
+               "defaultLogTag": "sdnc.config.default",
+               "adaptersConfig": {
+                 "file": {
+                   "appenderName": "APP"
+                 }
+               }
+             }
+           },
+           {
+             "serviceIdentifier": "Logging_CONFIG",
+             "enabled": true,
+             "serverType": "LOG",
+             "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+             "config": {
+               "type": "PUB",
+               "accepts": [
+                 "CONFIG"
+               ],
+               "defaultLogTag": "dzs.sdnc.config",
+               "adaptersConfig": {
+                 "file": {
+                   "appenderName": "CONFIG"
+                 }
+               }
+             }
+           },
+           {
+             "serviceIdentifier": "Logging_AEDO",
+             "enabled": true,
+             "serverType": "LOG",
+             "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+             "config": {
+               "type": "PUB",
+               "accepts": [
+                 "LOG"
+               ],
+               "defaultLogTag": "sdnc.config.default",
+               "adaptersConfig": {
+                 "file": {
+                   "appenderName": "dataLogAppender"
+                 }
+               }
+             }
+           },
+           {
+             "serviceIdentifier": "ROADM_TCA_to_MONGO",
+             "enabled": true,
+             "serverType": "LOG",
+             "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+             "config": {
+               "type": "PUB",
+               "accepts": [ "ROADM_TCA" ],
+               "adaptersConfig": {
+                 "mongo": {
+                   "schema": "his_tcanotification",
+                   "classifier": "ROADM_TCA"
+                 }
+               }
+             }
+           },
+           {
+             "serviceIdentifier": "NATS_AEDO",
+             "enabled": true,
+             "serverType": "NATS",
+             "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+             "config": {
+               "type": "PUB",
+               "accepts": [
+                 "ALARM",
+                 "CONFIG",
+                 "ONU_PRESENCE_STATE_CHANGE",
+                 "BBF_SW_MGMT",
+                 "BBF_HW",
+                 "DZS_CFG_MGMT",
+                 "ROADM_MAINT",
+                 "ROADM_TCA",
+                 "DZS_CONFIGURATION"
+               ],
+               "targets": [
+                 {
+                   "classifier": "ALARM",
+                   "target": "dzs.sdnc.alarm"
+                 },
+                 {
+                   "classifier": "CONFIG",
+                   "target": "dzs.sdnc.config"
+                 },
+                 {
+                   "classifier": "ONU_PRESENCE_STATE_CHANGE",
+                   "target": "dzs.sdnc.netconf.onu_presence_state_change"
+                 },
+                 {
+                   "classifier": "BBF_SW_MGMT",
+                   "target": "dzs.sdnc.netconf.bbf_opers"
+                 },
+                 {
+                   "classifier": "BBF_HW",
+                   "target": "dzs.sdnc.netconf.bbf_opers"
+                 },
+                 {
+                   "classifier": "DZS_CFG_MGMT",
+                   "target": "dzs.sdnc.netconf.bbf_opers"
+                 },
+                 {
+                   "classifier": "ROADM_MAINT",
+                   "target": "dzs.sdnc.netconf.bbf_opers"
+                 },
+                 {
+                   "classifier": "ROADM_TCA",
+                   "target": "dzs.sdnc.netconf.roadm_notis"
+                 },
+                 {
+                   "classifier": "DZS_CONFIGURATION",
+                   "target": "dzs.sdnc.netconf.bbf_opers"
+                 }
+               ],
+               "name": "SDNC.NetconfSvc",
+               "useEnvVarToGetNatsSvcName": true,
+               "envNatsSvcName": "RW_NATS_SVC_NAME",
+               "natsPort": 4222,
+               "servers": "nats://nats-svc-name:4222",
+               "subject": "dzs.sdnc.event",
+               "defaultSubject": "dzs.sdnc.event",
+               "connectionTimeoutSeconds": 10,
+               "maxReconnects": -1,
+               "reconnectWaitSeconds": 2,
+               "reconnectBufferSize": -1
+             }
+           },
+           {
+             "serviceIdentifier": "KAFKA",
+             "enabled": enableKafka,
+             "serverType": "KAFKA",
+             "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+             "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+             "config": {
+               "type": "PUB",
+               "accepts": [
+                 "ROADM_TCA"
+               ],
+               "targets": [
+                 {
+                   "classifier": "ROADM_TCA",
+                   "target": "dzs.sdnc.netconf.roadm_notis"
+                 }
+               ],
+               "producerConfig": {
+                 "bootstrap.servers": "kafka-headless",
+                 "acks": "all",
+                 "client.dns.lookup": "use_all_dns_ips",
+                 "retries": 0,
+                 "linger.ms": 10,
+                 "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                 "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+               }
+             }
+           }
+         ]
+       },
+       "notificationListenerConfigs": [
+         {
+           "notification": "backup-configuration-failed",
+           "namespace": "urn:vendor:dzs-configuration",
+           "module": "dzs-configuration",
+           "revision": [
+             "2024-08-30"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BackupConfigurationListener"
+         },
+         {
+           "notification": "backup-configuration-committed",
+           "namespace": "urn:vendor:dzs-configuration",
+           "module": "dzs-configuration",
+           "revision": [
+             "2024-08-30"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BackupConfigurationListener"
+         },
+         {
+           "notification": "netconf-config-change",
+           "namespace": "urn:ietf:params:xml:ns:yang:ietf-netconf-notifications",
+           "module": "ietf-netconf-notifications",
+           "revision": [
+             "2012-02-06"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.NetconfConfigChangeListener"
+         },
+         {
+           "notification": "change-notification",
+           "namespace": "http://org/openroadm/device",
+           "module": "org-openroadm-device",
+           "revision": [
+             "2018-10-19",
+             "2020-05-29",
+             "2022-12-09"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.ChangeNotificationListener"
+         },
+         {
+           "notification": "alarm-notification",
+           "namespace": "urn:ietf:params:xml:ns:yang:ietf-alarms",
+           "module": "ietf-alarms",
+           "revision": [
+             "2019-09-11",
+             "2022-03-29"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.AlarmNotificationListener",
+           "rebootAlarms": [
+             "DEVICE_REACHABILITY_DOWN",
+             "CARD_RESET_ALARM"
+           ]
+         },
+         {
+           "notification": "alarm-notification",
+           "namespace": "http://org/openroadm/alarm",
+           "module": "org-openroadm-alarm",
+           "revision": [
+             "2018-10-19",
+             "2020-05-29",
+             "2022-12-09",
+             "2023-05-26"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.ROADMAlarmNotifListener"
+         },
+         {
+           "notification": "tca-notification",
+           "namespace": "http://org/openroadm/tca",
+           "module": "org-openroadm-tca",
+           "revision": [
+             "2020-03-27",
+             "2023-05-26",
+             "2023-09-29",
+             "2023-12-08"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.TcaNotiListener"
+         },
+         {
+           "notification": "transfer-state-update",
+           "namespace": "urn:vendor:dzs-config-management",
+           "module": "dzs-config-management",
+           "revision": [ "2023-06-13" ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.TransferStateUpdateListener"
+         },
+         {
+           "notification": "onu-presence-state-change",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+               "module": "ietf-interfaces",
+               "revision": "2018-02-20",
+               "node": "interfaces-state"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+               "module": "ietf-interfaces",
+               "revision": "2018-02-20",
+               "node": "interface"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-xpon",
+               "module": "bbf-xpon",
+               "revision": "2020-10-13",
+               "node": "channel-termination"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-xpon-onu-state",
+               "module": "bbf-xpon-onu-state",
+               "revision": "2020-10-13",
+               "node": "onu-presence-state-change"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.OnuPresenceStateChangeListener"
+         },
+         {
+           "notification": "revision-downloaded",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision-downloaded"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "download-revision-failed",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "download-revision-failed"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "revision-committed",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "commit"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision-committed"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "commit-failed",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "commit"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "commit-failed"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "revision-activated",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "activate"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision-activated"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "activate-failed",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "activate"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "activate-failed"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "download-revision-aborted",
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "software"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revisions"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "revision"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "abort-download"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-software-management",
+               "module": "bbf-software-management",
+               "revision": "2022-03-01",
+               "node": "download-revision-aborted"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFSwMgmtNotiListener"
+         },
+         {
+           "notification": "component-reset",
+           "enabled": true,
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-hardware",
+               "module": "bbf-hardware",
+               "revision": "2022-03-01",
+               "node": "component-reset"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFHwNotiListener"
+         },
+         {
+           "notification": "component-reset",
+           "enabled": true,
+           "instanceNotification": true,
+           "paths": [
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "hardware"
+             },
+             {
+               "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "module": "ietf-hardware",
+               "revision": "2018-03-13",
+               "node": "component"
+             },
+             {
+               "namespace": "urn:bbf:yang:bbf-hardware",
+               "module": "bbf-hardware",
+               "revision": "2020-10-13",
+               "node": "component-reset"
+             }
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.BBFHwNotiListener"
+         },
+         {
+           "notification": "db-backup-notification",
+           "enabled": true,
+           "namespace": "http://dzsi.com/ns/saber-database",
+           "module": "saber-database",
+           "revision": [
+             "2023-07-12"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.RoadmMaintNotiListener"
+         },
+         {
+           "notification": "db-restore-notification",
+           "enabled": true,
+           "namespace": "http://dzsi.com/ns/saber-database",
+           "module": "saber-database",
+           "revision": [
+             "2023-07-12"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.RoadmMaintNotiListener"
+         },
+         {
+           "notification": "sw-stage-notification",
+           "enabled": true,
+           "namespace": "http://dzsi.com/ns/saber-swdl",
+           "module": "saber-swdl",
+           "revision": [
+             "2023-07-17"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.RoadmMaintNotiListener"
+         },
+         {
+           "notification": "sw-activate-notification",
+           "enabled": true,
+           "namespace": "http://org/openroadm/de/swdl",
+           "module": "org-openroadm-swdl",
+           "revision": [
+             "2023-05-26"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.RoadmMaintNotiListener"
+         },
+         {
+           "notification": "restart-notification",
+           "enabled": true,
+           "namespace": "http://org/openroadm/de/operations",
+           "module": "org-openroadm-de-operations",
+           "revision": [
+             "2023-05-26",
+             "2023-09-29"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.roadm.RoadmMaintNotiListener"
+         },
+         {
+           "notification": "hardware-state-oper-enabled",
+           "enabled": true,
+           "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+           "module": "ietf-hardware",
+           "revision": [
+             "2018-03-13"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.HwStateOperListener"
+         },
+         {
+           "notification": "hardware-state-oper-disabled",
+           "enabled": true,
+           "namespace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+           "module": "ietf-hardware",
+           "revision": [
+             "2018-03-13"
+           ],
+           "listener": "com.dzsi.sdnc.netconf.notification.dom.listeners.HwStateOperListener"
+         }
+       ]
+     }'
+
+
+  initData:
+    hasInitData: true
+    content:
+      '{
+         "network-topology:network-topology": {
+           "topology": [
+             {
+               "topology-id": "topology-netconf",
+               "node": [
+                  {
+                    "node-id": "zms",
+                    "netconf-node-topology:port": 830,
+                    "netconf-node-topology:username": "test",
+                    "netconf-node-topology:password": "test123",
+                    "netconf-node-topology:host": "zmsapp-tcp",
+                    "netconf-node-topology:default-request-timeout-millis": 120000,
+                    "netconf-node-topology:max-connection-attempts": 10,
+                    "topology-node-ext:system-type": "topology-node-ext:zms",
+                    "netconf-node-topology:schema-cache-directory": "zms"
+                  }
+               ]
+             }
+           ]
+         }
+       }
+      '
+  jmx:
+    # Port on which JMX server in image is listening, should be same as defined in dockerfile
+    # If true, allow remote connections to JMX server running in container image, useful for debugging
+    enableJmxRemoting: true
+    jmxPort: 1099
+
+  akka:
+    # If true, overrides akka cluster configuration with default single-node
+    isSingleNode: true
+    # Name of the config file must be same as property in configmap
+    akkaNodeConfigFilename: "akka-node-k8s.conf"
+    # At least three nodes are required for akka voting
+    minimumClusterNodes: 3
+    # Prefix for akka member name; in configmap POD IP address will be appended to prefix
+    memberNamePrefix: "member-"
+    remotingPort: 2552
+    managementPort: 8558
+    discovery:
+      # Where should akka look for other members to form cluster
+      podSelectorName: "app"
+      podSelectorValue: "lighty-k8s-cluster"
+      portName: "management"
+      podNamespace: "default"
+
+  aaa:
+    # If true, AAA lighty.io component will be enabled
+    enableAAA: false
+  log4j:
+    logDir: netconfsvc
+    fileName: netconf.log
+
+sdnc:
+  log:
+    appLogFile: netconf
+  volume:
+    log:
+      name: netconf-svc-log-volume
+      kind: PersistentVolumeClaim
+      pvc:
+        name: netconf-svc-log-volume-claim
+        accessMode: ReadWriteOnce
+        storage: 1Gi
+        mountPath: /data/log/netconfsvc
+        log4j2Version: true
+        storageClassName: null
+    plugins:
+      enableExtPlugins: false
+      name: netconfsvc-plugins
+      mountPath: /lighty-rnc/plugins/netconfsvc
+      hostPath: /data/plugins/netconfsvc
+
+fluentd:
+  image:
+    repository: rt.cloud.dzsi.local/docker/rw.fluentd
+    pullPolicy: IfNotPresent
+    tag: "0.1"
+
+sftp:
+  port: 22
+
+nodePort:
+  # If switched to "true", NodePort service will be created; If switched to "false", ClusterIp service will be created
+  useNodePort: false
+  restconfNodePort: 31017
+  exposeManagement: false
+  managementNodePort: 31011
+
+ingress:
+  useIngress: false
+  prefix: "/netconf"
+  restconfHost: "restconf.netconf.sdnc.dzsi.com"
+  exposeManagement: false
+  managementHost: "management.netconf.sdnc.dzsi.com"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   memory: 512Mi
+  #   cpu: 1000m
+  # requests:
+  #   memory: 256Mi
+  #   cpu: 500m
+
+daexim:
+  enable: true
+  volume:
+    name: daexim-volume
+    kind: PersistentVolumeClaim
+    pvc:
+      name: daexim-volume-claim
+      accessMode: ReadWriteOnce
+      storage: 1Gi
+      mountPath: /lighty-rnc/daexim/daexim
+      storageClassName: null
+
+java:
+  opts:
+    xmx: "-Xmx2g"  
+    

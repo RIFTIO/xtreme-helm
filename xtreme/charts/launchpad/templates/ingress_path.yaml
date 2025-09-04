@@ -1,0 +1,637 @@
+# Copyright 2022-2023 DZS Inc
+# ingress_paths.yaml
+# Pathtype support is only available from 1.18 version onwards
+{{- define "ingress_paths" }}
+{{- $canUsePathType :=  (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- $ingressApiGA := (semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion) }}
+      - path: /nfvi-alerts
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /authorization
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /token
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /verify
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /end_session
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /userinfo
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /revoke
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /favicon.ico
+      {{- if $canUsePathType }}
+        pathType: Exact
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /static/style/style.css
+      {{- if $canUsePathType }}
+        pathType: Exact
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /static/img/svg/logo.svg
+      {{- if $canUsePathType }}
+        pathType: Exact
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+
+      - path: /api
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /v1/api
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /v2/api
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /staging
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /mano
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sol002
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sol003_nbi
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /health_cluster
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sol003
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sol005
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /osma
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /ha
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /prometheus
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /tmf-api/mano
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: dzsx-tmf-apiserver-svc
+            port:
+              number: 9031
+        {{- else }}
+          serviceName: dzsx-tmf-apiserver-svc
+          servicePort: 9031
+        {{- end }}
+
+      - path: /tmf-api
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /logdownload
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /exportarchive
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /etsiproxy
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /v1/logs
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /logs
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /v1/streams
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /streams
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /grafana
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /tmf-api/dzs-aeo
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-alarm
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-config
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-netconf
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-inventory
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+      
+      - path: /sdnc-task
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-filemgr
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-pmcollector
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+      - path: /sdnc-tpce
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+
+{{- end }}

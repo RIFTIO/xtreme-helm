@@ -1,0 +1,51 @@
+# Copyright 2022 DZS Inc
+
+global:
+  namespace:
+    name: dzs
+  install:
+    zms: true
+    inas: true
+  ingress:
+    createClusterRole: true   # only for first installation on k8s cluster
+
+launchpad:
+  cluster_logger:
+    createClusterRole: true   # only for first installation on k8s cluster
+  launchpad:
+    image:
+      pullPolicy: Always     # This is only for images tagged based on branch
+      tag: "master"
+  aeo:
+    image:
+      controller:
+        pullPolicy: Always
+        tag: "master"
+      serviceWorker:
+        pullPolicy: Always
+        tag: "master"
+      resourceWorker:
+        pullPolicy: Always
+        tag: "master"
+      tmfServer:
+        pullPolicy: Always
+        tag: "master"
+
+sdnc-netconf-svc:
+  nodePort:
+    useNodePort: false
+    restconfNodePort: 31010
+
+sdnc-config-mgr:
+  nodePort:
+    userNodePort: false
+    restconfNodePort: 32010
+
+sdnc-transportpce:
+  nodePort:
+    userNodePort: false
+    restconfNodePort: 33010
+
+zms:
+  sevice:
+    zmsHostNetwork: false

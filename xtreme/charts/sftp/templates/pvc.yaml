@@ -1,0 +1,17 @@
+{{- if .Values.persistence.enabled -}}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ .Values.persistence.name }}
+  namespace: {{ .Values.global.namespace.name }}
+spec:
+  accessModes:
+  {{- range .Values.persistence.accessModes }}
+    - {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size | quote }}
+  {{ include "parent-chart.resolvePersistenceStorageClass" . | nindent 2 }}
+
+{{- end }}

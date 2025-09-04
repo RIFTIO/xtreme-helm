@@ -1,0 +1,2927 @@
+# Copyright 2022 DZS Inc
+
+{{- $nats_svc := include "nats.fqdn" . }}
+{{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
+{{- $inas_svc := include "inas-be.fqdn" . }}
+{{- $config_svc := include "rnc-config-mgr.fqdn" . }}
+{{- $inventory_svc := include "rnc-inventory-mgr.fqdn" . }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $influxdb_svc := include "influxdb.fqdn" . }}
+{{- $kafka_svc := include "kafkaBootstrap.fqdn" . }}
+{{- $sftp_svc := include "sftp.fqdn" . }}
+{{- $kafka_socket := include "kafka.socket" . }}
+{{- $enableKafka := .Values.global.enableKafka_pmCollector }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "pm-collector.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | dzsi | sdn | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/pmcollector</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/pmcollector.log"
+                         filePattern="${APP_LOG_ROOT}/pmcollector-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/pmcollector.log"
+                         filePattern="${APP_LOG}/pmcollector-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="DEFAULT"
+                         fileName="${APP_LOG_ROOT}/pmcollector-default.log"
+                         filePattern="${APP_LOG_ROOT}/pmcollector-default-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+            <Logger name="DEFAULT" level="info">
+                <AppenderRef ref="DEFAULT"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ssZ
+    server.sessionTimeout=30
+    server.port = 8888
+    api.version = 1
+    serviceconfig.file = config/pmcollectorconfig.json
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+
+  pmcollectorconfig.json: |
+    {
+      "serviceConfig": {
+        "serviceName": "pmcollector",
+        "sbPlugin": {
+          "device": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "olt": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "zms": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": true
+          },
+          "inas": {
+            "connection": {
+              "httpAddress": "http://{{- $inas_svc -}}:30522",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": false
+          }
+        },
+        "configMgrHost": "http://{{- $config_svc -}}:8888",
+        "inventoryMgrHost": "http://{{- $inventory_svc -}}:8899",
+        "topologyId": "device-topology",
+        "exporterConfig" : {
+          "influxDBExporterConfig" : {
+            "influxDBHost": "{{- $influxdb_svc -}}",
+            "influxDBPort": 80,
+            "username": "admin",
+            "password": "dzs123!!",
+            "organization": "pm-collector",
+            "retention": {
+              "device": 7776000,
+              "onu": 7776000,
+              "ETH_Rx_validity": 7776000,
+              "ETH_Tx_validity": 7776000,
+              "Meta_Rx_validity": 7776000,
+              "Meta_Tx_validity": 7776000,
+              "QSFPOptic_validity": 7776000,
+              "ZR_validity": 7776000,
+              "CSFPOptic_validity": 7776000,
+              "QSFPDdDco_validity": 7776000,
+              "AcPcs_Rx_validity": 7776000,
+              "AcPcs_Tx_validity": 7776000,
+              "OTN_validity": 7776000
+            }
+          },
+          "kafkaExporterConfig" : {
+            "classifier": "PM_REPORT"
+          }
+        },
+        "sftpConfig": {
+          "host": "{{- $sftp_svc -}}",
+          "user": "sftp",
+          "password": "sftp",
+          "path": "incoming/pm/inas"
+        },
+        "profileList": [
+          {
+            "profile-id": "Port Stats",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "id",
+            "parameters": [
+              {
+                "name": "in-octets",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-octets",
+                "unit": "bps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-octets",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-octets",
+                "unit": "bps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-ucastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-ucastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-unicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-mcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-multicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-mcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-multicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-bcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-broadcast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-bcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-broadcast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-discards",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-discards",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "out-discards",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-discards",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "in-errors",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-errors",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "out-errors",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-errors",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "in-unknownprotos",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
+                "unit": "number",
+                "displayType": "delta"
+              }
+            ]
+          },
+          {
+            "profile-id": "Avg Port Stats",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 10,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "id",
+            "parameters": [
+              {
+                "name": "in-avg-octets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/rcv-octet",
+                "unit": "bps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "out-avg-octets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/send-octet",
+                "unit": "bps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "in-avg-pkts",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/rcv-pkt",
+                "unit": "pps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "out-avg-pkts",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/send-pkt",
+                "unit": "pps",
+                "displayType": "realValue"
+              }
+            ]
+          },
+          {
+            "profile-id": "LAG Stats",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+            }],
+            "inventory-class": "lag",
+            "inventory-field": "id",
+            "parameters": [
+              {
+                "name": "in-octets",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-octets",
+                "unit": "bps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-octets",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-octets",
+                "unit": "bps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-ucastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-ucastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-unicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-mcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-multicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-mcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-multicast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-bcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-broadcast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-bcastpkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-broadcast-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "in-discards",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-discards",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "out-discards",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-discards",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "in-errors",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-errors",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "out-errors",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-errors",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "in-unknownprotos",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
+                "unit": "number",
+                "displayType": "delta"
+              }
+            ]
+          },
+          {
+            "profile-id": "Avg LAG Stats",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 10,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+            }],
+            "inventory-class": "lag",
+            "inventory-field": "id",
+            "parameters": [
+              {
+                "name": "in-avg-octets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/rcv-octet",
+                "unit": "bps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "out-avg-octets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/send-octet",
+                "unit": "bps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "in-avg-pkts",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/rcv-pkt",
+                "unit": "pps",
+                "displayType": "realValue"
+              },
+              {
+                "name": "out-avg-pkts",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-if-statistics:if-avg-statistics/avg-stat-10min/send-pkt",
+                "unit": "pps",
+                "displayType": "realValue"
+              }
+            ]
+          },
+          {
+            "profile-id": "EthernetRX",
+            "profile-display-name": "ETHERNET(INGRESS)",
+            "resource-type": "_interface",
+            "bucket-type": "ETH_Rx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "interface",
+            "inventory-field": "id",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "Total Octets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Total%20Octets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Total Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Total%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Broadcast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Broadcast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Multicast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Multicast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Unicast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Unicast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Dropped Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Dropped%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CRC Alignment Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,CRC%20Alignment%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Undersize Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Undersize%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Oversize Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Oversize%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Fragments",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Fragments,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Jabbers",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,Jabbers,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "64 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,64%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "65-127 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,65-127%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "128-255 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,128-255%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "256-511 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,256-511%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "512-1023 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,512-1023%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "1024-1518 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,1024-1518%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "1519-2047 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,1519-2047%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "2048-4095 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,2048-4095%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "4096-8191 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,4096-8191%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "over 8192 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetRX,[name]/historical-pm=vendorExtension,over%208192%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "EthernetTX",
+            "profile-display-name": "ETHERNET(EGRESS)",
+            "resource-type": "_interface",
+            "bucket-type": "ETH_Tx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "interface",
+            "inventory-field": "id",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "Total Octets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Total%20Octets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Total Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Total%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Broadcast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Broadcast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Multicast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Multicast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Unicast Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Unicast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Dropped Frames",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Dropped%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CRC Alignment Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,CRC%20Alignment%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Undersize Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Undersize%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Oversize Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Oversize%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Fragments",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Fragments,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Jabbers",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,Jabbers,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "64 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,64%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "65-127 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,65-127%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "128-255 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,128-255%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "256-511 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,256-511%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "512-1023 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,512-1023%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "1024-1518 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,1024-1518%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "1519-2047 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,1519-2047%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "2048-4095 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,2048-4095%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "4096-8191 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,4096-8191%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "over 8192 Octet Packets",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,EthernetTX,[name]/historical-pm=vendorExtension,over%208192%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "MetaDXPcs-RX",
+            "profile-display-name": "PCS(INGRESS)",
+            "resource-type": "_circuitpack",
+            "bucket-type": "Meta_Rx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "Block Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Block%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "BIP Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20BIP%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Post FEC Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Post%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC BER",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20BER,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValueExponential",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "MetaDXPcs-TX",
+            "profile-display-name": "PCS(EGRESS)",
+            "resource-type": "_circuitpack",
+            "bucket-type": "Meta_Tx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "Block Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,MetaDXPcs-TX,[name]/historical-pm=vendorExtension,PCS%20Block%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "QSFPOptic",
+            "profile-display-name": "OPTICAL",
+            "resource-type": "_circuitpack",
+            "bucket-type": "QSFPOptic_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "PWR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPOptic,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPOptic,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPOptic,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPOptic,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "ZR",
+            "profile-display-name": "ZR(INGRESS)",
+            "resource-type": "_interface",
+            "bucket-type": "ZR_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "interface",
+            "inventory-field": "id",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["ZR"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "Pre FEC",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,ZR,[name]/historical-pm=vendorExtension,ZR%20Pre%20FEC,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Post FEC",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,ZR,[name]/historical-pm=vendorExtension,ZR%20Post%20FEC,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC BER",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,ZR,[name]/historical-pm=vendorExtension,ZR%20Pre%20FEC%20BER,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "number",
+                    "displayType": "realValueExponential",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "CSFPOptic",
+            "profile-display-name": "OPTICAL",
+            "resource-type": "_circuitpack",
+            "bucket-type": "CSFPOptic_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["CFP2-200G", "CFP2-400G"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "PWR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SOP Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SOP%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "krad/s",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SOP Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SOP%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "krad/s",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SOP Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SOP%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "krad/s",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,CD%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,CD%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,CD%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,DGD%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,DGD%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,DGD%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-X Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-X%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-X Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-X%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-X Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-X%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-Y Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-Y%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-Y Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-Y%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR-Y Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,OSNR-Y%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PDL%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PDL%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,PDL%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SoPMD Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SoPMD%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps^2",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SoPMD Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SoPMD%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps^2",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SoPMD Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SoPMD%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps^2",
+                    "displayType": "realValue",
+                    "ignore-condition" : {"model-name" : ["CFP2-200G"]},
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Margin Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Margin%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Margin Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Margin%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Margin Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Margin%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Q-Factor Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,Q-Factor%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "sec",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-X Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-X%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-X Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-X%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-X Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-X%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-Y Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-Y%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-Y Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-Y%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SNR-Y Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,CSFP_Optic,[name]/historical-pm=vendorExtension,SNR-Y%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "QSFPDdDco",
+            "profile-display-name": "OPTICAL",
+            "resource-type": "_circuitpack",
+            "bucket-type": "QSFPDdDco_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["QSFP-DD-DCO"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "PWR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PWR Tx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "dBm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,CD%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,CD%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "CD Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,CD%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps/nm",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,DGD%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,DGD%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "DGD Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,DGD%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "ps",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,OSNR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,OSNR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "OSNR Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,OSNR%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx MAX",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PDL%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx MIN",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PDL%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "PDL Rx AVG",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPDdDco,[name]/historical-pm=vendorExtension,PDL%20Rx%20AVG,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "dB",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "AcPcs-RX",
+            "profile-display-name": "PCS(INGRESS)",
+            "resource-type": "_circuitpack",
+            "bucket-type": "AcPcs_Rx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1"], "additionalInfo.module-type" : ["TMX-4400"]},
+            "parameters": [
+                {
+                    "name": "Sync Header Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Sync%20Header%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Invalid PCS Blocks",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Invalid%20PCS%20Blocks,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Control Block Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Control%20Block%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Invalid Transcode Blocks",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Invalid%20Transcode%20Blocks,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "BIP Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20BIP%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Pre%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Post FEC Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Post%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC BER",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-RX,[name]/historical-pm=vendorExtension,AC%20PCS%20Pre%20FEC%20BER,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValueExponential",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "AcPcs-TX",
+            "profile-display-name": "PCS(EGRESS)",
+            "resource-type": "_circuitpack",
+            "bucket-type": "AcPcs_Tx_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "additionalInfo.circuit-pack",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1"], "additionalInfo.module-type" : ["TMX-4400"]},
+            "parameters": [
+                {
+                    "name": "Invalid PCS Blocks",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-TX,[name]/historical-pm=vendorExtension,AC%20PCS%20Invalid%20PCS%20Blocks,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Control Block Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-TX,[name]/historical-pm=vendorExtension,AC%20PCS%20Control%20Block%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Invalid Transcode Blocks",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-TX,[name]/historical-pm=vendorExtension,AC%20PCS%20Invalid%20Transcode%20Blocks,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "BIP Errors",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,AcPcs-TX,[name]/historical-pm=vendorExtension,AC%20PCS%20BIP%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+            "profile-id": "OTN",
+            "profile-display-name": "OTN(INGRESS)",
+            "resource-type": "_interface",
+            "bucket-type": "OTN_validity",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2020-05-29",
+                "node-type": "xpdr"
+            },
+            {
+                "vendor": "dzs",
+                "system-type": "roadm",
+                "revision": "2023-05-26",
+                "node-type": "xpdr"
+            }],
+            "inventory-class": "interface",
+            "inventory-field": "id",
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["OTU"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "parameters": [
+                {
+                    "name": "ES-SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,ES-SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "SES-SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,SES-SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "UAS-SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,UAS-SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "BBE-SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,BBE-SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,Pre%20FEC%20SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Post FEC SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,Post%20FEC%20SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValue",
+                    "time-field": "completion-time"
+                },
+                {
+                    "name": "Pre FEC BER SM",
+                    "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OTN,[name]/historical-pm=vendorExtension,Pre%20FEC%20BER%20SM,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                    "unit": "",
+                    "displayType": "realValueExponential",
+                    "time-field": "completion-time"
+                }
+            ]
+          },
+          {
+           "profile-id":"INAS Traffic",
+           "resource-type":"_interface",
+           "bucket-type": "device",
+           "enabled":"true",
+           "description":"",
+           "interval":15,
+           "timeout":30,
+           "retry-count":3,
+           "target-model":[{
+              "vendor":"dzs",
+              "system-type":"inas",
+              "revision":"2022-02-22"
+           }],
+           "inventory-class":"port",
+           "inventory-field":"id",
+           "parameters":[
+              {
+                 "name":"in-octets",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/In Octets",
+                 "unit": "bps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-octets",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/Out Octets",
+                 "unit": "bps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"in-ucastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/In Unicast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-ucastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/Out Unicast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"in-mcastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/In Multicast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-mcastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/Out Multicast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"in-bcastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/In Broadcast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-bcastpkts",
+                 "path": "/NodeName/Port[name]/FieldType/Avg/Out Broadcast",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              }
+            ]
+          },
+          {
+           "profile-id":"ONU Stats",
+           "resource-type":"_onu",
+           "bucket-type":"onu",
+           "enabled":"true",
+           "description":"",
+           "interval":15,
+           "timeout":30,
+           "retry-count":3,
+           "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+           }],
+           "inventory-class":"onu",
+           "inventory-field": "additionalInfo.v-ani-interface",
+           "parameters": [
+              {
+                 "name":"corrected-fec-bytes",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/corrected-fec-bytes",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"corrected-fec-codewords",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/corrected-fec-codewords",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"uncorrectable-fec-codewords",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/uncorrectable-fec-codewords",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"in-fec-codewords",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/in-fec-codewords",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"fec-seconds",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/fec-seconds",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"in-bip-protected-words",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/in-bip-protected-words",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"in-bip-errors",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/in-bip-errors",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"psbd-hec-errors",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/psbd-hec-errors",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"fs-hec-errors",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/fs-hec-errors",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"unknown-profiles",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/bbf-interfaces-performance-management:performance/intervals-15min/current/bbf-xpon-performance-management:xpon/phy/unknown-profiles",
+                 "unit": "number",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"rx-bytes",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-v-ani-stat/rx-bytes",
+                 "unit": "number",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"rx-packets",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-v-ani-stat/rx-packets",
+                 "unit": "number",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"tx-bytes",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-v-ani-stat/tx-bytes",
+                 "unit": "number",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"tx-packets",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-v-ani-stat/tx-packets",
+                 "unit": "number",
+                 "displayType": "deltaRatePerSec"
+              }
+           ]
+          },
+          {
+           "profile-id":"DHCP VP Stats",
+           "resource-type":"_onu",
+           "bucket-type":"onu",
+           "enabled":"true",
+           "description":"",
+           "interval":15,
+           "timeout":30,
+           "retry-count":3,
+           "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+           }],
+           "inventory-class":"onu",
+           "inventory-field": "additionalInfo.vp-list",
+           "parameters": [
+              {
+                 "name":"option-82-removed-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-removed-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-inserted-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-inserted-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-not-inserted-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-not-inserted-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/in-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv4-statistics:dhcpv4-stat/out-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-in-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/in-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv6-out-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-dhcpv6-statistics:dhcpv6-stat/out-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              }
+            ]
+          },
+          {
+           "profile-id":"DHCP Port Stats",
+           "resource-type":"_interface",
+           "bucket-type":"device",
+           "enabled":"true",
+           "description":"",
+           "interval":15,
+           "timeout":30,
+           "retry-count":3,
+           "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+           }],
+           "inventory-class":"port",
+           "inventory-field": "id",
+           "parameters": [
+              {
+                 "name":"option-82-removed-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-removed-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-inserted-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-inserted-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-not-inserted-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-not-inserted-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              }
+            ]
+          },
+          {
+           "profile-id":"DHCP LAG Stats",
+           "resource-type":"_interface",
+           "bucket-type":"device",
+           "enabled":"true",
+           "description":"",
+           "interval":15,
+           "timeout":30,
+           "retry-count":3,
+           "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+           }],
+           "inventory-class":"lag",
+           "inventory-field": "id",
+           "parameters": [
+              {
+                 "name":"option-82-removed-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-removed-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-inserted-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-inserted-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"option-82-not-inserted-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/option-82-not-inserted-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-bad-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-bad-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"in-packets-from-server",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/in-packets-from-server",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name":"out-packets-to-client",
+                 "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/out-packets-to-client",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-in-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/in-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-packets",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-packets",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-errors",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-errors",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-bootup-replies",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-bootup-replies",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-discovers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-discovers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-offers",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-offers",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-requests",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-requests",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-declines",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-declines",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-acks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-acks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-naks",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-naks",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-releases",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-releases",
+                  "unit": "number",
+                  "displayType": "delta"
+              },
+              {
+                  "name": "dhcpv4-out-informs",
+                  "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/bbf-l2-dhcpv4-relay:dhcpv4/dzs-dhcpv4-statistics:dhcpv4-stat/out-informs",
+                  "unit": "number",
+                  "displayType": "delta"
+              }
+            ]
+          },
+          {
+            "profile-id": "ZMS Traffic",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+               "vendor": "dzs",
+               "system-type": "zms",
+               "revision": "2021-12-29"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "id",
+            "parameters": [
+              {
+                 "name": "in-octets",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInOctets",
+                 "unit": "bps",
+                 "displayType": "realValue"
+              },
+              {
+                 "name": "out-octets",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutOctets",
+                 "unit": "bps",
+                 "displayType": "realValue"
+              },
+              {
+                 "name":"in-ucastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInUcastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-ucastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutUcastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"in-mcastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInMulticastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-mcastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutMulticastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"in-bcastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInBroadcastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name":"out-bcastpkts",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutBroadcastPkts",
+                 "unit": "pps",
+                 "displayType": "deltaRatePerSec"
+              },
+              {
+                 "name": "in-discards",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInDiscards",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name": "out-discards",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutDiscards",
+                 "unit": "number",
+                 "displayType": "delta"
+              },{
+                 "name": "in-errors",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInErrors",
+                 "unit": "number",
+                 "displayType": "delta"
+              },
+              {
+                 "name": "out-errors",
+                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutErrors",
+                 "unit": "number",
+                 "displayType": "delta"
+              }
+            ]
+          }
+        ],
+        "externalDb": {
+           "type": "mongo",
+           "mongo": {
+           "entries": [
+            {
+              "enabled": true,
+              "id": "default",
+              "mandatory": true,
+              "connectionString": "mongodb://{{- $mongo_db -}}:8006/pmcollector?retryWrites=false",
+              "dbName": "pmcollector",
+              "collections": [ {"name": "device"}, {"name": "profile"} ]
+            }],
+           "codecProviderClass" : "com.dzsi.sdn.pmcollector.mongo.CustomCodecProvider"
+          }
+        },
+        "messagingClientConfig": {
+          "entries": [
+            {
+              "serviceIdentifier": "Logging_AEDO",
+              "enabled": true,
+              "serverType": "LOG",
+              "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+              "config": {
+                "type": "PUB",
+                "accepts": [
+                  "LOG"
+                ],
+                "targets": [
+                  {
+                    "classifier": "LOG",
+                    "target": "sdnc.pmcollector.default"
+                  }
+                ],
+                "defaultLogTag": "sdnc.pmcollector.default",
+                "adaptersConfig": {
+                  "file": {
+                    "appenderName": "APP"
+                  }
+                }
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_AEDO",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "accepts": [],
+                "targets": [],
+                "name": "SDNC.PMCollector",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.config",
+                "queueGroup": "pmcollector",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "KAFKA",
+              "enabled": "{{- $enableKafka -}}",
+              "serverType": "KAFKA",
+              "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+              "config": {
+                "type": "PUB",
+                "accepts": [
+                  "PM_REPORT"
+                ],
+                "targets": [
+                  { "classifier": "PM_REPORT", "target": "dzs.sdnc.pm_report" }
+                ],
+                "producerConfig": {
+                  "bootstrap.servers": "{{- $kafka_socket -}}",
+                  "acks": "all",
+                  "retries": 0,
+                  "linger.ms": 10,
+                  "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                  "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+                },
+                "producerTopics": [
+                  "dzs.sdnc.pm_report"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/pmcollector.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/pmcollector.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

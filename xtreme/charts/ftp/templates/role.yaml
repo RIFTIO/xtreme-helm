@@ -1,0 +1,10 @@
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: rw-ftp-role
+  namespace: {{ .Values.global.namespace.name }}
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get"]

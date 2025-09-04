@@ -1,0 +1,110 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2022-2023 DZS Inc
+#
+# external IP address used for the template function
+{{- $ipAddress := .Values.global.ingress.externalAddress -}}
+# Pathtype support is only available from 1.18 version onwards
+{{- $canUsePathType :=  (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- $ingressApiGA := (semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion) }}
+---
+{{ if .Values.global.ingress.externalAddress }}
+{{- $isIPValid := include "isIPchk" $ipAddress -}}
+{{- if eq (toString $isIPValid) "true" }}
+{{- else }}
+{{ if eq .Values.global.certificateIssuer.certMgrEnabled true }}
+{{- $ns := .Values.global.namespace.name -}}
+{{- if .Values.global.certificateIssuer.issuerConfig.namespace }}
+{{- $ns = .Values.global.certificateIssuer.issuerConfig.namespace -}}
+{{- end}}
+
+{{ if eq .Values.global.certificateIssuer.isSelfSigned true }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: dzs-selfsigned-issuer
+  namespace: {{ $ns }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: dzs-ca-issuer
+  namespace: {{ $ns }}
+spec:
+  ca:
+    secretName: {{ .Values.global.certificateIssuer.secret }}
+{{ else }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: acme-issuer
+  namespace: {{ $ns }}
+spec:
+  acme:
+    email: {{ .Values.global.certificateIssuer.issuerConfig.issuerEmail }}
+    server: {{ .Values.global.certificateIssuer.issuerConfig.server }}
+    privateKeySecretRef:
+      name: {{ .Values.global.certificateIssuer.secret }}
+    solvers:
+    - http01:
+        ingress: {}
+{{ end }}
+{{- end }}
+{{- end }}
+{{- end}}
+---
+{{- if $ingressApiGA }}
+apiVersion: networking.k8s.io/v1
+{{- else }}
+apiVersion: networking.k8s.io/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: rw-ingress
+  namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    {{- if .Values.global.certificateIssuer.clusterIssuer }}
+    cert-manager.io/cluster-issuer: {{ .Values.global.certificateIssuer.issuerName }}
+    {{- else }}
+    {{- if .Values.global.certificateIssuer.issuerName }}
+    cert-manager.io/issuer: {{ .Values.global.certificateIssuer.issuerName }}
+    {{- else }}
+    cert-manager.io/issuer: acme-issuer
+    {{- end }}
+    {{- end }}
+  labels:
+    {{- if .Values.global.customLabels }}
+    helm.toolkit.fluxcd.io/name: {{ include "launchpad.name" . }}
+    helm.toolkit.fluxcd.io/namespace: {{ .Values.global.namespace.name }}
+    {{- end }}
+spec:
+  {{- if .Values.global.ingress.class.name }}
+  {{- if eq .Values.global.ingress.class.namespaced true }}
+  ingressClassName: {{ .Values.global.namespace.name }}-{{ .Values.global.ingress.class.name }}
+  {{- else }}
+  ingressClassName: {{ .Values.global.ingress.class.name }}
+  {{- end }}
+  {{- end }}
+  rules:
+  - http:
+      paths:
+      {{- include "ingress_paths" . }}
+  {{ if .Values.global.ingress.externalAddress }}
+  {{- $isIPValid := include "isIPchk" $ipAddress -}}
+  {{- if eq (toString $isIPValid) "false" }}
+  - host: {{ .Values.global.ingress.externalAddress }}
+    http:
+      paths:
+      {{- include "ingress_paths" . }}
+  {{- end }}
+  {{- end }}
+  {{ if .Values.global.ingress.externalAddress }}
+  {{- $isIPValid := include "isIPchk" $ipAddress -}}
+  {{- if eq (toString $isIPValid) "false" }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.externalAddress }}
+      secretName: {{ .Values.global.certificateIssuer.secret }}
+  {{- end }}
+  {{- end }}

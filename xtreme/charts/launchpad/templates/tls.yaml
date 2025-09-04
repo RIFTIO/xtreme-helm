@@ -1,0 +1,22 @@
+# Copyright 2020 RIFT Inc
+#
+{{ $ca := genCA "RIFT" 365 }}
+{{ $cn := printf "%s.rift.lp.com" .Release.Namespace }}
+{{- if .Values.global.ingress.externalAddress }}
+{{ $cn = .Values.global.ingress.externalAddress }}
+{{- end }}
+{{ $server := genSignedCert $cn nil nil 365 $ca }}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/tls
+metadata:
+{{ if eq .Values.global.certificateIssuer.certMgrEnabled true }}
+  name: {{ .Values.global.certificateIssuer.secret }}
+{{ else }}
+  name: rw-tls-secret
+{{ end }}
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  tls.crt: {{ b64enc $server.Cert }}
+  tls.key: {{ b64enc $server.Key }}

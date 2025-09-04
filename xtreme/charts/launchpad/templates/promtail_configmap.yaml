@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  promtail.yaml: |
+    scrape_configs:
+      - job_name: lcm-worker
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: lcm-worker
+              __path__: /usr/rift/var/rift/log/rwlogd/lcm-worker/*.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: metadata.severity
+                event_name: metadata.event_name
+                event_module: metadata.event_module
+          - labels:
+              severity:
+              event_name:
+              event_module:
+      - job_name: lcm-config-worker
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: lcm-config-worker
+              __path__: /usr/rift/var/rift/log/rwlogd/lcm-config-worker/*.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: metadata.severity
+                event_name: metadata.event_name
+                event_module: metadata.event_module
+          - labels:
+              severity:
+              event_name:
+              event_module:
+      - job_name: lcm-monitor
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: lcm-monitor
+              __path__: /usr/rift/var/rift/log/rwlogd/lcm-monitor/*.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: metadata.severity
+                event_name: metadata.event_name
+          - labels:
+              severity:
+              event_name:
+      - job_name: rw-rest
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: rw-rest
+              __path__: /usr/rift/var/rift/log/rwlogd/rest/*/restconf.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: metadata.severity
+                event_name: metadata.event_name
+          - labels:
+              severity:
+              event_name:
+      - job_name: rift-log
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: rift-log
+              __path__: /usr/rift/var/rift/log/rwlogd/rift.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: metadata.severity
+                event_name: metadata.event_name
+          - labels:
+              severity:
+              event_name:
+      - job_name: metric-exporter
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: metric-exporter
+              __path__: /usr/rift/var/rift/log/rwlogd/metric_exporter/*.log
+        pipeline_stages:
+          - json:
+              expressions:
+                severity: level
+          - labels:
+              severity:
+      - job_name: mongodb
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: mongodb
+              __path__: /usr/rift/var/rift/log/mongo/eventsdb.mongodb.log
+      - job_name: redis
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+              job: redis
+              __path__: /usr/rift/var/rift/log/rwdatastore/redis.log
+      - job_name: nginx
+        static_configs:
+        - targets:
+            - localhost
+          labels:
+            job: nginx
+            __path__: /usr/rift/var/rift/log/nginx/access*log
+        pipeline_stages:
+          - regex:
+              expression: '^(?P<timestamp>\[.*\]) (?P<clientIP>[0-9]+.[0-9]+.[0-9]+.[0-9]+) (?P<user>[^ ]*) to (?P<backend>[0-9]+.[0-9]+.[0-9]+.[0-9]+:[0-9]+:) (?P<method>[^ ]*) (?P<request_url>[^ ]*) (?P<request_http_protocol>[^ ]*) (?P<status>[\d]+) (?P<remaining>.*)'
+          - labels:
+              host:
+              method:
+              status:
+              user_agent:

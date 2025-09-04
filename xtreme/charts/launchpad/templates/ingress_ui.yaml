@@ -1,0 +1,86 @@
+# Copyright 2023 DZS Inc
+#
+# external IP address used for the template function
+{{- $ipAddress := .Values.global.ingress.externalAddress -}}
+{{- $ingressApiGA := (semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion) }}
+---
+{{- define "ui_ingress_path" }}
+# Pathtype support is only available from 1.18 version onwards
+{{- $canUsePathType :=  (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- $ingressApiGA := (semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion) }}
+      {{- if eq .Values.global.ingress.class.name "nginx" }}
+      - path: /(.*)
+        pathType: ImplementationSpecific
+      {{- else }}
+      - path: /
+      {{- if $canUsePathType }}
+        pathType: Prefix
+      {{- end }}
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8008
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8008
+        {{- end }}
+{{- end }}
+---
+{{- if $ingressApiGA }}
+apiVersion: networking.k8s.io/v1
+{{- else }}
+apiVersion: networking.k8s.io/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: rw-ui-ingress
+  namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    {{- if eq .Values.global.ingress.class.name "nginx" }}
+    nginx.ingress.kubernetes.io/rewrite-target: /ui/$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    {{- else }}
+    ingress.kubernetes.io/rewrite-target: "/ui"
+    {{- end }}
+    {{- if .Values.global.certificateIssuer.clusterIssuer }}
+    cert-manager.io/cluster-issuer: {{ .Values.global.certificateIssuer.issuerName }}
+    {{- else }}
+    {{- if .Values.global.certificateIssuer.issuerName }}
+    cert-manager.io/issuer: {{ .Values.global.certificateIssuer.issuerName }}
+    {{- else }}
+    cert-manager.io/issuer: acme-issuer
+    {{- end }}
+    {{- end }}
+  labels:
+    {{- if .Values.global.customLabels }}
+    helm.toolkit.fluxcd.io/name: {{ include "launchpad.name" . }}
+    helm.toolkit.fluxcd.io/namespace: {{ .Values.global.namespace.name }}
+    {{- end }}
+spec:
+  {{- if .Values.global.ingress.class.name }}
+  {{- if eq .Values.global.ingress.class.namespaced true }}
+  ingressClassName: {{ .Values.global.namespace.name }}-{{ .Values.global.ingress.class.name }}
+  {{- else }}
+  ingressClassName: {{ .Values.global.ingress.class.name }}
+  {{- end }}
+  {{- end }}
+  rules:
+  - http:
+      paths:
+        {{- include "ui_ingress_path" . }}
+  {{ if .Values.global.ingress.externalAddress }}
+  {{- $isIPValid := include "isIPchk" $ipAddress -}}
+  {{- if eq (toString $isIPValid) "false" }}
+  - host: {{ .Values.global.ingress.externalAddress }}
+    http:
+      paths:
+      {{- include "ui_ingress_path" . }}
+  tls:
+    - hosts:
+        - {{ .Values.global.ingress.externalAddress }}
+      secretName: {{ .Values.global.certificateIssuer.secret }}
+  {{- end }}
+  {{- end }}

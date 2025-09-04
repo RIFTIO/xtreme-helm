@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "explore-application.fullname" . }}
+  namespace: {{ include "explore-application.namespace" . }}
+  labels:
+    {{- include "explore-application.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8008
+      # nodePort: 32129
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "explore-application.selectorLabels" . | nindent 4 }}

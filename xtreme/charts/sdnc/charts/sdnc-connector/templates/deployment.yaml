@@ -1,0 +1,90 @@
+# Copyright 2022 DZS Inc
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dzs-sdnc-ui
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+    {{- include "sdnc-connector.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "sdnc-connector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "sdnc-connector.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sdnc-connector.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: config-mgr
+            value: {{ include "rnc-config-mgr.fqdn" . }}
+          - name: alarm-svc
+            value: {{ include "rnc-alarm-svc.fqdn" . }}
+          - name: inventory-mgr
+            value: {{ include "rnc-inventory-mgr.fqdn" . }}
+          - name: nats-host
+            value: {{ include "nats.fqdn" . }}
+          - name: mongodb-host
+            value: {{ include "mongodb.fqdn" . }}
+          - name: file-mgr
+            value: {{ include "file-mgr.fqdn" . }} 
+          - name: task-mgr
+            value: {{ include "task-mgr.fqdn" . }}
+          - name: netconf-svc
+            value: {{ include "rnc-netconf-svc.fqdn" . }}
+          - name: pm-collector
+            value: {{ include "pm-collector.fqdn" . }}
+          - name: influxdb_pm
+            value: {{ include "influxdb.fqdn" . }}
+          - name: transportpce
+            value: {{ include "rnc-transportpce.fqdn" . }}
+          - name: JAVA_OPTS
+            value: "-Xmx2g"
+          ports:
+            - name: sdnc-connector
+              containerPort: 30635
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+          - mountPath: /sdnc/entrypoint.sh
+            name: scripts
+            subPath: entrypoint.sh
+      volumes:
+        - name: scripts 
+          configMap:
+            defaultMode: 493
+            name: {{ include "sdnc-connector.fullname" . }} 
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

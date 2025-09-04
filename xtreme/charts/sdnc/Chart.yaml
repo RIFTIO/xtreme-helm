@@ -1,0 +1,49 @@
+apiVersion: v2
+appVersion: 1.16.0
+dependencies:
+- condition: global.install.deviceSimulator
+  name: simulator
+  repository: file://.charts/simulator
+- condition: install.artifactory
+  name: sdnc-artifactory
+  repository: file://.charts/sdnc-artifactory
+- condition: install.fileManager
+  name: sdnc-file-mgr
+  repository: file://.charts/sdnc-file-mgr
+- condition: install.pmCollector
+  name: sdnc-influxdb
+  repository: file://.charts/sdnc-influxdb
+- condition: install.pmCollector
+  name: sdnc-pm-collector
+  repository: file://.charts/sdnc-pm-collector
+- condition: install.alarmSvc
+  name: sdnc-alarm-svc
+  repository: file://.charts/sdnc-alarm-svc
+- condition: install.inventoryMgr
+  name: sdnc-inventory-mgr
+  repository: file://.charts/sdnc-inventory-mgr
+- condition: install.taskMgr
+  name: sdnc-task-mgr
+  repository: file://.charts/sdnc-task-mgr
+- condition: install.netconfSvc
+  name: sdnc-netconf-svc
+  repository: file://.charts/sdnc-netconf-svc
+- condition: install.configMgr
+  name: sdnc-config-mgr
+  repository: file://.charts/sdnc-config-mgr
+- condition: install.transportpce
+  name: sdnc-transportpce
+  repository: file://.charts/sdnc-transportpce
+- condition: install.sdncConnector
+  name: sdnc-connector
+  repository: file://.charts/sdnc-connector
+- condition: install.envoy
+  name: envoy
+  repository: file://.charts/envoy
+- condition: install.gnpy
+  name: sdnc-gnpy
+  repository: file://./charts/sdnc-gnpy
+description: A Helm chart for Kubernetes
+name: sdnc
+type: application
+version: 0.1.0

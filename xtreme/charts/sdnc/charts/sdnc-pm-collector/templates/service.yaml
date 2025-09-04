@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pm-collector.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+    {{- include "pm-collector.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.service.useNodePort }}
+  type: NodePort
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      {{- if .Values.service.useNodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "pm-collector.selectorLabels" . | nindent 4 }}

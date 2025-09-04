@@ -1,0 +1,18 @@
+# Copyright 2022 DZS Inc
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: rw-aeo-tmf-server-svc
+  namespace: {{ include "aeo.namespace" . }}
+  labels:
+    app: rw.aeo.tmf
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9021
+      targetPort: 9021
+      protocol: TCP
+      name: tmf-server
+  selector:
+    app: rw.aeo.tmf

@@ -1,0 +1,12 @@
+{{- if eq .Values.global.ingress.class.disable false }}
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  {{- if eq .Values.global.ingress.class.namespaced true }}
+  name: {{ .Values.global.namespace.name }}-{{ .Values.global.ingress.class.name }}
+  {{- else }}
+  name: {{ .Values.global.ingress.class.name }}
+  {{- end }}
+spec:
+  controller: {{ .Values.global.ingress.class.controller }}
+{{- end }}

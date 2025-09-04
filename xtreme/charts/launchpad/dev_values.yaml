@@ -1,0 +1,136 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021 DZS Inc
+# Default values for development launchpad setup.
+
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+# This creates a namespace if specified and then assigns roles
+# to the default user
+global:
+  namespace:
+    create: true
+    name: TPL_HOSTNAME
+
+  imagePullSecrets: []
+
+  hostAliases: []
+# - ip: "127.0.0.1"
+#    hostnames:
+#    - "foo.local"
+  ingress:
+    class:
+      name: "ha-proxy"
+
+    # Hostname or IP address through which launchpad can be externally accessed
+    # This value is mandatory except if service type is "LoadBalancer"
+    externalAddress: null
+
+# Launchpad service related values
+#  service.type: Determines the k8s type Values - NodePort, LoadBalancer
+#  service.loadBalancerIP: Sets the service.spec.loadBalancerIP
+#                           (applicable only for LoaBalancer service type)
+#  image.tag: Docker tag for the image. If not specified Chart.AppVersion is applied.
+launchpad:
+  image:
+    repository: rt.cloud.dzsi.local/docker/rw.lp-base
+    tag: TPL_BRANCH
+    pullPolicy: Always
+    imagePullSecrets: []
+
+  env:
+    RW_RUNTIME_PROFILE: dev
+
+  resources: {}
+    # limits:
+    #   cpu: 8
+    #   memory: 32Gi
+    # requests:
+    #   cpu: 8
+    #   memory: 24Gi
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  capabilities: [ NET_ADMIN, SYS_RESOURCE, SYS_PTRACE ]
+  securityContext:
+    enabled: False
+    # Set this to secondary group id that is being used by the
+    # underlying storage.
+    fsGroup: 3064
+    # The user with which all processes will run as.
+    runAsUser: 3064
+    # The primary group for the user.
+    runAsGroup: 3064
+  service:
+    type: ClusterIP
+  ports:
+  - name: rwrest
+    port: 8008
+  - name: rwauth
+    port: 8009
+  - name: rwui
+    port: 8443
+  - name: rwredis
+    port: 8014
+  - name: rwmongo
+    port: 8006
+  - name: pkgmgr
+    port: 4568
+  coreDir: null   # Default goes to RIFT_VAR_ROOT
+  devSetup:
+    riftInstall: TPL_RIFT_INSTALL/usr/rift
+
+loki:
+  serviceScheme: http
+  enabled: false
+  servicePort: 3100
+
+storage:
+  storageClassName: TPL_HOSTNAME-manual-rvr
+  capacity: 80Gi
+  manual:
+    mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/lp
+
+redis:
+  redisStorage:
+    storageClassName: TPL_HOSTNAME-manual-redis
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/redis
+
+mongodb:
+  mongoStorage:
+    storageClassName: TPL_HOSTNAME-manual-mongo
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/eventsdb
+
+# Override values for alertmanager storage
+alertmgr:
+  alertmgrStorage:
+    storageClassName: TPL_HOSTNAME-manual-alertmgr
+    capacity: 20Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/alertmanager
+
+# Override values for prometheus
+prometheus:
+  prometheusStorage:
+    storageClassName: TPL_HOSTNAME-manual-prometheus
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/prometheus
+
+# Override values for grafana
+grafana:
+  grafanaStorage:
+    storageClassName: TPL_HOSTNAME-manual-grafana
+    capacity: 20Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/grafana
+
+aeo:
+  devSetup:
+    riftInstall: TPL_RIFT_INSTALL/usr/rift

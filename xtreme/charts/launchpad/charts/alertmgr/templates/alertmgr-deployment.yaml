@@ -1,0 +1,118 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2021 DZS Inc
+{{- $namespace := .Values.global.namespace.name -}}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rw-alertmgr
+  namespace: {{ $namespace }}
+  labels:
+    app: rw.alertmgr
+spec:
+  selector:
+    matchLabels:
+      app: rw.alertmgr
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: rw.alertmgr
+        release: {{ .Release.Name }}
+    spec:
+      {{- if and .Values.global.ensureSecurityContext (not (has "appAlertMgr" .Values.global.excludeAppsInSecurityContext)) }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: 65534
+        runAsGroup: {{ .Values.global.defaultGroup2 }}
+      {{- end }}
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+      containers:
+      - name: alertmgr
+        image: {{ .Values.alertmgr.image.repository -}} : {{- .Values.alertmgr.image.tag }}
+        imagePullPolicy: {{ .Values.alertmgr.image.pullPolicy }}
+        ports:
+        {{- range $name, $port := .Values.alertmgr.ports }}
+        - name: {{ $name }}
+          containerPort: {{ $port }}
+        {{- end }}
+
+        args:
+          - '--config.file=/config/alertmanager.yaml'
+          - '--storage.path=/alertmanager'
+        command:
+        - /bin/alertmanager
+
+        volumeMounts:
+        - name: data-volume
+          mountPath: /alertmanager
+          readOnly: false
+
+        - name: config-volume
+          mountPath: /config
+        {{- if and .Values.global.ensureSecurityContext (not (has "appAlertMgr" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: 65534
+          runAsGroup: {{ .Values.global.defaultGroup2 }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appAlertMgr" .Values.global.excludeAppsInContainerProbe)) }}
+        readinessProbe:
+          tcpSocket:
+            port: 9093
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9093
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appAlertMgr" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.verySmall" . }}
+        {{- end }}
+
+      initContainers:
+      - name: init-alertmgr
+        image: {{ .Values.alertmgr.image.repository -}} : {{- .Values.alertmgr.image.tag }}
+        imagePullPolicy: {{ .Values.alertmgr.image.pullPolicy }}
+        command: ["/bin/sh"]
+        args: ["-c", 'while [ ! -f "/config/alertmanager.yaml" ]; do sleep 2; done']
+        volumeMounts:
+        - name: config-volume
+          mountPath: /config
+          readOnly: false
+        {{- if and .Values.global.ensureSecurityContext (not (has "appAlertMgr" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: 65534
+        {{- end }}
+
+      {{- with .Values.alertmgr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.alertmgr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.alertmgr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      volumes:
+        - name: data-volume
+          emptyDir:
+            sizeLimit: 5000Mi
+        - name: config-volume
+          configMap:
+            name: alertmgr-config

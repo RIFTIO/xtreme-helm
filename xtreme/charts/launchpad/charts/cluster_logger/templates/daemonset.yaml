@@ -1,0 +1,117 @@
+#
+# Copyright 2022 DZS Inc
+#
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: rw-cluster-logger
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    k8s-app: dzs-log-aggregation
+spec:
+  selector:
+    matchLabels:
+      name: dzs-log-aggregation
+  template:
+    metadata:
+      labels:
+        name: dzs-log-aggregation
+    spec:
+      {{- if and .Values.global.ensureSecurityContext (not (has "appClusterLogger" .Values.global.excludeAppsInSecurityContext)) }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      {{- end }}
+
+    {{- if .Values.runnableOnMaster }}
+      tolerations:
+      # this toleration is to have the daemonset runnable on master nodes
+      # remove it if your masters can't run pods
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+    {{- end }}
+    {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: rw-cluster-logger-sa
+
+      initContainers:
+      - name: wait-for-mongo
+        image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+        imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+        env:
+        - name: RW_MONGODB_SVC_NAME
+          value: {{ include "mongodb.fqdn" . }}
+        command:
+          - /wait-for
+        args:
+          - --host="$(RW_MONGODB_SVC_NAME):8006"
+          - --timeout=120s
+          - --verbose
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appClusterLogger" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContextReducedCL | nindent 10 }}
+        {{- end }}
+
+      containers:
+      - name: rw-cluster-logger
+        image: {{ .Values.image.repository -}} : {{- .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        command: ["/usr/bin/ruby", "-Eascii-8bit:ascii-8bit", "/usr/bin/fluentd", "-c", "/dzs/fluentd/conf/fluentd.conf", "-p", "/fluentd/plugins", "--under-supervisor"]
+        env:
+        - name: RW_MONGODB_SVC_NAME
+          value: {{ include "mongodb.fqdn" . }}
+        - name: RW_COLLECTION_NAME
+          value: aeo
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appClusterLogger" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.small" . }}
+        {{- else }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appClusterLogger" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContextReducedCL | nindent 10 }}
+        {{- end }}
+
+        livenessProbe:
+          exec:
+            command:
+            - cat
+            - /dzs/fluentd/conf/fluentd.conf
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /dzs/fluentd/conf/fluentd.conf
+          initialDelaySeconds: 30
+          periodSeconds: 5
+
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: conf
+          mountPath: /dzs/fluentd/conf
+
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: conf
+        configMap:
+          name: rw-logger-conf
+          defaultMode: 0644

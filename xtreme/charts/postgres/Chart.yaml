@@ -1,0 +1,7 @@
+apiVersion: v2
+appVersion: "10.7"
+description: postgresql Helm chart
+icon: https://bitnami.com/assets/stacks/postgresql/img/postgresql-stack-220x234.png
+name: postgres
+type: application
+version: 0.1.0

@@ -1,0 +1,61 @@
+# Default values for explore.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Install options for explore services
+install:
+  # When set enables airflow service
+  airflow: false
+  # When set enales clickhouse service
+  clickhouse: false
+  # When set enables explore-application
+  exploreApplication: true
+
+# Global configuration applicable for all subcharts
+# If this is a subchart, will be replaced by the superchart's globals
+global:
+  # Details of the clickhouse database
+  chiDb:
+    host: smi-database-svc
+    port: 9000
+    httpPort: 8123
+
+# Override for the clickhouse subchart
+clickhouse:
+  chiDb:
+    service:
+      name: "{{ .Values.global.chiDb.host }}"
+      type: NodePort
+      port: "{{ .Values.global.chiDb.port }}"
+      httpPort: "{{ .Values.global.chiDb.httpPort }}"
+
+# Override for the explore-application subchart
+explore-application:
+  clickhouse:
+    host: "{{ .Values.global.chiDb.host }}"
+    port: "{{ .Values.global.chiDb.port }}"
+
+# Override for the explore-application subchart
+airflow:
+  clickhouse:
+    host: "{{ .Values.global.chiDb.host }}"
+    port: "{{ .Values.global.chiDb.port }}"
+    httpPort: "{{ .Values.global.chiDb.httpPort }}"
+
+logAnalytics:
+  image:
+    repository: rt.cloud.dzsi.local/docker/smi/log-analytics
+    tag: 1.8
+    pullPolicy: IfNotPresent
+
+kafkaExplore:
+  image:
+    repository: rt.cloud.dzsi.local/docker/smi/explore-kafka
+    tag: 0.3
+    pullPolicy: IfNotPresent
+
+redisExplore:
+  image:
+    repository: rt.cloud.dzsi.local/docker/smi/explore-redis
+    tag: 0.3
+    pullPolicy: IfNotPresent

@@ -1,0 +1,400 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+#
+{{- if not (eq .Values.architecture "replicaset") }}
+apiVersion: {{ if .Values.useStatefulSet }}apps/v1{{- else }}{{ include "common.capabilities.deployment.apiVersion" . }}{{- end }}
+kind: {{ if .Values.useStatefulSet }}StatefulSet{{- else }}Deployment{{- end }}
+metadata:
+  name: rw-mongodb
+  namespace: {{ .Values.global.namespace.name }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    app.kubernetes.io/component: mongodb
+    {{- if .Values.labels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.labels "context" $) | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.useStatefulSet }}
+  serviceName: {{ include "mongodb.fullname" . }}
+  updateStrategy:
+  {{- else }}
+  strategy:
+  {{- end }}
+    type: {{ .Values.strategyType }}
+    {{- if or (and (not .Values.useStatefulSet) (eq "Recreate" .Values.strategyType)) (and .Values.useStatefulSet (eq "OnDelete" .Values.strategyType))  }}
+    rollingUpdate: null
+    {{- end }}
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mongodb
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: mongodb
+        {{- if .Values.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/path: 'metrics'
+        prometheus.io/port: '9008'
+        {{- if (include "mongodb.createConfigmap" .) }}
+        checksum/configuration: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+      {{- if .Values.schedulerName }}
+      schedulerName: "{{ .Values.schedulerName }}"
+      {{- end }}
+      serviceAccountName: {{ template "mongodb.serviceAccountName" . }}
+      {{- if .Values.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.nodeSelector "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" .) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+        runAsUser: {{ .Values.containerSecurityContext.runAsUser }}
+        {{- if and .Values.global.ensureSecurityContext (not (has "appMongodb" .Values.global.excludeAppsInSecurityContext)) }}
+        seccompProfile:
+          type: RuntimeDefault
+        runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+      {{- if .Values.enableVolumePermissions }}
+      initContainers:
+      - name: mongodb-pl-perm
+        image: {{ .Values.busybox.image.repository }}
+        imagePullPolicy: {{ .Values.busybox.image.pullPolicy | quote }}
+        command: ["chown", "-R", "{{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }}", /data]
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - CAP_NET_RAW
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+      {{- end }}
+
+      containers:
+        - name: replicator
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appMongodb" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+            runAsUser: {{ .Values.mongodb.runAsUser }}
+            runAsGroup: {{ .Values.global.defaultGroup }}
+          {{- end }}
+
+          image: {{ .Values.replicator.image.repository -}}:{{- .Values.replicator.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          command: ["/replicator/replicator"]
+          args:
+            - "/config/config.json"
+          env:
+            - name: RW_K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: replicator-config
+              mountPath: /config
+              readOnly: false
+          ports:
+            - name: metrics
+              containerPort: 9008
+
+          {{- if and .Values.global.ensureContainerProbe (not (has "appMongodb" .Values.global.excludeAppsInContainerProbe)) }}
+          readinessProbe:
+            tcpSocket:
+              port: 9008
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9008
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- end }}
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appMongodb" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.average" . | nindent 2 }}
+          {{- end }}
+
+        - name: mongodb
+          image: {{ include "mongodb.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appMongodb" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+            runAsGroup: {{ .Values.global.defaultGroup }}
+          {{- else }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- end }}
+
+          command: ["/bin/bash"]
+          args:
+            - "/config/init-db.sh"
+          env:
+            - name: RW_K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: BITNAMI_DEBUG
+              value: {{ ternary "true" "false" .Values.image.debug | quote }}
+            {{- if .Values.auth.username }}
+            - name: MONGODB_USERNAME
+              value: {{ .Values.auth.username | quote }}
+            {{- end }}
+            {{- if .Values.auth.database }}
+            - name: MONGODB_DATABASE
+              value: {{ .Values.auth.database | quote }}
+            {{- end }}
+            {{- if .Values.auth.enabled }}
+            {{- if and .Values.auth.username .Values.auth.database }}
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mongodb.secretName" . }}
+                  key: mongodb-password
+            {{- end }}
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mongodb.secretName" . }}
+                  key: mongodb-root-password
+            {{- end }}
+            - name: ALLOW_EMPTY_PASSWORD
+              value: {{ ternary "no" "yes" .Values.auth.enabled | quote }}
+            - name: MONGODB_SYSTEM_LOG_VERBOSITY
+              value: {{ .Values.systemLogVerbosity | quote }}
+            - name: MONGODB_DISABLE_SYSTEM_LOG
+              value: {{ ternary "yes" "no" .Values.disableSystemLog | quote }}
+            - name: MONGODB_ENABLE_IPV6
+              value: {{ ternary "yes" "no" .Values.enableIPv6 | quote }}
+            - name: MONGODB_ENABLE_DIRECTORY_PER_DB
+              value: {{ ternary "yes" "no" .Values.directoryPerDB | quote }}
+            {{- if .Values.extraFlags }}
+            - name: MONGODB_EXTRA_FLAGS
+              value: {{ .Values.extraFlags | join " " | quote }}
+            {{- end }}
+            {{- if .Values.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+          {{- if or .Values.extraEnvVarsCM .Values.extraEnvVarsSecret }}
+          envFrom:
+            {{- if .Values.extraEnvVarsCM }}
+            - configMapRef:
+                name: {{ tpl .Values.extraEnvVarsCM . | quote }}
+            {{- end }}
+            {{- if .Values.extraEnvVarsSecret }}
+            - secretRef:
+                name: {{ tpl .Values.extraEnvVarsSecret . | quote }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: mongodb
+              containerPort: 8006
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - pgrep
+                - mongod
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- else if .Values.customLivenessProbe }}
+          livenessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- if .Values.global.ipv6Mode }}
+            exec:
+              command:
+                - mongo
+                - --host
+                - ::1
+                - --port
+                - "8006"
+                - --ipv6
+                - --eval
+                - "db.adminCommand('ping')"
+            {{- else }}
+            exec:
+              command:
+                - mongo
+                - --port
+                - "8006"
+                - --eval
+                - "db.adminCommand('ping')"
+            {{- end }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- else if .Values.customReadinessProbe }}
+          readinessProbe: {{- include "common.tplvalues.render" (dict "value" .Values.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appMongodb" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.small.ephemeral3" . | nindent 2 }}
+          {{- else }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- end }}
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: config
+              mountPath: /config
+              readOnly: false
+          {{- if and .Values.global.ensureEmptyDirCreation (not (has "appMongodb" .Values.global.excludeAppsInEmptyDirCreation)) }}
+            - name: optvol
+              mountPath: /opt2
+              readOnly: false
+            - name: optvoltmp
+              mountPath: /tmp
+              readOnly: false
+            - name: mongoshdir
+              mountPath: /.mongodb/mongosh
+              readOnly: false
+          {{- end }}
+            {{- if .Values.extraVolumeMounts }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+            {{- end }}
+        {{- if .Values.metrics.enabled }}
+        - name: mongodb-exporter
+          image: {{ template "mongodb.metrics.image" . }}
+          imagePullPolicy: {{ .Values.metrics.image.pullPolicy | quote }}
+
+          {{- if and .Values.global.ensureSecurityContext (not (has "appMongodb" .Values.global.excludeAppsInSecurityContext)) }}
+          securityContext:
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+            runAsGroup: {{ .Values.global.defaultGroup }}
+          {{- else }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          {{- end }}
+
+          command:
+            - /bin/bash
+            - -ec
+          args:
+            - |
+              {{- if .Values.auth.enabled }}
+              {{- if .Values.global.ipv6Mode }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              {{- else }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              {{- end }}
+              {{- else }}
+              {{- if .Values.global.ipv6Mode }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              {{- else }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              {{- end }}
+              {{- end }}
+          env:
+          {{- if .Values.auth.enabled }}
+          - name: MONGODB_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ include "mongodb.secretName" . }}
+                key: mongodb-root-password
+          {{- end }}
+          ports:
+            - name: metrics
+              containerPort: 9216
+          {{- if .Values.metrics.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: {{ .Values.metrics.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.metrics.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.metrics.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.metrics.livenessProbe.failureThreshold }}
+            successThreshold: {{ .Values.metrics.livenessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.metrics.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: {{ .Values.metrics.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.metrics.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.metrics.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.metrics.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.metrics.readinessProbe.successThreshold }}
+          {{- end }}
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appMongodb" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.small" . | nindent 2 }}
+          {{- else }}
+          {{- if .Values.metrics.resources }}
+          resources: {{- toYaml .Values.metrics.resources | nindent 12 }}
+          {{- end }}
+          {{- end }}
+
+        {{- end }}
+        {{- if .Values.sidecars }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.sidecars "context" $) | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: rw-mongo-config
+        - name: replicator-config
+          configMap:
+            name: rw-mongo-replicator-config
+      {{- if and .Values.global.ensureEmptyDirCreation (not (has "appMongodb" .Values.global.excludeAppsInEmptyDirCreation)) }}
+        - name: optvol
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: optvoltmp
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: mongoshdir
+          emptyDir:
+            sizeLimit: 1000Mi
+      {{- end }}
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.mongoStorage.capacity }}
+      storageClassName: {{ .Values.mongoStorage.storageClassName }}
+
+{{- end }}

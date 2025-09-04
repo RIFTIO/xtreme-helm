@@ -1,0 +1,26 @@
+global: 
+  sdncImgtag: 13.3.0.1010155
+launchpad:
+  launchpad:
+    appSelector: aeo
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 13.3.0.1010169
+    upgradeFrom: null
+  aeo:
+    image:
+      controller:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      serviceWorker:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      resourceWorker:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      tmfServer:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      scriptExec:
+        pullPolicy: IfNotPresent
+

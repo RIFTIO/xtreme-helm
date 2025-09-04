@@ -1,0 +1,66 @@
+# Copyright 2022 DZS Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-mongo-replicator-config
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  {{- if .Values.global.ipv6Mode }}
+  config.json: |
+    {
+      "source": {
+        "mongo": {
+            "host": "[::1]",
+            "port": 8006,
+            "tlsEnabled": false,
+            "batchSize": 10,
+            "maxAwaitTimeSecs": 10,
+            "location": [
+                {
+                    "id": 1,
+                    "database": "events",
+                    "collection": "events",
+                    "eventType": ["insert"],
+                    "filter": [
+                        {
+                            "field": "project_name",
+                            "value": "default"
+                        }
+                    ]
+                }
+            ]
+        },
+        "transformPlugin": "noop"
+      },
+      "target": []
+    }
+  {{- else }}
+  config.json: |
+    {
+      "source": {
+        "mongo": {
+            "host": "localhost",
+            "port": 8006,
+            "tlsEnabled": false,
+            "batchSize": 10,
+            "maxAwaitTimeSecs": 10,
+            "location": [
+                {
+                    "id": 1,
+                    "database": "events",
+                    "collection": "events",
+                    "eventType": ["insert"],
+                    "filter": [
+                        {
+                            "field": "project_name",
+                            "value": "default"
+                        }
+                    ]
+                }
+            ]
+        },
+        "transformPlugin": "noop"
+      },
+      "target": []
+    }
+  {{- end }}

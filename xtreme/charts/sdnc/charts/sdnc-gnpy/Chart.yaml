@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: latest
+description: A Helm chart for Kubernetes
+name: sdnc-gnpy
+type: application
+version: 0.1.0

@@ -1,0 +1,26 @@
+# this shows how to reset the storage for all pods
+# it is also possible to set the storage classes for each SDNC pod separately 
+# for some reason null does not work for the pvcmetadata.storageClass
+global:
+  pvcmetadata:
+    storageClass: ""
+
+mongodb:
+  mongoStorage:
+    storageClassName: null
+
+prometheus:
+  prometheusStorage:
+    storageClassName: null
+
+redis:
+  redisStorage:
+    storageClassName: null
+
+launchpad:
+  storage:
+    storageClassName: null
+
+grafana:
+  grafanaStorage:
+    storageClassName: null

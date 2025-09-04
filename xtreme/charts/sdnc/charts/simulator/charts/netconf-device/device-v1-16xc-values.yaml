@@ -1,0 +1,3008 @@
+replicaCount: 1
+
+image:
+  repository: rt.cloud.dzsi.local/docker/simulators/dzs-netconf-device-v1-16xc
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: master
+
+imagePullSecrets: []
+nameOverride: "device-v1-16xc"
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+serverconfig:
+  servers:
+    - 8022
+  json:
+    '{
+       "servers": [
+         {
+           "port": 8022,
+           "configId": "device-v116xc"
+         }
+       ],
+       "configs": [
+         {
+           "configId": "device-v116xc",
+           "credential": {
+             "user": "admin",
+             "password": "admin"
+           },
+           "workMode": {
+             "saveConfigData": true,
+             "errorRate": 0
+           },
+           "models": [
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-traffic-mngt",
+               "name": "bbf-qos-traffic-mngt",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-sub-interfaces",
+               "name": "bbf-sub-interfaces",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+               "name": "ietf-interfaces",
+               "revision": "2018-02-20"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-if-extensions",
+               "name": "ietf-if-extensions",
+               "revision": "2020-07-29"
+             },
+             {
+               "nameSpace": "urn:ieee:std:802.3:yang:ieee802-ethernet-interface",
+               "name": "ieee802-ethernet-interface",
+               "revision": "2019-06-21"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpon",
+               "name": "bbf-xpon",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xponani",
+               "name": "bbf-xponani",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpongemtcont",
+               "name": "bbf-xpongemtcont",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xponvani",
+               "name": "bbf-xponvani",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpongemtcont-qos",
+               "name": "bbf-xpongemtcont-qos",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "http://yumaworks.com/ns/yumaworks-system",
+               "name": "yumaworks-system",
+               "revision": "2022-03-08"
+             },
+             {
+               "nameSpace": "http://yumaworks.com/ns/yumaworks-templates",
+               "name": "yumaworks-templates",
+               "revision": "2017-02-20"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpon-onu-state",
+               "name": "bbf-xpon-onu-state",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-equipment-inventory",
+               "name": "bbf-equipment-inventory",
+               "revision": "2021-07-06"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-sub-interface-tagging",
+               "name": "bbf-sub-interface-tagging",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-link-table",
+               "name": "bbf-link-table",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-l2-forwarding",
+               "name": "bbf-l2-forwarding",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-l2-dhcpv4-relay",
+               "name": "bbf-l2-dhcpv4-relay",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-device",
+               "name": "bbf-device",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-baa-pan",
+               "name": "bbf-baa-pan",
+               "revision": "2021-07-06"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-device-types",
+               "name": "bbf-device-types",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-node-types",
+               "name": "bbf-node-types",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:ietf-netconf-notifications-trigger",
+               "name": "dzsi-ietf-netconf-notifications-trigger",
+               "revision": "2021-07-23"
+             },
+             {
+               "nameSpace": "urn:TBD:params:xml:ns:yang:network-topology",
+               "name": "network-topology",
+               "revision": "2013-10-21"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:netconf:simulator:alarm-type-id-def",
+               "name": "alarm-type-id-def",
+               "revision": "2021-10-20"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:netconf:notification:1.0",
+               "name": "notifications",
+               "revision": "2008-07-14"
+             },
+             {
+               "nameSpace": "http://netconfcentral.org/ns/yuma-ncx",
+               "name": "yuma-ncx",
+               "revision": "2015-10-16"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-system",
+               "name": "ietf-system",
+               "revision": "2014-08-06"
+             },
+             {
+               "nameSpace": "urn:ieee:std:802.1AX:yang:ieee802-dot1ax",
+               "name": "ieee802-dot1ax",
+               "revision": "2016-09-09"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-ldra",
+               "name": "bbf-ldra",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-pppoe-intermediate-agent",
+               "name": "bbf-pppoe-intermediate-agent",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-subscriber-profiles",
+               "name": "bbf-subscriber-profiles",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:yang:ietf-hardware",
+               "name": "ietf-hardware",
+               "revision": "2018-03-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-classifiers",
+               "name": "bbf-qos-classifiers",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-composite-filters",
+               "name": "bbf-qos-composite-filters",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-filters",
+               "name": "bbf-qos-filters",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policer-envelope-profiles",
+               "name": "bbf-qos-policer-envelope-profiles",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policies",
+               "name": "bbf-qos-policies",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policing",
+               "name": "bbf-qos-policing",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-software-management",
+               "name": "bbf-software-management",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-shaping",
+               "name": "bbf-qos-shaping",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-hardware-types",
+               "name": "bbf-hardware-types",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-enhanced-scheduling",
+               "name": "bbf-qos-enhanced-scheduling",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpon-onu-types",
+               "name": "bbf-xpon-onu-types",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-interfaces-performance-management",
+               "name": "bbf-interfaces-performance-management",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-xpon-performance-management",
+               "name": "bbf-xpon-performance-management",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-hardware",
+               "name": "bbf-hardware",
+               "revision": "2020-10-13"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policies-sub-interface-rewrite",
+               "name": "bbf-qos-policies-sub-interface-rewrite",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policies-sub-interfaces",
+               "name": "bbf-qos-policies-sub-interfaces",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-rate-control",
+               "name": "bbf-qos-rate-control",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-l2-dhcpv4-relay-forwarding",
+               "name": "bbf-l2-dhcpv4-relay-forwarding",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-interface-usage",
+               "name": "bbf-interface-usage",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-frame-classification",
+               "name": "bbf-frame-classification",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-mgmd",
+               "name": "bbf-mgmd",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-mgmd-mrd",
+               "name": "bbf-mgmd-mrd",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-hardware-transceivers",
+               "name": "bbf-hardware-transceivers",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-enhanced-scheduling",
+               "name": "bbf-qos-enhanced-scheduling",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policies-sub-interface-rewrite",
+               "name": "bbf-qos-policies-sub-interface-rewrite",
+               "revision": "2022-03-01"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-policies-sub-interfaces",
+               "name": "bbf-qos-policies-sub-interfaces",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-shaping",
+               "name": "bbf-qos-shaping",
+               "revision": "2021-06-02"
+             },
+             {
+               "nameSpace": "urn:bbf:yang:bbf-qos-rate-control",
+               "name": "bbf-qos-rate-control",
+               "revision": "2022-03-01"
+             }
+           ],
+           "rpcProcessors": [
+             "com.dzsi.netconf.device.processors.SendNotificationProc"
+           ],
+           "initDataStores": [
+             {
+               "type": "CONFIGURATION",
+               "dataFile": "config/initial-config-datastore.xml"
+             },
+             {
+               "type": "OPERATIONAL",
+               "dataFile": "config/initial-operational-datastore.xml"
+             }
+           ]
+         }
+       ]
+     }'
+  datastore:
+    configuration:
+      - name: initial-config-datastore.xml
+        data:
+          '<?xml version="1.0" encoding="UTF-8"?>
+           <data xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+              <policies xmlns="urn:bbf:yang:bbf-qos-policies">
+                 <policy>
+                    <name>IPP0</name>
+                 </policy>
+                 <policy>
+                    <name>QPP0</name>
+                 </policy>
+              </policies>
+              <qos-policy-profiles xmlns="urn:bbf:yang:bbf-qos-policies">
+                 <policy-profile>
+                    <name>IPP0</name>
+                    <policy-list>
+                       <name>POLICY_ING</name>
+                    </policy-list>
+                 </policy-profile>
+                 <policy-profile>
+                    <name>QPP0</name>
+                    <policy-list>
+                       <name>POLICY_EG</name>
+                    </policy-list>
+                 </policy-profile>
+              </qos-policy-profiles>
+              <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+                 <interface>
+                    <name>mgmt</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>0.1</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>lo</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:softwareLoopback</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">16436</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>lo.management</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:softwareLoopback</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/1</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                    <inline-frame-processing xmlns="urn:bbf:yang:bbf-sub-interfaces">
+                       <ingress-rule>
+                          <rule>
+                             <name>rule3</name>
+                             <priority>8</priority>
+                          </rule>
+                          <rule>
+                             <name>rule2</name>
+                             <priority>1</priority>
+                          </rule>
+                          <rule>
+                             <name>rule1</name>
+                             <priority>5</priority>
+                          </rule>
+                          <rule>
+                             <name>rule4</name>
+                             <priority>3</priority>
+                          </rule>
+                       </ingress-rule>
+                    </inline-frame-processing>
+                    <tm-root xmlns="urn:bbf:yang:bbf-qos-traffic-mngt">
+                       <queue>
+                          <local-queue-id>1</local-queue-id>
+                       </queue>
+                       <queue>
+                          <local-queue-id>3</local-queue-id>
+                       </queue>
+                       <queue>
+                          <local-queue-id>6</local-queue-id>
+                       </queue>
+                    </tm-root>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/2</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>enet_uni_ont1_1_1</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <hardware-component xmlns="urn:bbf:yang:bbf-hardware">
+                       <port-layer-if>ontUni_ont1_1_1</port-layer-if>
+                    </hardware-component>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>ontAni_ont1</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:ani</type>
+                    <enabled>true</enabled>
+                    <hardware-component xmlns="urn:bbf:yang:bbf-hardware">
+                       <port-layer-if>ontUni_ont1_1_1</port-layer-if>
+                    </hardware-component>
+                    <ani xmlns="urn:bbf:yang:bbf-xponani">
+                       <onu-id>1</onu-id>
+                    </ani>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/3</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/4</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/5</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/6</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/7</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/8</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/9</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/10</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/11</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/12</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/13</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/14</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/15</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>xgspon0/16</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:xgs</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/17</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/18</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/19</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/20</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/21</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>100.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/22</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>100.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/40</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/41</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/42</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/43</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/44</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/45</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/46</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>eth0/47</name>
+                    <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+                       <speed>25.0</speed>
+                    </ethernet>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1518</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/1</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/2</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/3</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/4</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/5</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/6</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/7</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/8</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/9</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/10</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/11</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/12</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/13</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/14</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/15</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+                 <interface>
+                    <name>gpon0/16</name>
+                    <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                    <enabled>true</enabled>
+                    <link-up-down-trap-enable>enabled</link-up-down-trap-enable>
+                    <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                       <channel-termination-type xmlns:bbf-xpon-types="urn:bbf:yang:bbf-xpon-types">bbf-xpon-types:gpon</channel-termination-type>
+                    </channel-termination>
+                    <max-frame-size xmlns="urn:ietf:params:xml:ns:yang:ietf-if-extensions">1500</max-frame-size>
+                 </interface>
+              </interfaces>
+              <system xmlns="urn:ietf:params:xml:ns:yang:ietf-system">
+                 <contact />
+                 <hostname>V6016XC_79</hostname>
+                 <location />
+                 <clock>
+                    <timezone-name />
+                 </clock>
+                 <authentication>
+                    <user>
+                       <name>admin</name>
+                    </user>
+                    <user>
+                       <name>test</name>
+                    </user>
+                 </authentication>
+              </system>
+              <xpongemtcont xmlns="urn:bbf:yang:bbf-xpongemtcont">
+                 <tconts>
+                    <tcont>
+                       <name>TCONT5</name>
+                       <alloc-id>1024</alloc-id>
+                       <interface-reference>xgspon0/1.v-ani.1</interface-reference>
+                       <tm-root xmlns="urn:bbf:yang:bbf-qos-traffic-mngt">
+                          <queue>
+                             <local-queue-id>1</local-queue-id>
+                             <bac-name>bac-name-test</bac-name>
+                          </queue>
+                          <tc-id-2-queue-id-mapping-profile-name>TM</tc-id-2-queue-id-mapping-profile-name>
+                       </tm-root>
+                    </tcont>
+                 </tconts>
+              </xpongemtcont>
+              <tm-profiles xmlns="urn:bbf:yang:bbf-qos-traffic-mngt">
+                 <shaper-profile xmlns="urn:bbf:yang:bbf-qos-shaping">
+                    <name>shaper-1</name>
+                    <single-token-bucket>
+                       <pir>123</pir>
+                       <pbs>123</pbs>
+                    </single-token-bucket>
+                 </shaper-profile>
+              </tm-profiles>
+              <hardware xmlns="urn:ietf:params:xml:ns:yang:ietf-hardware">
+                 <component>
+                    <name>V1-16XC</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:chassis</class>
+                 </component>
+                 <component>
+                    <name>Fan_A</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+                    <parent>V1-16XC</parent>
+                 </component>
+                 <component>
+                    <name>Fan_B</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+                    <parent>V1-16XC</parent>
+                 </component>
+                 <component>
+                    <name>Power_A</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:power-supply</class>
+                    <parent>V1-16XC</parent>
+                 </component>
+                 <component>
+                    <name>Power_B</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:power-supply</class>
+                    <parent>V1-16XC</parent>
+                 </component>
+                 <component>
+                    <name>Temperature_1</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:sensor</class>
+                 </component>
+                 <component>
+                    <name>Temperature_2</name>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:sensor</class>
+                 </component>
+                 <component>
+                    <name>V1-16XC_board</name>
+                    <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:board</class>
+                    <parent>V1-16XC</parent>
+                    <parent-rel-pos>1</parent-rel-pos>
+                 </component>
+              </hardware>
+           </data>
+          '
+    operational:
+      - name: initial-operational-datastore.xml
+        data:
+          '<?xml version="1.0" encoding="UTF-8"?>
+           <data xmlns:nc="urn:ietf:params:xml:ns:netconf:base:1.0">
+           <equipment-inventory xmlns="urn:bbf:yang:bbf-equipment-inventory">
+             <device-inventory>
+               <device>
+                 <device-id>9c:65:ee:77:16:f8</device-id>
+                 <management-info>
+                   <port>30830</port>
+                   <ip-address>10.55.196.101</ip-address>
+                 </management-info>
+                 <hardware-info>
+                   <device-type xmlns:bbf-dvct="urn:bbf:yang:bbf-device-types">bbf-dvct:olt</device-type>
+                   <model-name>V1-16XC</model-name>
+                   <mfg-name>DZS</mfg-name>
+                   <serial-num>ASDFWERQW</serial-num>
+                 </hardware-info>
+                 <software-info>
+                   <software-instance>
+                     <software-type xmlns:bbf-nodet="urn:bbf:yang:bbf-node-types">bbf-nodet:software</software-type>
+                     <current-revision>R5.01</current-revision>
+                   </software-instance>
+                 </software-info>
+               </device>
+             </device-inventory>
+           </equipment-inventory>
+           <system-state xmlns="urn:ietf:params:xml:ns:yang:ietf-system">
+			   <platform>
+				   <os-release></os-release>
+				   <os-name>V1-16XC_R5.02 #001</os-name>
+				   <os-version>R5.02</os-version>
+				   <machine>Linux</machine>
+			   </platform>
+		   </system-state>
+		   <hardware xmlns="urn:ietf:params:xml:ns:yang:ietf-hardware">
+                <component>
+                    <name>DSNW00001869</name>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:chassis</class>
+                    <state>
+                        <admin-state>unlocked</admin-state>
+                    </state>
+                </component> 
+                <component>
+                    <name>ontCard_DSNW00001869_1</name>
+                    <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:board</class>
+                    <state>
+                        <admin-state>unlocked</admin-state>
+                    </state>
+                    <software xmlns="urn:bbf:yang:bbf-software-management">
+                        <software>
+                            <name>NOS</name>
+                            <revisions>
+                                <maximum-number-of-revisions>2</maximum-number-of-revisions>
+                            </revisions>
+                        </software>
+                    </software>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <parent>DSNW00001869</parent>
+                </component>
+                <component>
+                    <name>ontUni_DSNW00001869_1_1</name>
+                    <description></description>
+                    <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:transceiver-link</class>
+                    <state>
+                        <oper-state>unknown</oper-state>
+                    </state>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <parent>ontCard_DSNW00001869_1</parent>
+                </component>
+                <component>
+                    <name>DSNW00001864</name>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:chassis</class>
+                    <state>
+                        <admin-state>unlocked</admin-state>
+                    </state>
+                </component> 
+                <component>
+                    <name>ontCard_DSNW00001864_1</name>
+                    <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:board</class>
+                    <state>
+                        <admin-state>unlocked</admin-state>
+                    </state>
+                    <software xmlns="urn:bbf:yang:bbf-software-management">
+                        <software>
+                            <name>NOS</name>
+                            <revisions>
+                                <maximum-number-of-revisions>2</maximum-number-of-revisions>
+                            </revisions>
+                        </software>
+                    </software>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <parent>DSNW00001864</parent>
+                </component>
+                <component>
+                    <name>ontUni_DSNW00001864_1_1</name>
+                    <description></description>
+                    <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:transceiver-link</class>
+                    <state>
+                        <oper-state>unknown</oper-state>
+                    </state>
+                    <parent-rel-pos>1</parent-rel-pos>
+                    <parent>ontCard_DSNW00001864_1</parent>
+                </component>
+                <component>
+                   <name>Fan_A</name>
+                   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+                   <parent>V6016XC</parent>
+                   <state>
+                       <oper-state>enabled</oper-state>
+                   </state>
+               </component>
+               <component>
+                   <name>Fan_B</name>
+                   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+                   <parent>V6016XC</parent>
+                   <state>
+                       <oper-state>enabled</oper-state>
+                   </state>
+               </component>
+			   <component>
+				   <name>Fan_A</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+				   <parent>V6016XC</parent>
+				   <state>
+					   <oper-state>enabled</oper-state>
+				   </state>
+			   </component>
+			   <component>
+				   <name>Fan_B</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:fan</class>
+				   <parent>V6016XC</parent>
+				   <state>
+					   <oper-state>enabled</oper-state>
+				   </state>
+			   </component>
+			   <component>
+				   <name>Power_A</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:power-supply</class>
+				   <parent>V6016XC</parent>
+				   <state>
+					   <oper-state>unknown</oper-state>
+				   </state>
+			   </component>
+			   <component>
+				   <name>Power_B</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:power-supply</class>
+				   <parent>V6016XC</parent>
+				   <state>
+					   <oper-state>enabled</oper-state>
+				   </state>
+			   </component>
+			   <component>
+				   <name>Temperature_1</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:sensor</class>
+				   <sensor-data>
+					   <value>56</value>
+					   <value-type>celsius</value-type>
+				   </sensor-data>
+			   </component>
+			   <component>
+				   <name>Temperature_2</name>
+				   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:sensor</class>
+				   <sensor-data>
+					   <value>66</value>
+					   <value-type>celsius</value-type>
+				   </sensor-data>
+			   </component>
+               <component>
+                   <name>V1-16XC</name>
+                   <class xmlns:ianahw="urn:ietf:params:xml:ns:yang:iana-hardware">ianahw:chassis</class>
+               </component> 
+			   <component>
+				   <name>V1-16XC_board</name>
+				   <class xmlns:bbf-hwt="urn:bbf:yang:bbf-hardware-types">bbf-hwt:board</class>
+				   <parent>V1-16XC</parent>
+				   <serial-num>V116XCSimulator_serial</serial-num>
+				   <model-name>V1-16XC</model-name>
+				   <state>
+					   <oper-state>enabled</oper-state>
+				   </state>
+				   <software xmlns="urn:bbf:yang:bbf-software-management">
+					   <software>
+						   <name>NOS</name>
+						   <revisions>
+							   <maximum-number-of-revisions>2</maximum-number-of-revisions>
+							   <revision>
+								   <id>1</id>
+								   <is-valid>true</is-valid>
+								   <is-committed>true</is-committed>
+								   <is-active>false</is-active>
+								   <alias>os1</alias>
+								   <state>in-use</state>
+								   <version>R5.02 #001</version>
+							   </revision>
+							   <revision>
+								   <id>2</id>
+								   <is-valid>true</is-valid>
+								   <is-committed>false</is-committed>
+								   <is-active>true</is-active>
+								   <alias>os2</alias>
+								   <state>in-use</state>
+								   <version>R5.02 #001</version>
+							   </revision>
+						   </revisions>
+					   </software>
+				   </software>
+			   </component>
+		   </hardware>
+           <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+            <interface>
+                <name>vAni_DSNW00001864</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:v-ani</type>
+                <oper-status>up</oper-status>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-discards>100</in-discards>
+                    <out-discards>0</out-discards>
+                    <out-unicast-pkts>100</out-unicast-pkts>
+                    <out-errors>0</out-errors>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <in-errors>100</in-errors>
+                    <out-octets>100</out-octets>
+                    <out-multicast-pkts>100</out-multicast-pkts>
+                    <in-octets>100</in-octets>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <in-unicast-pkts>0</in-unicast-pkts>
+                    <in-unknown-protos>0</in-unknown-protos>
+                    <out-broadcast-pkts>0</out-broadcast-pkts>
+                </statistics>
+            </interface>            
+            <interface>
+                <name>vAni_DSNW00001869</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:v-ani</type>
+                <oper-status>up</oper-status>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-discards>100</in-discards>
+                    <out-discards>0</out-discards>
+                    <out-unicast-pkts>100</out-unicast-pkts>
+                    <out-errors>0</out-errors>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <in-errors>100</in-errors>
+                    <out-octets>100</out-octets>
+                    <out-multicast-pkts>100</out-multicast-pkts>
+                    <in-octets>100</in-octets>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <in-unicast-pkts>0</in-unicast-pkts>
+                    <in-unknown-protos>0</in-unknown-protos>
+                    <out-broadcast-pkts>0</out-broadcast-pkts>
+                </statistics>
+            </interface>            
+            <interface>
+                <name>eth0/17</name>
+                <if-index>5017</if-index>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>eth0/18</name>
+                <if-index>5018</if-index>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>eth0/19</name>
+                <if-index>5019</if-index>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>eth0/20</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5020</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>eth0/21</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5021</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>eth0/22</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5022</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/1</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5051</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/1</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5051</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/2</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5052</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/2</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5052</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/3</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5053</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/3</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5053</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/4</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5054</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/4</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5054</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/5</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5055</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/5</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5055</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/6</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5056</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/6</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5056</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/7</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5057</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/7</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5057</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/8</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5058</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/8</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5058</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/9</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5059</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/9</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5059</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/10</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5060</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/10</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5060</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/11</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5061</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/11</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5061</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/12</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5062</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/12</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5062</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/13</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5063</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/13</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5063</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/14</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5064</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/14</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5064</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/15</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5065</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/15</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5065</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>gpon0/16</name>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <if-index>5066</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+            </interface>
+            <interface>
+                <name>xgspon0/16</name>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <if-index>5066</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-discards>100</in-discards>
+                    <out-discards>0</out-discards>
+                    <out-unicast-pkts>100</out-unicast-pkts>
+                    <out-errors>0</out-errors>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <in-errors>100</in-errors>
+                    <out-octets>100</out-octets>
+                    <out-multicast-pkts>100</out-multicast-pkts>
+                    <in-octets>100</in-octets>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <in-unicast-pkts>0</in-unicast-pkts>
+                    <in-unknown-protos>0</in-unknown-protos>
+                    <out-broadcast-pkts>0</out-broadcast-pkts>
+                </statistics>
+            </interface>
+           </interfaces>
+           <interfaces-state xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+            <interface>
+                <name>eth0/17</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5017</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <performance xmlns="urn:bbf:yang:bbf-interfaces-performance-management">
+                    <intervals-15min>
+                        <current>
+                            <in-octets>100</in-octets>
+                            <out-octets>200</out-octets>
+                            <in-unicast-pkts>100</in-unicast-pkts>
+                            <out-unicast-pkts>200</out-unicast-pkts>
+                            <in-multicast-pkts>100</in-multicast-pkts>
+                            <out-multicast-pkts>200</out-multicast-pkts>
+                            <in-broadcast-pkts>100</in-broadcast-pkts>
+                            <out-broadcast-pkts>200</out-broadcast-pkts>
+                            <in-discards>100</in-discards>
+                            <out-discards>200</out-discards>
+                            <in-errors>100</in-errors>
+                            <out-errors>100</out-errors>
+                            <in-unknown-protos>100</in-unknown-protos>
+                        </current>
+                    </intervals-15min>
+                </performance>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/18</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5018</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/19</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5019</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/20</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5020</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/21</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5021</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/22</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5022</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/40</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5040</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/41</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5041</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/42</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5042</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/43</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5043</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/44</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5044</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/45</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5045</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/46</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5046</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>eth0/47</name>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>up</admin-status>
+                <oper-status>down</oper-status>
+                <last-change>1970-01-04T19:29:06Z</last-change>
+                <if-index>5047</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/1</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5051</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/2</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5052</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/3</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5053</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/4</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5054</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/5</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5055</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/6</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5056</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/7</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5057</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/8</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5058</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/9</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5059</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/10</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5060</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/11</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5061</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/12</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5062</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/13</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5063</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/14</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5064</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/15</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5065</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>gpon0/16</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5066</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>2500000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/1</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5001</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/2</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5002</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/3</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5003</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/4</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5004</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/5</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5005</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/6</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5006</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/7</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5007</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/8</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5008</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/9</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5009</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/10</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5010</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/11</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5011</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/12</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5012</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/13</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5013</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/14</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5014</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/15</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5015</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>
+            <interface>
+                <name>xgspon0/16</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:channel-termination</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <if-index>5016</if-index>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <performance xmlns="urn:bbf:yang:bbf-interfaces-performance-management">
+                    <intervals-15min>
+                        <current>
+                            <in-octets>100</in-octets>
+                            <out-octets>200</out-octets>
+                            <in-unicast-pkts>100</in-unicast-pkts>
+                            <out-unicast-pkts>200</out-unicast-pkts>
+                            <in-multicast-pkts>100</in-multicast-pkts>
+                            <out-multicast-pkts>200</out-multicast-pkts>
+                            <in-broadcast-pkts>100</in-broadcast-pkts>
+                            <out-broadcast-pkts>200</out-broadcast-pkts>
+                            <in-discards>100</in-discards>
+                            <out-discards>200</out-discards>
+                            <in-errors>100</in-errors>
+                            <out-errors>100</out-errors>
+                            <in-unknown-protos>100</in-unknown-protos>
+                        </current>
+                    </intervals-15min>
+                </performance>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+               <channel-termination xmlns="urn:bbf:yang:bbf-xpon">
+                    <onus-present-on-local-channel-termination xmlns="urn:bbf:yang:bbf-xpon-onu-state">
+                        <onu>
+                          <detected-serial-number>DSNW00001864</detected-serial-number>
+                          <detected-registration-id></detected-registration-id>
+                          <onu-presence-state xmlns:bbf-xpon-onu-types="urn:bbf:yang:bbf-xpon-onu-types">bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-in-o5</onu-presence-state>
+                          <onu-state-last-change>2023-03-29T13:08:17-00:00</onu-state-last-change>
+                          <onu-id>1</onu-id>
+                          <v-ani-ref>vAni_DSNW00001864</v-ani-ref>
+                          <onu-detected-datetime>2023-03-29T13:08:17-00:00</onu-detected-datetime>
+                        </onu>
+                        <onu>
+                          <detected-serial-number>DSNW00001869</detected-serial-number>
+                          <detected-registration-id></detected-registration-id>
+                          <onu-presence-state xmlns:bbf-xpon-onu-types="urn:bbf:yang:bbf-xpon-onu-types">bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-in-o5</onu-presence-state>
+                          <onu-state-last-change>2023-03-29T13:08:17-00:00</onu-state-last-change>
+                          <onu-id>2</onu-id>
+                          <v-ani-ref>vAni_DSNW00001869</v-ani-ref>
+                          <onu-detected-datetime>2023-03-29T13:08:17-00:00</onu-detected-datetime>
+                        </onu>
+                    </onus-present-on-local-channel-termination>
+                </channel-termination>
+            </interface>
+            <interface>
+                <name>vAni_DSNW00001864</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:v-ani</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <v-ani xmlns="urn:bbf:yang:bbf-xponvani">
+                    <onu-present-on-this-olt>
+                        <onu-present-on-this-channel-termination>xgspon0/16</onu-present-on-this-channel-termination>
+                        <detected-serial-number>DSNW00001864</detected-serial-number>
+                    </onu-present-on-this-olt>
+                    <onu-presence-state xmlns:bbf-xpon-onu-types="urn:bbf:yang:bbf-xpon-onu-types">bbf-xpon-onu-types:onu-present-and-on-intended-channel-termination</onu-presence-state>
+                    <onu-id>1</onu-id>
+                </v-ani>
+                <performance xmlns="urn:bbf:yang:bbf-interfaces-performance-management">
+                    <intervals-15min>
+                        <current>
+                            <xpon xmlns="urn:bbf:yang:bbf-xpon-performance-management">
+                                <phy>
+                                   <corrected-fec-bytes>100</corrected-fec-bytes> 
+                                   <corrected-fec-codewords>200</corrected-fec-codewords> 
+                                   <uncorrectable-fec-codewords>100</uncorrectable-fec-codewords> 
+                                   <in-fec-codewords>200</in-fec-codewords> 
+                                   <fec-seconds>100</fec-seconds> 
+                                   <in-bip-protected-words>200</in-bip-protected-words> 
+                                   <in-bip-errors>100</in-bip-errors> 
+                                   <psbd-hec-errors>200</psbd-hec-errors> 
+                                   <fs-hec-errors>100</fs-hec-errors> 
+                                   <unknown-profiles>200</unknown-profiles> 
+                                </phy>
+                            </xpon>
+                        </current>
+                    </intervals-15min>
+                </performance>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>            
+            <interface>
+                <name>vAni_DSNW00001869</name>
+                <type xmlns:bbf-xponift="urn:bbf:yang:bbf-xpon-if-type">bbf-xponift:v-ani</type>
+                <admin-status>up</admin-status>
+                <oper-status>up</oper-status>
+                <last-change>1970-01-01T09:01:20Z</last-change>
+                <phys-address>9c:65:ee:77:16:f8</phys-address>
+                <speed>10000000000</speed>
+                <v-ani xmlns="urn:bbf:yang:bbf-xponvani">
+                    <onu-present-on-this-olt>
+                        <onu-present-on-this-channel-termination>xgspon0/16</onu-present-on-this-channel-termination>
+                        <detected-serial-number>DSNW00001869</detected-serial-number>
+                    </onu-present-on-this-olt>
+                    <onu-presence-state xmlns:bbf-xpon-onu-types="urn:bbf:yang:bbf-xpon-onu-types">bbf-xpon-onu-types:onu-present-and-on-intended-channel-termination</onu-presence-state>
+                    <onu-id>2</onu-id>
+                </v-ani>
+                <performance xmlns="urn:bbf:yang:bbf-interfaces-performance-management">
+                    <intervals-15min>
+                        <current>
+                            <xpon xmlns="urn:bbf:yang:bbf-xpon-performance-management">
+                                <phy>
+                                   <corrected-fec-bytes>100</corrected-fec-bytes> 
+                                   <corrected-fec-codewords>200</corrected-fec-codewords> 
+                                   <uncorrectable-fec-codewords>100</uncorrectable-fec-codewords> 
+                                   <in-fec-codewords>200</in-fec-codewords> 
+                                   <fec-seconds>100</fec-seconds> 
+                                   <in-bip-protected-words>200</in-bip-protected-words> 
+                                   <in-bip-errors>100</in-bip-errors> 
+                                   <psbd-hec-errors>200</psbd-hec-errors> 
+                                   <fs-hec-errors>100</fs-hec-errors> 
+                                   <unknown-profiles>200</unknown-profiles> 
+                                </phy>
+                            </xpon>
+                        </current>
+                    </intervals-15min>
+                </performance>
+                <statistics>
+                    <in-octets>100</in-octets>
+                    <out-octets>200</out-octets>
+                    <in-unicast-pkts>100</in-unicast-pkts>
+                    <out-unicast-pkts>200</out-unicast-pkts>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <out-multicast-pkts>200</out-multicast-pkts>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <out-broadcast-pkts>200</out-broadcast-pkts>
+                    <in-discards>100</in-discards>
+                    <out-discards>200</out-discards>
+                    <in-errors>100</in-errors>
+                    <out-errors>100</out-errors>
+                    <in-unknown-protos>100</in-unknown-protos>
+                </statistics>
+            </interface>            
+            <interface>
+                <name>ontUni_DSNW00001864_1_1</name>
+                <oper-status>down</oper-status>
+                <speed>0</speed>
+                <performance xmlns="urn:bbf:yang:bbf-interfaces-performance-management">
+                    <intervals-15min>
+                        <current>
+                            <in-discards>100</in-discards>
+                            <out-discards>0</out-discards>
+                            <out-unicast-pkts>100</out-unicast-pkts>
+                            <out-errors>0</out-errors>
+                            <in-multicast-pkts>100</in-multicast-pkts>
+                            <in-errors>100</in-errors>
+                            <out-octets>100</out-octets>
+                            <out-multicast-pkts>100</out-multicast-pkts>
+                            <in-octets>100</in-octets>
+                            <in-broadcast-pkts>100</in-broadcast-pkts>
+                            <in-unicast-pkts>0</in-unicast-pkts>
+                            <in-unknown-protos>0</in-unknown-protos>
+                            <out-broadcast-pkts>0</out-broadcast-pkts>
+                        </current>
+                    </intervals-15min>
+                </performance>
+                <type xmlns:ianaift="urn:ietf:params:xml:ns:yang:iana-if-type">ianaift:ethernetCsmacd</type>
+                <admin-status>down</admin-status>
+                <statistics>
+                    <in-discards>100</in-discards>
+                    <out-discards>0</out-discards>
+                    <out-unicast-pkts>100</out-unicast-pkts>
+                    <out-errors>0</out-errors>
+                    <in-multicast-pkts>100</in-multicast-pkts>
+                    <in-errors>100</in-errors>
+                    <out-octets>100</out-octets>
+                    <out-multicast-pkts>100</out-multicast-pkts>
+                    <in-octets>100</in-octets>
+                    <in-broadcast-pkts>100</in-broadcast-pkts>
+                    <in-unicast-pkts>0</in-unicast-pkts>
+                    <in-unknown-protos>0</in-unknown-protos>
+                    <out-broadcast-pkts>0</out-broadcast-pkts>
+                </statistics>
+            </interface>
+            </interfaces-state>
+           </data>
+            '

@@ -1,0 +1,25 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "nats.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.nats
+spec:
+  type: {{ .Values.service.type }}
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 4222
+      protocol: TCP
+      name: nats
+    - port: 7777
+      targetPort: 7777
+      protocol: TCP
+      name: nats-exp
+  selector:
+    app: rw.nats

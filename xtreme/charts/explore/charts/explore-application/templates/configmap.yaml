@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: custom-configmap
+  namespace: {{ include "explore-application.namespace" . }}
+data:
+  dbconfig.json: |-
+{{ tpl (.Files.Get "files/dbconfig.json") . | indent 4 }}

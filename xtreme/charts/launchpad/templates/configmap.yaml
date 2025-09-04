@@ -1,0 +1,8 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prelaunch
+  namespace: {{ .Values.global.namespace.name }}
+data:
+{{ (.Files.Glob "rw_scripts/*").AsConfig | indent 4 }}

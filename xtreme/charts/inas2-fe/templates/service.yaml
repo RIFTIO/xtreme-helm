@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inas2-fe.fullname" . }}
+  namespace: {{ include "inas.namespace" . }}
+  labels:
+    {{- include "inas2-fe.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      protocol: TCP
+  selector:
+    {{- include "inas2-fe.selectorLabels" . | nindent 4 }}
+  externalTrafficPolicy: Cluster

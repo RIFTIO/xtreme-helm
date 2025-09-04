@@ -1,0 +1,200 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021 DZS Inc
+#
+# Default values for launchpad.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+# Enable autoscaling to set the initial replicaCount
+autoscaling:
+  enabled: false
+nameOverride: ""
+fullnameOverride: ""
+redisfullnameOverride: ""
+
+inventoryMgr:
+  runAsUser: 1024
+
+image:
+  repository: rt.cloud.dzsi.local/docker/rw.cluster-logger
+  tag: "0.5"
+  pullPolicy: IfNotPresent
+
+# Wait for init Contianer that waits for other services to be launched
+initContainer:
+  waitForDep:
+    image:
+      repository: rt.cloud.dzsi.local/ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+      tag: "v1.0.0"
+
+tmfApiserver:
+  runAsUser: 1024
+
+# This creates a namespace if specified and then assigns roles
+# to the default user
+# If using OpenShift, set create to false. Pre-create the namespace and add anyuid scc to default
+# service account using, oc adm policy add-scc-to-user anyuid -z default
+
+global:
+  namespace:
+    create: true
+    name: rift-lp
+  install:
+    aeo: true
+    orchestrator: true
+  # The imagePullSecrets is provided at both global and per chart level.
+  # If defined at per chart level, then that overrides the global value.
+  imagePullSecrets: []
+  #- name: gitlab-secret
+
+  hostAliases: []
+  # - ip: "127.0.0.1"
+  #    hostnames:
+  #    - "foo.local"
+
+  # Ingress related global configuration options.
+  ingress:
+    class:
+      name: "haproxy"
+    createClusterRole: true
+    service:
+      type: NodePort
+    # Hostname or IP address through which launchpad can be externally accessed
+    # This value is mandatory except if service type is "LoadBalancer"
+    externalAddress: null
+    # Ports exposed by Ingress Controller
+    ports:
+      - name: https
+        port: 443
+        protocol: TCP
+        targetPort: 8443
+        #nodePort: 30000
+        #proxyPort: 5000
+      - name: mongo
+        port: 8006
+        protocol: TCP
+        targetPort: 8006
+        #nodePort: 30001
+        #proxyPort: 5001
+      - name: redis-tunnel
+        port: 8014
+        protocol: TCP
+        targetPort: 8014
+        #nodePort: 30002
+        #proxyPort: 5002
+
+# HAProxy IC related values
+haproxy-ingress:
+  # Add extra annotations to the ingress controller service.
+  # Can be used to add cloud specific annotations required to expose the service.
+  serviceAnnotations: {}
+  # Use below for using an internal Load balancer in GCP
+  #cloud.google.com/load-balancer-type: Internal
+
+  # Add cloud specific service spec attributes.
+  cloudSpecificServiceSpec: {}
+  # Use below for specifying static IP address in GCP
+  #loadBalancerIP: 1.2.3.4
+# Launchpad service related values
+#  service.type: Determines the k8s type Values - NodePort, LoadBalancer
+#  service.loadBalancerIP: Sets the service.spec.loadBalancerIP
+#                           (applicable only for LoaBalancer service type)
+#  image.tag: Docker tag for the image. If not specified Chart.AppVersion is applied.
+
+enableVolumePermissions: false
+
+launchpad:
+  image:
+    repository: rt.cloud.dzsi.local/docker/launchpad/dzs
+    tag: "11.2.3"
+    pullPolicy: IfNotPresent
+    imagePullSecrets: []
+  env:
+    RW_RUNTIME_PROFILE: production
+    # Certificate state updates periodically from rw-tls-secret,
+    # This is the certificate status update frequency configuration.
+    CERT_STATE_REFRESH_TIMEOUT_MINS: 10
+
+  # Selects the mentioned app name to be run in the main launchpad pod.
+  # Accepts "aeo", "nfvo" as valid values. Default is "nfvo".
+  appSelector: "nfvo"
+  primitiveExec:
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw-primitive-exec
+      tag: "0.25"
+      pullPolicy: IfNotPresent
+
+  # Duration of the trial license installed on launchpad during
+  # initial installation in days. Default is 3 days from the
+  # time of installation. License expiration is evaluated
+  # based on date.
+  trialLicenseExpiry: 30
+
+  # Enable the resouce limits if installing a demo LP
+  resources: {}
+  # limits:
+  #   cpu: 8
+  #   memory: 32Gi
+  # requests:
+  #   cpu: 8
+  #   memory: 24Gi
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  capabilities: [] # Expected value [NET_ADMIN]
+  securityContext:
+    enabled: False
+    # Set this to secondary group id that is being used by the
+    # underlying storage.
+    fsGroup: 3064
+    # The user with which all processes will run as.
+    runAsUser: 3064
+    # The primary group for the user.
+    runAsGroup: 3064
+  service:
+    type: ClusterIP
+  ports:
+    - name: rwrest
+      port: 8008
+    - name: rwauth
+      port: 8009
+    - name: rwui
+      port: 8443
+    - name: rwredis
+      port: 8014
+    - name: rwmongo
+      port: 8006
+    - name: pkgmgr
+      port: 4568
+  coreDir: null # Default goes to RIFT_VAR_ROOT
+  upgradeFrom: 10.2.0.0.125090
+  fluxcdAdaptor:
+    enabled: False
+    project: default
+
+  runAsUser: 1024
+
+# setting this will enable ingressClassName in ingress.yaml
+ingressClassName: null
+loki:
+  serviceScheme: http
+  enabled: false
+  servicePort: 3100
+# - For local-storage a node affinity is required and hence
+#   the launchpad will we launched on the same node (required behavior)
+# - If storageClassName is 'manual' the storage is obtained from local node
+#   but node affinity is not assured.
+# - Change the storage class for using ceph, glusterFS or
+# - Set the storageClassname to null to use default storageClass
+# - For local and manual the mountPath must have been created in the host
+storage:
+  accessMode: ReadWriteOnce
+  storageClassName: null
+  capacity: 80Gi
+  localStore: {}
+  manual: {}
+  nfs: {}
+  #  mountPath: /mnt/riftpool1/k8s/storage3
+  #  server: nas1

@@ -1,0 +1,114 @@
+# Copyright 2022 DZS Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-mongo-config
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  rw-mongo.conf: |
+    systemLog:
+      destination: file
+      {{- if .Values.global.ensureEmptyDirCreation }}
+      path: "/dev/stdout"
+      {{- else }}
+      path: "/opt/bitnami/mongodb/logs/mongodb.log"
+      {{- end }}
+      logAppend: true
+      logRotate: reopen
+      traceAllExceptions: true
+      timeStampFormat: iso8601-utc
+    processManagement:
+      fork: false
+      {{- if .Values.global.ensureEmptyDirCreation }}
+      pidFilePath: "/opt2/mongodb.pid"
+      {{- else }}
+      pidFilePath: "/opt/bitnami/mongodb/tmp/mongodb.pid"
+      {{- end }}
+    {{- if .Values.mongodbCustomNetworking.bindToAllAddresses }}
+    net:
+      bindIp: "::"
+      port: 8006
+      ipv6: true
+    {{- else }}
+    net:
+      bindIp: 0.0.0.0
+      port: 8006
+    {{- end }}
+    security:
+      authorization: disabled
+    storage:
+      dbPath: "/data"
+      journal:
+        enabled: true
+      wiredTiger:
+        engineConfig:
+          cacheSizeGB: 3
+    setParameter:
+      enableLocalhostAuthBypass: true
+
+  mongo-init.js: |
+    if (db.getUser({{ .Values.global.eventsDB.username | quote }}) == null) {
+      db.createUser(
+        {
+          user: {{ .Values.global.eventsDB.username | quote }},
+          pwd: {{ .Values.global.eventsDB.password | quote }},
+          roles: [{role: "readWrite", db: "events"}]
+        }
+      );
+    }
+
+  {{- if .Values.global.ipv6Mode }}
+  init-db.sh: |
+    #! /bin/bash
+    echo "Starting mongod";
+    setsid /opt/bitnami/mongodb/bin/mongod --config=/config/rw-mongo.conf &
+    echo "Started mongod"
+    # Add user to events database if user doesn't exist
+    mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+    while [ $? -ne 0 ]
+    do
+      sleep 1
+      mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+    done
+    sleep 1
+    mongosh "mongodb://[::1]:8006/events" /config/mongo-init.js
+    mongosh "mongodb://[::1]:8006/check_point_db" /config/mongo-init.js
+    echo "Added user"
+    # check if mongo available, else break
+    while true;
+    do
+      mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+      if [ $? -ne 0 ]
+      then
+        break
+      fi
+      sleep 30;
+    done
+  {{- else }}
+  init-db.sh: |
+    #! /bin/bash
+    echo "Starting mongod";
+    setsid /opt/bitnami/mongodb/bin/mongod --config=/config/rw-mongo.conf &
+    echo "Started mongod"
+    # Add user to events database if user doesn't exist
+    mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+    while [ $? -ne 0 ]
+    do
+      sleep 1
+      mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+    done
+    sleep 1
+    mongosh --port 8006 events /config/mongo-init.js
+    mongosh --port 8006 check_point_db /config/mongo-init.js
+    echo "Added user"
+    # check if mongo available, else break
+    while true;
+    do
+      mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
+      if [ $? -ne 0 ]
+      then
+        break
+      fi
+      sleep 30;
+    done
+  {{- end }}

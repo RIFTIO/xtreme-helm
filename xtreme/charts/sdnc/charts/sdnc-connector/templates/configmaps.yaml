@@ -1,0 +1,38 @@
+# Copyright 2022 DZS Inc
+
+{{- $config_mgr := include "rnc-config-mgr.fqdn" . }}
+{{- $alarm_svc := include "rnc-alarm-svc.fqdn" . }}
+{{- $inventory_mgr := include "rnc-inventory-mgr.fqdn" . }}
+{{- $nats_host := include "nats.fqdn" . }}
+{{- $mongodb_host := include "mongodb.fqdn" . }}
+{{- $file_mgr := include "file-mgr.fqdn" . }}
+{{- $task_mgr := include "task-mgr.fqdn" . }}
+{{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
+{{- $pm_collector := include "pm-collector.fqdn" . }}
+{{- $influxdb_pm := include "influxdb.fqdn" . }}
+{{- $transportpce := include "rnc-transportpce.fqdn" . }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "sdnc-connector.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    sed -i "s/host=/host={{ $config_mgr }}/g" config/sdnc.communication
+    sed -i "s/host=/host={{ $alarm_svc }}/g" config/alarm_service.communication
+    sed -i "s/host=/host={{ $inventory_mgr }}/g" config/inventory_service.communication
+    sed -i "s/host=/host={{ $nats_host }}/g" config/nats.communication
+    sed -i "s/host=/host={{ $mongodb_host }}/g" config/mongodb.communication 
+    sed -i "s/host=/host={{ $file_mgr }}/g" config/file_mgr.communication
+    sed -i "s/host=/host={{ $task_mgr }}/g" config/task_mgr.communication
+    sed -i "s/host=/host={{ $netconf_svc }}/g" config/netconf_svc.communication
+    sed -i "s/host=/host={{ $pm_collector }}/g" config/pm_collector.communication
+    sed -i "s/host=/host={{ $influxdb_pm }}/g" config/influxdb_pm.communication
+    sed -i "s/host=/host={{ $transportpce }}/g" config/transportpce.communication
+
+    java $JAVA_OPTS -jar target/sdnc_connector-1.0.0.1.jar
+

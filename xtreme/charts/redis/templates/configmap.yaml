@@ -1,0 +1,20 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-redis-config
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  rw-redis.conf: |
+    appendonly yes
+    save 60 100
+    dir /data
+    protected-mode no
+    daemonize no
+    port 6379
+    loadmodule /opt/redis-stack/lib/rediscompat.so
+    loadmodule /opt/redis-stack/lib/redisearch.so
+    loadmodule /opt/redis-stack/lib/redistimeseries.so
+    loadmodule /opt/redis-stack/lib/rejson.so
+    loadmodule /opt/redis-stack/lib/redisbloom.so
+    loadmodule /opt/redis-stack/lib/redisgears.so v8-plugin-path /opt/redis-stack/lib/libredisgears_v8_plugin.so

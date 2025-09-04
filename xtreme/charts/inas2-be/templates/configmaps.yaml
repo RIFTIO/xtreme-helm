@@ -1,0 +1,20 @@
+apiVersion: v1
+
+metadata:
+  name: {{ include "inas2-be.fullname" . }}
+  namespace: {{ include "inas.namespace" . }}
+kind: ConfigMap
+
+data:
+  configuration.json: |
+    {
+        "natsServer": "nats://nats:4222",
+        "kafkaServer": "kafka-headless:9092",
+        "useKafka": false,
+        "config_topic": "dzs.sdnc.config",
+        "alarm_topic": "dzs.sdnc.alarm",
+        "envNatsSvcName": "RW_NATS_SVC_NAME",
+        "natsPort": 4222
+    }
+
+

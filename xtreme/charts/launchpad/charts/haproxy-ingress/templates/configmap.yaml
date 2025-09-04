@@ -1,0 +1,36 @@
+# Copyright 2020-2021 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+#
+{{- $useLatestHaProxy :=  (semverCompare ">=1.21-0" .Capabilities.KubeVersion.GitVersion) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-configmap
+  namespace: {{ .Values.global.namespace.name }}
+data:
+{{- if $useLatestHaProxy }}
+  ssl-always-add-https: "true"
+{{- end }}
+  {{- if .Values.global.ipv6Mode }}
+  bind-http:
+    "::{{ .Values.bindPort.http }}"
+  bind-https:
+    "::{{ .Values.bindPort.https }}"
+  bind-ip-addr-healthz:
+    "::"
+  bind-ip-addr-stats:
+    "::"
+  bind-ip-addr-tcp:
+    "::"
+  {{- else }}
+  bind-http:
+    {{ .Values.bindPort.http }}
+  bind-https:
+    {{ .Values.bindPort.https }}
+  {{- end }}
+  config-frontend: |
+    http-response replace-header Set-Cookie (.*) \1;\ Secure
+    http-request deny if !{ path -i -m beg /.well-known/acme-challenge } !{ ssl_fc }
+  config-backend: |
+    timeout server 500s

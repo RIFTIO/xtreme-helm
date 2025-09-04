@@ -1,0 +1,446 @@
+# Copyright 2024 DZS Inc
+apiVersion: v1
+metadata:
+  name: {{ include "envoy.fullname" . }}
+kind: ConfigMap
+
+data:
+  envoy.yaml: |
+    admin:
+      access_log_path: /dev/null
+      address:
+        socket_address:
+          address: 127.0.0.1
+          port_value: 9091
+
+    node:
+      cluster: mycluster
+      id: test-idnfigmgr-list
+
+    dynamic_resources:
+      cds_config:
+        path: /envoy/conf/cds.yaml
+      lds_config:
+        path: /envoy/tmp/lds.yaml
+
+  cds.yaml: |
+    resources:
+    - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+      name: proxy_cluster
+      type: STRICT_DNS
+      connect_timeout: 0.25s
+      upstream_connection_timeout: 120s
+      load_assignment:
+        cluster_name: proxy_cluster
+        endpoints:
+        {{- range $index, $ip := .Values.configmgrlist }}
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: {{ $ip }}
+                  port_value: 8888
+        {{- end }}
+
+    - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+      name: add_device
+      type: STRICT_DNS
+      connect_timeout: 0.25s
+      upstream_connection_timeout: 120s
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: add_device
+        endpoints:
+        {{- range $index, $ip := .Values.configmgrlist }}
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: {{ $ip }}
+                  port_value: 8888
+        {{- end }}
+
+    {{- range $index, $ip := .Values.configmgrlist }}
+    - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+      name: config-mgr-{{ $index }}
+      type: STRICT_DNS
+      connect_timeout: 0.25s
+      upstream_connection_timeout: 120s
+      load_assignment:
+        cluster_name: config-mgr-{{ $index }}
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: {{ $ip }}
+                  port_value: 8888
+    {{- end }}
+
+  device-topology.sh: |
+    #!/bin/bash
+
+    MAX_RETRIES=5
+
+    REST_API_ENDPOINTS=(
+      {{- range $index, $ip := .Values.configmgrlist }}
+      "http://{{ $ip }}:8888/restconf/data/network-topology:network-topology/topology=device-topology"
+      {{- end }}
+    )
+
+    # Make a REST request and handle errors
+    make_request() {
+      local endpoint=$1
+      local retries=$MAX_RETRIES
+
+      while ((retries > 0)); do
+        local response=$(curl -s "$endpoint")
+        if [ $? -eq 0 ]; then
+          echo "$response"
+          return 0
+        else
+          echo "Error: Unable to fetch data from $endpoint. Retrying... (Attempts left: $((retries--)))"
+          sleep 5
+        fi
+      done
+
+      echo "Error: Maximum number of retries reached. Exiting..."
+      exit 1
+    }
+
+    # Make API requests and store responses
+    responses=()
+    for endpoint in "${REST_API_ENDPOINTS[@]}"; do
+      responses+=("$(make_request "$endpoint")")
+    done
+
+    result_combined=$(printf '%s\n' "${responses[@]}" | grep -oP '"node":\[\K[^]]+' | tr -s '\n' ',')
+
+    # Format the final result as JSON
+    result="{\"network-topology:topology\":[{\"topology-id\":\"device-topology\",\"node\":[${result_combined%,}]}]}"
+    result=$(echo "$result" | tr -d "\n" | tr -d " ")
+
+    # Print the final result
+    echo "$result"
+
+  duplicate.sh: |
+    #!/bin/bash
+    deviceID=$(echo $@ | grep -oP 'device-id:\K[^},]+')
+
+    duplicate=$(cat /envoy/tmp/lds.yaml| grep $deviceID)
+    if [ $? -eq 0 ]; then
+      echo "Error: The device with the same device-id already exists."
+      exit 1
+    fi
+    echo $duplicate
+
+  get-cluster.sh: |
+    #!/bin/bash
+    deviceID=$(echo $@ | grep -oP 'device-id:\K[^},]+')
+    if [ -z "$deviceID" ]; then
+      echo "Error: Invalid deviceID"
+      exit 1
+    fi
+
+    cluster=$(cat /envoy/tmp/lds.yaml | grep $deviceID -A2 | grep -oP 'cluster: \K[^},]+')
+    echo $cluster
+
+  global-post.sh: | 
+    #!/bin/bash
+
+    MAX_RETRIES=5
+
+    REST_API_ENDPOINTS=(
+      {{- range $index, $ip := .Values.configmgrlist }}
+      "http://{{ $ip }}:8888$1"
+      {{- end }}
+    )
+
+    array_length=${#REST_API_ENDPOINTS[@]}
+
+    # Make a REST request and handle errors
+    make_request() {
+      local endpoint=$1
+      local data=$2
+      local retries=$MAX_RETRIES
+
+      while ((retries > 0)); do
+        local response=$(curl -s -X POST "$endpoint" -H "Content-Type: application/json" -d "$data")
+        if [ $? -eq 0 ]; then
+          echo "$response"
+          return 0
+        else
+          echo "Error: Unable to fetch data from $endpoint. Retrying... (Attempts left: $((retries--)))"
+          sleep 5
+        fi
+      done
+
+      echo "Error: Maximum number of retries reached. Exiting..."
+      exit 1
+    }
+
+    # Make API requests and store responses
+    responses=()
+    for endpoint in "${REST_API_ENDPOINTS[@]}"; do
+      responses+=("$(make_request "$endpoint" "$2" )")
+    done
+
+    for ((i=0; i<$array_length; i++)); do
+      echo ${responses[i]}
+    done
+  global-put.sh: |
+    #!/bin/bash
+
+    MAX_RETRIES=5
+
+    REST_API_ENDPOINTS=(
+      {{- range $index, $ip := .Values.configmgrlist }}
+      "http://{{ $ip }}:8888$1"
+      {{- end }}
+    )
+
+    array_length=${#REST_API_ENDPOINTS[@]}
+
+    # Make a REST request and handle errors
+    make_request() {
+      local endpoint=$1
+      local data=$2
+      local retries=$MAX_RETRIES
+
+      while ((retries > 0)); do
+        local response=$(curl -s -X PUT "$endpoint" -H "Content-Type: application/json" -d "$data")
+        if [ $? -eq 0 ]; then
+          echo "$response"
+          return 0
+        else
+          echo "Error: Unable to fetch data from $endpoint. Retrying... (Attempts left: $((retries--)))"
+          sleep 5
+        fi
+      done
+
+      echo "Error: Maximum number of retries reached. Exiting..."
+      exit 1
+    }
+
+    # Make API requests and store responses
+    responses=()
+    for endpoint in "${REST_API_ENDPOINTS[@]}"; do
+      responses+=("$(make_request "$endpoint" "$2" )")
+      echo $responses
+    done
+
+    for ((i=0; i<$array_length; i++)); do
+      echo ${responses[i]}
+    done
+
+  node.sh: |
+    #!/bin/bash
+    deviceID=$(echo $@ | grep -oP 'device-id:\K[^},]+')
+
+    MAX_RETRIES=5
+
+    {{- range $index, $ip := .Values.configmgrlist }}
+    REST_API_ENDPOINT_{{ $index }}=http://{{ $ip }}:8888/restconf/data/network-topology:network-topology/topology=device-topology
+    {{- end }}
+
+    # Function to make a REST request and handle errors
+    make_request() {
+      local endpoint=$1
+      local retries=$MAX_RETRIES
+
+      while [ $retries -gt 0 ]; do
+        local response=$(curl -s "$endpoint")
+        if [ $? -eq 0 ]; then
+          echo "$response"
+          return 0
+        else
+          echo "Error: Unable to fetch data from $endpoint. Retrying... (Attempts left: $((retries-1)))"
+          sleep 5
+          ((retries--))
+        fi
+      done
+
+      echo "Error: Maximum number of retries reached. Exiting..."
+      exit 1
+    }
+
+    # Make REST requests
+    {{- range $index, $ip := .Values.configmgrlist }}
+    response_{{ $index }}=$(make_request "$REST_API_ENDPOINT_{{ $index }}")
+    {{- end }}
+
+    # Extract node IDs from the response
+    {{- range $index, $ip := .Values.configmgrlist }}
+    node_ids_{{ $index }}=($(echo "$response_{{ $index }}" | sed 's/"node-id/\n"node-id/g' | grep host | grep -oP '"node-id":*"\K[^"]+' ))
+    {{- end }}
+
+
+    # Define output file
+    output_file="/envoy/tmp/output.yaml"
+
+    # Output YAML configuration
+    echo "resources:" > "$output_file"
+    cat << EOF >> "$output_file"
+    - "@type": type.googleapis.com/envoy.config.listener.v3.Listener
+      name: listener_0
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 10000
+      filter_chains:
+      - filters:
+        - name: envoy.http_connection_manager
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            stat_prefix: ingress_http
+            common_http_protocol_options:
+              idle_timeout: 120s
+            http_filters:
+            - name: envoy.filters.http.lua
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                inline_code: |
+                  local request_method
+                  local jsonString = ""
+                  local global_respose = ""
+                  local path
+
+                  function envoy_on_request(request_handle)
+                    local request_headers = request_handle:headers()
+                    request_method = request_headers:get(":method")
+                    path = request_headers:get(":path")
+                    local body = request_handle:body()
+                    
+                    if body then
+                      jsonString = tostring(body:getBytes(0, body:length()))
+                      jsonString = jsonString:gsub("[\n%s]+", "")
+                      request_handle:logInfo("Body: " .. jsonString)
+                    end
+
+                    if request_method == "POST" and path == "/restconf/operations/config-mgr:add-device" then
+                      request_handle:logInfo("Received a " .. request_method .. " request to " .. path)
+                      local cmd = 'bash /envoy/conf/duplicate.sh "' .. jsonString .. '"'
+                      local file = io.popen(cmd)
+                      local result = file:read('*a')
+                      if string.match(result, "Error") then
+                        request_handle:logInfo("Dropping the request.")
+                        request_handle:respond({[":status"] = "403"}, "Request dropped due to duplicate.")
+                        return FilterHeadersStatusStopIteration
+                      end
+                    end
+
+                    if request_method == "PUT" and path == "/restconf/data/config-mgr:global-settings/source-of-truth" then
+                      local luaString = "'" .. jsonString .. "'"
+                      local cmd = 'bash /envoy/conf/global-put.sh "' .. path .. '" ' .. luaString .. ''
+                      local file = io.popen(cmd)
+                    end
+
+                    if request_method == "POST" and 
+                      (path == "/restconf/operations/config-mgr:upload-daexim-files" or
+                        path == "/restconf/operations/config-mgr:download-daexim-files" or
+                        path == "/restconf/operations/data-export-import:schedule-export" or
+                        path == "/restconf/operations/data-export-import:status-export" or
+                        path == "/restconf/operations/data-export-import:cancel-export" or
+                        path == "/restconf/operations/data-export-import:immediate-import" or
+                        path == "/restconf/operations/data-export-import:status-import") then
+                      local luaString = "'" .. jsonString .. "'"
+                      local cmd = 'bash /envoy/conf/global-post.sh "' .. path .. '" ' .. luaString .. ''
+                      local file = io.popen(cmd)
+                      global_respose = file:read('*a')
+                      request_handle:logInfo("Response: \n" .. global_respose)
+                    end
+
+                    if path == "/restconf/operations/config-mgr:delete-device" or
+                      path == "/restconf/operations/config-mgr:device-resync" or 
+                      path == "/restconf/operations/config-mgr:device-audit" or
+                      path == "/restconf/operations/config-mgr:component-resync" or
+                      path == "/restconf/operations/config-mgr:component-audit" or
+                      path == "/restconf/operations/config-mgr:change-audit-state" then
+                      local cmd = 'bash /envoy/conf/get-cluster.sh "' .. jsonString .. '"'
+                      local file = io.popen(cmd)
+                      local result = file:read('*a'):gsub("%s+", "")
+                      request_handle:logInfo("Route: " .. result)
+                      request_handle:headers():replace(":route", result)
+                    end
+                  end
+
+                  function envoy_on_response(response_handle)
+                    local status = response_handle:headers():get(":status")
+                    if request_method == "POST" and (status == "200" or status == "204") then
+                      local cmd = 'bash /envoy/conf/node.sh "' .. jsonString .. '"'
+                      os.execute(cmd)
+                    end
+            
+                    if path == "/restconf/data/network-topology:network-topology/topology=device-topology" then
+                      local cmd = 'bash /envoy/conf/device-topology.sh'
+                      local file = io.popen(cmd)
+                      local result = file:read('*a'):gsub("%s+", "")  
+                      local contentLength = response_handle:body():setBytes(result) 
+                      response_handle:headers():replace("Content-Length", tostring(contentLength))             
+                    end
+
+                    if path == "/restconf/operations/config-mgr:upload-daexim-files" or
+                      path == "/restconf/operations/config-mgr:download-daexim-files" or
+                      path == "/restconf/operations/data-export-import:schedule-export" or
+                      path == "/restconf/operations/data-export-import:status-export" or
+                      path == "/restconf/operations/data-export-import:cancel-export" or
+                      path == "/restconf/operations/data-export-import:immediate-import" or
+                      path == "/restconf/operations/data-export-import:status-import" then
+                      local contentLength = response_handle:body():setBytes(global_respose)
+                      response_handle:headers():replace("Content-Length", tostring(contentLength))
+                    end
+                  end
+                  
+
+            - name: envoy.router
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            route_config:
+              name: local_route
+              virtual_hosts:
+              - name: local_service
+                domains:
+                - "*"
+                {{- range $index, $ip := .Values.configmgrlist }}
+                routes:
+                - match:
+                    prefix: "/"
+                    headers:
+                      - name: ":route"
+                        prefix_match: config-mgr-{{ $index }}
+                  route:
+                    cluster: config-mgr-{{ $index }}
+                {{- end }}
+    EOF
+
+    # Loop for each node_id
+    {{- range $index, $ip := .Values.configmgrlist }}
+    for node_id in "${node_ids_{{ $index }}[@]}"; do
+        cat << EOF >> "$output_file"
+                - match:
+                    safe_regex:
+                      google_re2: {}
+                      regex: "/.*${node_id}.*$"
+                  route:
+                    cluster: config-mgr-{{ $index }}
+    EOF
+    done    
+    {{- end }}
+
+    cat << EOF >> "$output_file"
+                - match:
+                    prefix: "/restconf/operations/config-mgr:add-device"
+                  route:
+                    cluster: add_device
+                - match:
+                    prefix: "/"
+                  route:
+                    cluster: proxy_cluster
+    EOF
+
+    if diff "$output_file" "/envoy/tmp/lds.yaml" &> /dev/null ; then
+      echo "No changes detected."
+    else
+      mv "$output_file" "/envoy/tmp/lds.yaml"
+    fi
+

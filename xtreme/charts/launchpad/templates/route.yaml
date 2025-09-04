@@ -1,0 +1,23 @@
+{{- if .Values.global.isOpenShiftRoute }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.global.route.name | default "dzs-route" }}
+  namespace: {{ .Values.global.namespace.name | default "dzs-route" }}
+  labels:
+    app: {{ .Values.global.route.appLabel | default "dzs" }}
+spec:
+  host: {{ required "External address needs to be specified." .Values.global.ingress.externalAddress | quote }}
+  port:
+    targetPort: {{ .Values.global.route.targetPort | default 8443 }}
+  tls:
+    {{- $tls := .Values.global.route.tls | default dict }}
+    insecureEdgeTerminationPolicy: {{ $tls.insecureEdgeTerminationPolicy | default "None" }}
+    termination: {{ $tls.termination | default "passthrough" }}
+  to:
+    kind: Service
+    name: {{ printf "%s-haproxy-ingress" .Release.Name }}
+    {{- $to := .Values.global.route.to | default dict }}
+    weight: {{ $to.weight | default 100 }}
+  wildcardPolicy: {{ .Values.global.route.wildcardPolicy | default "None" }}
+{{- end }}

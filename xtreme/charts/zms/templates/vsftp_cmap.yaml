@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vsftp-cmap
+  namespace: {{ include "zms.namespace" . }}
+data:
+  vsftpd.conf: |-
+    listen=YES
+    listen_ipv6=NO
+    anonymous_enable=NO
+    local_enable=YES
+    write_enable=YES
+    dirmessage_enable=YES
+    use_localtime=YES
+    xferlog_enable=YES
+    connect_from_port_20=YES
+    secure_chroot_dir=/var/run/vsftpd/empty
+    pam_service_name=ftp
+    rsa_cert_file=/certs/tls.crt
+    rsa_private_key_file=/certs/tls.key
+    force_local_logins_ssl=NO
+    force_local_data_ssl=NO
+    ssl_enable={{.Values.vsftp.sslEnable}}
+    pasv_enable={{.Values.vsftp.pasvEnable}}
+{{- if eq .Values.vsftp.pasvEnable "YES" }}
+    pasv_max_port={{.Values.vsftp.pasvMaxNodePort}}
+    pasv_min_port={{.Values.vsftp.pasvMinNodePort}}
+{{- end }}
+{{- if .Values.global  }}
+{{- if .Values.global.externalIPAddress }}
+    pasv_address={{.Values.global.externalIPAddress}}
+{{- end }}
+{{- else if .Values.externalIPAddress }}
+    pasv_address={{.Values.externalIPAddress}}
+{{- end }}

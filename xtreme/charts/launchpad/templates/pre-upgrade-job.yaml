@@ -1,0 +1,150 @@
+#Copyright 2020 RIFT Inc
+#Copyright 2021 DZS Inc
+#
+{{- define "launchpad-sts-pvc" }}
+{{- printf "rift-var-root-%s-0" (include "launchpad.fullname" .) -}}
+{{- end }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-pre-upgrade-job
+  namespace: {{ .Values.global.namespace.name }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+        {{ if .Values.launchpad.image.imagePullSecrets }}
+        {{- toYaml .Values.launchpad.image.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      {{- if .Values.launchpad.securityContext.enabled }}
+      securityContext:
+        runAsUser: {{ .Values.launchpad.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.launchpad.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.launchpad.securityContext.fsGroup }}
+        {{- if and .Values.global.ensureSecurityContext (not (has "appUpgradeJob" .Values.global.excludeAppsInSecurityContext)) }}
+        seccompProfile:
+          type: RuntimeDefault
+         {{- end }}
+      {{- end }}
+
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app-type
+                operator: In
+                values:
+                - {{ .Values.global.namespace.name }}-launchpad
+            topologyKey: kubernetes.io/hostname
+
+      containers:
+      - name: {{ .Release.Name }}-pre-upgrade-hook
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
+        imagePullPolicy: IfNotPresent
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appUpgradeJob" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.launchpad.runAsUser }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appUpgradeJob" .Values.global.excludeAppsInContainerProbe)) }}
+        {{- toYaml .Values.global.commonProbe | nindent 8 }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appUpgradeJob" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.small" . }}
+        {{- end }}
+
+        volumeMounts:
+        {{- with .Values.launchpad.devSetup }}
+        - name: localdisk
+          mountPath: /localdisk
+          readOnly: false
+        - name: rift-install
+          mountPath: /usr/rift
+          readOnly: false
+        {{- end }}
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+        - name: prelaunch-scripts
+          mountPath: /scripts
+          readOnly: false
+
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          if [ -f /scripts/pre_upgrade_runner.py ]; then
+            echo "Running pre_upgrade_runner.py"
+            /usr/rift/rift-shell -- python3 /scripts/pre_upgrade_runner.py; exit $?;
+          else
+            echo "Running rw_redis_backup.py"
+            /usr/rift/rift-shell -- python3 /usr/rift/usr/bin/rw_redis_backup.py --rollback-save --save --config --data --disable_redis_sync;
+          fi
+        env:
+        - name: RW_REDIS_SVC_NAME
+          value: {{ include "redis.fullname" . }}
+        - name: RW_K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: RW_UPGRADE_FROM_VER
+          value: {{ .Values.launchpad.upgradeFrom }}
+
+      initContainers:
+      {{- if .Values.enableVolumePermissions }}
+      - name: set-rvr-ownership
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["chown", "-R", "{{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }}", "/usr/rift/var"]
+        securityContext:
+            runAsUser: 0
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+
+      - name: set-rvr-perm
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
+        command: ["chmod", "-R", "775", "/usr/rift/var"]
+        securityContext:
+            runAsUser: 0
+        volumeMounts:
+        - name: rift-var-root
+          mountPath: /usr/rift/var
+          readOnly: false
+      {{- end }}
+
+      restartPolicy: Never
+      volumes:
+      {{- with .Values.launchpad.devSetup }}
+        - name: localdisk
+          hostPath:
+            path: /localdisk
+            type: Directory
+        - name: rift-install
+          hostPath:
+            path: {{ .riftInstall }}
+            type: Directory
+      {{- end }}
+        - name: rift-var-root
+          persistentVolumeClaim:
+            claimName: rift-var-root-rw-launchpad-0
+        - name: prelaunch-scripts
+          configMap:
+            name: prelaunch
+            defaultMode: 0644
+
+  backoffLimit: 0 # reduced the number of pod restarts from 5 to 1
+  #activeDeadlineSeconds: 200
+  ttlSecondsAfterFinished : 100

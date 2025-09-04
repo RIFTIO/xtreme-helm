@@ -1,0 +1,163 @@
+# Copyright 2022 DZS Inc
+
+global:
+  # kyverno warnings related
+  ensureResourceQuota: false
+  ensureSecurityContext: false
+  ensureContainerProbe: false
+
+  namespace:
+    name: TPL_HOSTNAME
+  install:
+    explore: false
+    zms: false
+    inas: false
+    sdnc: true
+    ftp: true
+    sftp: true
+    aeo: true
+    kafka: true
+    orchestrator: true
+    deviceSimulator: true
+    clusterLogger: true
+  ingress:
+    createClusterRole: true
+
+  # Configurations related to creation and managing of TLS certificates
+  certificateIssuer:
+
+    # cert-manager can reside in a Kubernetes cluster. Enable this flag if your
+    # system should use cert-manager for automatic issuance and renewal of TLS
+    # certificates. Otherwise, certificate management must be done manually.
+    certMgrEnabled: false
+
+launchpad:
+  cluster_logger:
+    createClusterRole: true
+
+  launchpad:
+    appSelector: aeo
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw.aeo-base
+      tag: TPL_BRANCH
+      pullPolicy: IfNotPresent  # This is only for images tagged based on branch
+
+    env:
+      RW_RUNTIME_PROFILE: dev
+      LAUNCHPAD_PY_OPTS: --no-heartbeat
+
+    capabilities: [ NET_ADMIN, SYS_RESOURCE, SYS_PTRACE ]
+    securityContext:
+      enabled: False
+
+    coreDir: null   # Default goes to RIFT_VAR_ROOT
+    devSetup:
+      riftInstall: TPL_RIFT_INSTALL/usr/rift
+      volumes:
+        localdisk: /localdisk
+        home: /home
+
+  aeo:
+    image:
+      controller:
+        tag: TPL_BRANCH
+        pullPolicy: IfNotPresent
+      serviceWorker:
+        tag: TPL_BRANCH
+        pullPolicy: IfNotPresent
+      resourceWorker:
+        tag: TPL_BRANCH
+        pullPolicy: IfNotPresent
+      tmfServer:
+        tag: TPL_BRANCH
+        pullPolicy: IfNotPresent
+      scriptExec:
+        pullPolicy: IfNotPresent
+    devSetup:
+      riftInstall: TPL_RIFT_INSTALL/usr/rift
+
+  storage:
+    storageClassName: TPL_HOSTNAME-manual-rvr
+    capacity: 80Gi
+    accessMode: ReadWriteOnce
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/lp
+
+
+sdnc:
+  install:
+    artifactory: true
+    fileManager: true
+    pmCollector: true
+
+  sdnc-netconf-svc:
+    nodePort:
+      useNodePort: false
+    image:
+      pullPolicy: Always
+
+  sdnc-config-mgr:
+    nodePort:
+      useNodePort: false
+    image:
+      pullPolicy: Always
+
+  sdnc-alarm-svc:
+    service:
+      useNodePort: false
+    image:
+      pullPolicy: Always
+
+  sdnc-task-mgr:
+    service:
+      useNodePort: false
+      restconfNodePort: 32125
+    image:
+      pullPolicy: Always
+
+redis:
+  enableVolumePermissions: true
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+  redisStorage:
+    storageClassName: TPL_HOSTNAME-manual-redis
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/redis
+
+mongodb:
+  enableVolumePermissions: true
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+  mongoStorage:
+    storageClassName: TPL_HOSTNAME-manual-mongo
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/eventsdb
+
+  # Override values for prometheus
+prometheus:
+  enableVolumePermissions: true
+  containerSecurityContext:
+    runAsUser: 1001
+  podSecurityContext:
+    fsGroup: 1001
+    runAsGroup: 1001
+  prometheusStorage:
+    storageClassName: TPL_HOSTNAME-manual-prometheus
+    capacity: 80Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/prometheus
+
+  # Override values for grafana
+grafana:
+  grafanaStorage:
+    storageClassName: TPL_HOSTNAME-manual-grafana
+    capacity: 20Gi
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/grafana

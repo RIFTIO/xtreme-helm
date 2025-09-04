@@ -1,0 +1,17 @@
+Copyright 2020 RIFT Inc
+Copyright 2022 DZS Inc
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get {{ .Release.Name }}
+
+Installed namespace {{ .Values.global.namespace.name }}
+
+To get the service ports (REST, UI etc..) execute the following command
+
+ $ kubectl describe service -n {{ .Values.global.namespace.name }} | grep "^{{ .Values.launchpad.service.type }}:"

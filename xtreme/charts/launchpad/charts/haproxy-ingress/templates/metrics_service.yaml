@@ -1,0 +1,22 @@
+# Copyright 2020 RIFT Inc
+#
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: haproxy-ingress
+  name: {{ include "haproxy-metrics.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+spec:
+  selector:
+    run: haproxy-ingress
+  type: ClusterIP
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  ports:
+  - name: http
+    port: 9101
+    protocol: TCP
+    targetPort: 9101

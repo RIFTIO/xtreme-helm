@@ -1,0 +1,60 @@
+apiVersion: v2
+appVersion: 13.3.0
+dependencies:
+- name: common
+  repository: file://./charts/common
+  version: 0.1.0
+- name: nats
+  repository: file://./charts/nats
+  version: 2.1.8
+- name: redis
+  repository: file://./charts/redis
+  version: 6.0.8
+- name: mongodb
+  repository: file://./charts/mongodb
+  version: 4.4.1
+- name: prometheus
+  repository: file://./charts/prometheus
+  version: 2.20.0
+- condition: global.install.orchestrator
+  name: grafana
+  repository: file://./charts/grafana
+  version: 1.2.0
+- condition: global.install.kafka
+  name: kafka
+  repository: file://./charts/kafka
+  version: 0.34.0
+- condition: global.install.orchestrator
+  name: launchpad
+  repository: file://.charts/launchpad
+- condition: global.install.sdnc
+  name: sdnc
+  repository: file://.charts/sdnc
+  version: 0.1.0
+- condition: global.install.aeo
+  name: ftp
+  repository: ""
+  version: 0.1.0
+- condition: global.install.aeo
+  name: sftp
+  repository: ""
+  version: 0.1.0
+- condition: global.install.zms
+  name: zms
+  repository: file://.charts/zms
+- condition: global.install.explore, global.install.inas
+  name: postgres
+  repository: file://.charts/postgres
+- condition: global.install.inas
+  name: inas2-be
+  repository: file://.charts/inas2-be
+- condition: global.install.inas
+  name: inas2-fe
+  repository: file://.charts/inas2-fe
+- condition: global.install.explore
+  name: explore
+  repository: file://.charts/explore
+description: Consolidated Helm Chart for DZS Xtreme products
+name: xtreme
+type: application
+version: 13.3.0

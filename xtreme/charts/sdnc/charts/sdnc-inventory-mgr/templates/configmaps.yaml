@@ -1,0 +1,311 @@
+# Copyright 2022 DZS Inc
+
+{{- $nats_svc := include "nats.fqdn" . }}
+{{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
+{{- $inas_svc := include "inas-be.fqdn" . }}
+{{- $config_svc := include "rnc-config-mgr.fqdn" . }}
+{{- $redis_svc := include "redis.fqdn" . }}
+{{- $kafka_socket := include "kafka.socket" . }}
+{{- $enableKafka := .Values.global.enableKafka_inventoryMgr }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "inventory-mgr.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | dzsi | sdn | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/inventorymgr</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/inventorymgr.log"
+                         filePattern="${APP_LOG_ROOT}/inventorymgr-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/inventory.log"
+                         filePattern="${APP_LOG}/alarm-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="DEFAULT"
+                         fileName="${APP_LOG_ROOT}/inventory-default.log"
+                         filePattern="${APP_LOG_ROOT}/inventory-default-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+            <Logger name="DEFAULT" level="info">
+                <AppenderRef ref="DEFAULT"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ss
+    server.sessionTimeout=30
+    server.port = 8899
+    api.version = 1
+    serviceconfig.file = config/inventorymgrconfig.json
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+    #Redis
+    redis.host = {{ include "redis.fqdn" . }}
+    redis.port=8012
+    feature.inventory.event-handler.sync-on-connect=true
+    inventory.sync.max-scheduled-sync-task-per-device=5
+    inventory.sync.sync-on-connect.type=IMMEDIATE
+    inventory.sync.sync-on-connect.delay-seconds=60
+    inventory.sync.scheduler.delay-seconds=86400
+    inventory.sync.scheduler.init-delay-seconds=60
+
+
+  inventorymgrconfig.json: |
+    {
+      "serviceConfig": {
+        "serviceName": "inventory",
+        "sbPlugin": {
+          "device": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "olt": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            },
+            "supportLastChanged": true
+          },
+          "zms": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": true
+          },
+          "inas": {
+            "connection": {
+              "httpAddress": "http://{{- $inas_svc -}}:30522",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "nms"
+              }
+            },
+            "supportLastChanged": false
+          }
+        },
+        "configMgrHost": "http://{{- $config_svc -}}:8888",
+        "topologyId": "device-topology",
+        "triggerComponent": {
+            "device": [{"path": "interfaces/interface", "availableClasses": ["port","onu"], "indexField": "name"}],
+            "olt": [{"path": "interfaces/interface", "availableClasses": ["port","onu"], "indexField": "name"},
+            {"path": "hardware/component", "availableClasses": ["port","onu"], "indexField": "name"}],
+            "inas": [{"path": "slot", "availableClasses": ["module"], "indexField": "name"},
+            {"path": "olt/onu", "availableClasses": ["onu"], "indexField": "name"}],
+            "zms" : [{"path": "Device/Shelf/Card", "availableClasses": ["module"], "indexField": "name"},
+            {"path": "Device/Shelf/Card/GponOlt_Physical/GponOnu_Physical", "availableClasses": ["onu"], "indexField": "name"}],
+            "roadm" : [{"path": "org-openroadm-device/info/node-type", "availableClasses": ["chassis"]},
+            {"path": "org-openroadm-device/circuit-packs", "availableClasses": ["module","port"], "indexField": "name"},
+            {"path": "org-openroadm-device/interface", "availableClasses": ["interface"], "indexField": "name"}]
+        },
+        "onuServiceState" : {
+            "assigned" : ["bbf-xpon-onu-types:onu-present-and-on-intended-channel-termination",
+                "bbf-xpon-onu-types:onu-present-and-in-wavelength-discovery",
+                "bbf-xpon-onu-types:onu-not-present-with-v-ani"],
+            "connected" : ["bbf-xpon-onu-types:onu-present-and-on-intended-channel-termination",
+                "bbf-xpon-onu-types:onu-present-and-in-wavelength-discovery",
+                "bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-in-o5"],
+            "unassigned" : ["bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-in-o5"],
+            "not-connected" : ["bbf-xpon-onu-types:onu-not-present-with-v-ani",
+                "bbf-xpon-onu-types:onu-not-present-without-v-ani"],
+            "error" : ["bbf-xpon-onu-types:onu-present-and-discovery-tune-failed",
+                "bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-o5-failed-no-onu-id",
+                "bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-o5-failed-undefined",
+                "bbf-xpon-onu-types:onu-present-and-v-ani-known-and-o5-failed-no-onu-id",
+                "bbf-xpon-onu-types:onu-present-and-v-ani-known-and-o5-failed-undefined",
+                "bbf-xpon-onu-types:onu-present-and-no-v-ani-known-and-unclaimed",
+                "bbf-xpon-onu-types:onu-present-and-v-ani-known-but-intended-ct-unknown"],
+            "disabled" : ["bbf-xpon-onu-types:onu-present-and-emergency-stopped"]
+        },
+        "messagingClientConfig": {
+          "entries": [
+            {
+              "serviceIdentifier": "Logging_AEDO",
+              "enabled": true,
+              "serverType": "LOG",
+              "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+              "config": {
+                "type": "PUB",
+                "accepts": [
+                  "LOG"
+                ],
+                "targets": [
+                  {
+                    "classifier": "LOG",
+                    "target": "sdnc.inventory.default"
+                  }
+                ],
+                "defaultLogTag": "sdnc.inventory.default",
+                "adaptersConfig": {
+                  "file": {
+                    "appenderName": "APP"
+                  }
+                }
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_AEDO",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "ALL",
+                "accepts": ["CONFIG_CHANGE", "INV_SYNC_RES"],
+                "targets": [
+                    {"classifier": "CONFIG_CHANGE", "target": "dzs.sdnc.config_change"},
+                    {"classifier": "INV_SYNC_RES", "target": "dzs.sdnc.inv_sync"}
+                ],
+                "name": "SDNC.InventoryMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.config",
+                "queueGroup": "inventorymgr",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_ONU_PRESENCE_STATE_CHANGE",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "accepts": ["ONU_PRESENCE_STATE_CHANGE"],
+                "targets": [
+                    {"classifier": "ONU_PRESENCE_STATE_CHANGE", "target": "dzs.sdnc.netconf.onu_presence_state_change"}
+                ],
+                "name": "SDNC.InventoryMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.netconf.onu_presence_state_change",
+                "queueGroup": "inventorymgr",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "KAFKA",
+              "enabled": "{{- $enableKafka -}}",
+              "serverType": "KAFKA",
+              "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+              "config": {
+                "type": "PUB",
+                "accepts": [
+                  "INV_SYNC_RES"
+                ],
+                "targets": [
+                  { "classifier": "INV_SYNC_RES", "target": "dzs.sdnc.ext.inv_sync" }
+                ],
+                "producerConfig": {
+                  "bootstrap.servers": "{{- $kafka_socket -}}",
+                  "acks": "all",
+                  "retries": 0,
+                  "linger.ms": 10,
+                  "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                  "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+                },
+                "producerTopics": [
+                  "dzs.sdnc.inv_sync"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/inventory.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/inventory.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

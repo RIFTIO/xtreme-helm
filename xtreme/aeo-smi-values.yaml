@@ -1,0 +1,107 @@
+global:
+  exploreNamespacePrefix: "explore"
+  sdncImgtag: 11.4.0.1004394
+  install:
+    explore: true
+    inas: false
+    orchestrator: true
+    sdnc: true
+    ftp: true
+    sftp: true
+    zms: false
+    aeo: true
+    kafka: true
+  namespace:
+    create: true
+    name: dzs
+  chiDb:
+    host: smi-database-svc
+    port: 9000
+    httpPort: 8123
+
+launchpad:
+  launchpad:
+    appSelector: aeo
+    image:
+      pullPolicy: IfNotPresent
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 11.4.0.1004371
+    upgradeFrom: 11.4.0.1004371
+  storage:
+    storageClassName: null
+    capacity: 80Gi
+  cluster_logger:
+    createClusterRole: true
+  aeo:
+    image:
+      controller:
+        pullPolicy: IfNotPresent
+        tag: 11.4.0.1004371
+      serviceWorker:
+        pullPolicy: IfNotPresent
+        tag: 11.4.0.1004371
+      resourceWorker:
+        pullPolicy: IfNotPresent
+        tag: 11.4.0.1004371
+      tmfServer:
+        pullPolicy: IfNotPresent
+        tag: 11.4.0.1004371
+zms:
+  image:
+    tag: 4.3.0.1003914
+
+sdnc:
+  sdnc-netconf-svc:
+    nodePort:
+      useNodePort: true
+      restconfNodePort: 32130
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-config-mgr:
+    nodePort:
+      useNodePort: true
+      restconfNodePort: 32131
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-alarm-svc:
+    service:
+      useNodePort: true
+      nodePort: 32132
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-inventory-mgr:
+    service:
+      useNodePort: true
+      nodePort: 32133
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-file-mgr:
+    service:
+      useNodePort: true
+      nodePort: 32134
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-task-mgr:
+    service:
+      useNodePort: true
+      nodePort: 32135
+    image:
+      pullPolicy: IfNotPresent
+  sdnc-pm-collector:
+    service:
+      useNodePort: true
+      nodePort: 32136
+    image:
+      pullPolicy: IfNotPresent
+inas2-be:
+  image:
+    pullPolicy: IfNotPresent
+sftp:
+  service:
+    port: 8022
+
+explore:
+  install:
+    airflow: true
+    clickhouse: true
+    exploreApplication: true

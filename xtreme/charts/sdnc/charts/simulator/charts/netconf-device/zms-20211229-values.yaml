@@ -1,0 +1,157 @@
+replicaCount: 1
+
+image:
+  repository: dzs-netconf-zms-20211229
+  pullPolicy: Always
+  version: latest
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: "zms-20211229"
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+# fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+# runAsNonRoot: true
+# runAsUser: 1000
+
+service:
+  type: NodePort
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+serverconfig:
+  servers:
+    - 32430
+    - 32431
+  json:
+    '{
+       "servers": [
+         {
+           "port": 32430,
+           "configId": "zms-20211229"
+         },
+         {
+           "port": 32431,
+           "configId": "zms-20211229"
+         }
+       ],
+       "configs": [
+         {
+           "configId": "zms-20211229",
+           "credential": {
+             "user": "admin",
+             "password": "admin"
+           },
+           "models": [
+             {
+               "nameSpace": "http://dzsi.com/zms",
+               "name": "zms",
+               "revision": "2021-12-29"
+             },
+             {
+               "nameSpace": "http://dzsi.com/zms-alarms",
+               "name": "zms-alarms",
+               "revision": "2021-12-29"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:ietf-netconf-notifications-trigger",
+               "name": "dzsi-ietf-netconf-notifications-trigger",
+               "revision": "2021-07-23"
+             },
+             {
+               "nameSpace": "urn:TBD:params:xml:ns:yang:network-topology",
+               "name": "network-topology",
+               "revision": "2013-10-21"
+             },
+             {
+               "nameSpace": "yang:dzsi:sdnc:netconf:simulator:alarm-type-id-def",
+               "name": "alarm-type-id-def",
+               "revision": "2021-10-20"
+             },
+             {
+               "nameSpace": "urn:ietf:params:xml:ns:netconf:notification:1.0",
+               "name": "notifications",
+               "revision": "2008-07-14"
+             },
+             {
+               "nameSpace": "http://netconfcentral.org/ns/yuma-ncx",
+               "name": "yuma-ncx",
+               "revision": "2015-10-16"
+             }
+           ],
+           "rpcProcessors": [
+             "com.dzsi.netconf.device.processors.SendNotificationProc",
+             "com.dzsi.netconf.device.processors.zms.GetDeviceIPListProcessor"
+           ]
+         }
+       ]
+     }'
+  datastore:
+    mountConfigData: false
+    mountOperData: false
+    configuration:
+      - name: zms-config-data.xml
+        data:
+          ''
+    operational:
+      - name: zms-operational-data.xml
+        data:
+          ''

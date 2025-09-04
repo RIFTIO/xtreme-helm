@@ -1,0 +1,86 @@
+# Copyright 2022 DZS Inc
+
+global:
+  namespace:
+    name: TPL_HOSTNAME
+  install:
+    zms: false
+    inas: false
+    sdnc: false
+    explore: false
+    aeo: false
+  ingress:
+    createClusterRole: true   # only for first installation on k8s cluster
+
+launchpad:
+  cluster_logger:
+    createClusterRole: true   # only for first installation on k8s cluster
+
+  launchpad:
+    appSelector: nfvo
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw.lp-base
+      tag: TPL_BRANCH
+      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
+
+    env:
+      RW_RUNTIME_PROFILE: dev
+      DEVELOPER_LICENSE: 1
+
+    capabilities: [ NET_ADMIN, SYS_RESOURCE, SYS_PTRACE ]
+    securityContext:
+      enabled: False
+
+    coreDir: null   # Default goes to RIFT_VAR_ROOT
+    devSetup:
+      riftInstall: TPL_RIFT_INSTALL/usr/rift
+      volumes:
+        localdisk: /localdisk
+        home: /home
+
+  externalAddress: null
+
+  storage:
+    storageClassName: TPL_HOSTNAME-manual-rvr
+    capacity: 80Gi
+    accessMode: ReadWriteOnce
+    manual:
+      mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/lp
+
+  redis:
+    redisStorage:
+      storageClassName: TPL_HOSTNAME-manual-redis
+      capacity: 80Gi
+      manual:
+        mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/redis
+
+  mongodb:
+    mongoStorage:
+      storageClassName: TPL_HOSTNAME-manual-mongo
+      capacity: 80Gi
+      manual:
+        mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/eventsdb
+
+  # Override values for alertmanager storage
+  alertmgr:
+    alertmgrStorage:
+      storageClassName: TPL_HOSTNAME-manual-alertmgr
+      capacity: 20Gi
+      manual:
+        mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/alertmanager
+
+  # Override values for prometheus
+  prometheus:
+    prometheusStorage:
+      storageClassName: TPL_HOSTNAME-manual-prometheus
+      capacity: 80Gi
+      manual:
+        mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/prometheus
+
+  # Override values for grafana
+  grafana:
+    grafanaStorage:
+      storageClassName: TPL_HOSTNAME-manual-grafana
+      capacity: 20Gi
+      manual:
+        mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/grafana

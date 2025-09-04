@@ -1,0 +1,63 @@
+** Please be patient while the chart is being deployed **
+###############################################################################
+### ERROR: You did not provide an external URL in your 'helm install' call ###
+###############################################################################
+
+This deployment will be incomplete until you configure Airflow with a resolvable
+host. To configure Airflow with the URL of your service:
+
+1. Get the Airflow URL by running:
+
+    export AIRFLOW_HOST=$(kubectl get nodes --namespace airflow -o jsonpath="{.items[0].status.addresses[0].address}")
+    export AIRFLOW_PORT=$(kubectl get --namespace airflow -o jsonpath="{.spec.ports[0].nodePort}" services bitnami-airflow)
+
+2. Complete your Airflow deployment by running:
+
+    export AIRFLOW_PASSWORD=$(kubectl get secret --namespace "airflow" bitnami-airflow -o jsonpath="{.data.airflow-password}" | base64 -d)
+    export AIRFLOW_FERNET_KEY=$(kubectl get secret --namespace "airflow" bitnami-airflow -o jsonpath="{.data.airflow-fernet-key}" | base64 -d)
+    export AIRFLOW_SECRET_KEY=$(kubectl get secret --namespace "airflow" bitnami-airflow -o jsonpath="{.data.airflow-secret-key}" | base64 -d)
+
+    helm upgrade --namespace airflow bitnami-airflow airflow-new/ \
+      --set web.baseUrl=http://$AIRFLOW_HOST:$AIRFLOW_PORT \
+      --set auth.fernetKey=$AIRFLOW_FERNETKEY \
+      --set auth.secretKey=$AIRFLOW_SECRETKEY
+
+Release "bitnami-airflow" has been upgraded. Happy Helming!
+NAME: bitnami-airflow
+LAST DEPLOYED: Tue Jul 12 13:25:01 2022
+NAMESPACE: airflow
+STATUS: deployed
+REVISION: 2
+TEST SUITE: None
+NOTES:
+CHART NAME: airflow
+CHART VERSION: 12.5.12
+APP VERSION: 2.0.2
+
+** Please be patient while the chart is being deployed **
+
+Airflow can be accessed via port 8080 on the following DNS name from within your cluster:
+
+    bitnami-airflow.airflow.svc.cluster.local
+
+To connect to Airflow from outside the cluster, perform the following steps:
+
+1. Obtain the NodePort IP and port:
+
+    export NODE_IP=$(kubectl get nodes --namespace airflow -o jsonpath="{.items[0].status.addresses[0].address}")
+    export NODE_PORT=$(kubectl get svc --namespace airflow bitnami-airflow -o jsonpath="{.spec.ports[0].nodePort}")
+    echo "Airflow URL: http://${NODE_IP}:$NODE_PORT"
+
+2. Open a browser and access Airflow using the obtained URL.
+
+3. Get your Airflow login credentials by running:
+
+    export AIRFLOW_PASSWORD=$(kubectl get secret --namespace "airflow" bitnami-airflow -o jsonpath="{.data.airflow-password}" | base64 -d)
+    echo User:     admin
+    echo Password: $AIRFLOW_PASSWORD
+
+3. In case of pods stuck in terminating stage:
+
+    kubectl get namespace airflow -o json > airflow.json
+    sed -i -e 's/"kubernetes"//' airflow.json
+    kubectl replace --raw "/api/v1/namespaces/airflow/finalize" -f ./airflow.json

@@ -1,0 +1,907 @@
+# Copyright 2022 DZS Inc
+
+{{- $nats_svc := include "nats.fqdn" . }}
+{{- $inas_svc := include "inas-be.fqdn" . }}
+{{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
+{{- $config_mgr := include "rnc-config-mgr.fqdn" . }}
+{{- $tpce := include "rnc-transportpce.fqdn" . }}
+{{- $inventory_mgr := include "rnc-inventory-mgr.fqdn" . }}
+{{- $file_mgr := include "file-mgr.fqdn" . }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $ftp := include "ftp.fqdn" . }}
+{{- $sftp := include "sftp.fqdn" . }}
+{{- $kafka_socket := include "kafka.socket" . }}
+{{- $enableKafka := .Values.global.enableKafka_taskMgr }}
+{{- $repoTypeRoadm := .Values.repo.type.roadm }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "task-mgr.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | dzsi | sdn | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/taskmgr</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/taskmgr.log"
+                         filePattern="${APP_LOG_ROOT}/taskmgr-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/task.log"
+                         filePattern="${APP_LOG}/task-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="DEFAULT"
+                         fileName="${APP_LOG_ROOT}/task-default.log"
+                         filePattern="${APP_LOG_ROOT}/task-default-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+            <Logger name="DEFAULT" level="info">
+                <AppenderRef ref="DEFAULT"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ssZ
+    server.port = 8888
+    api.version = 1
+    serviceconfig.file = config/serviceconfig.json
+    spring.jackson.parser.allow_comments=true
+    spring.jackson.serialization.FAIL_ON_EMPTY_BEANS=false
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+
+  serviceconfig.json: |
+    {
+      "serviceConfig": {
+        "serviceName": "task",
+        "sbPlugin": {
+          "device": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "olt": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "roadm": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "zms": {
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "inas": {
+            "connection": {
+              "httpAddress": "http://{{- $inas_svc -}}:30522",
+              "authType": "basic",
+              "authDetail": {
+                "username": "admin",
+                "password": "Admin#123"
+              }
+            }
+          }
+        },
+        "externalDb":  {
+          "type": "mongo",
+          "mongo": {
+            "entries": [
+              {
+                "enabled": true,
+                "id": "default",
+                "mandatory":  true,
+                "connectionString": "mongodb://{{- $mongo_db -}}:8006/taskmgr?retryWrites=false",
+                "dbName": "taskmgr",
+                "collections": [
+                  {
+                    "name": "task",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "task_general_idx",
+                        "fields": {
+                          "task-type": 1,
+                          "status": 1,
+                          "model": 1,
+                          "target-model": 1
+                        }
+                      },
+                      {
+                        "name": "ctrl_task_id_idx",
+                        "fields": {
+                          "ctrl-task-id": 1
+                        }
+                      },
+                      {
+                        "name": "device_id_idx",
+                        "fields": {
+                          "device-id": 1
+                        }
+                      },
+                      {
+                        "name": "model_idx",
+                        "fields": {
+                          "model": 1
+                        }
+                      },
+                      {
+                        "name": "status_idx",
+                        "fields": {
+                          "status": 1
+                        }
+                      },
+                      {
+                        "name": "target_idx",
+                        "fields": {
+                          "target": 1
+                        }
+                      },
+                      {
+                        "name": "ip_ort_host_idx",
+                        "fields": {
+                          "ip-or-host": 1
+                        }
+                      },
+                      {
+                        "name": "target_model_idx",
+                        "fields": {
+                          "target-model": 1
+                        }
+                      },
+                      {
+                        "name": "request_id_idx",
+                        "fields": {
+                          "request-id": 1
+                        }
+                      },
+                      {
+                        "name": "task_id_idx",
+                        "fields": {
+                          "task-id": 1
+                        }
+                      },
+                      {
+                        "name": "task_name_idx",
+                        "fields": {
+                          "task-name": 1
+                        }
+                      },
+                      {
+                        "name": "comp_name_idx",
+                        "fields": {
+                          "component.component-name": 1
+                        }
+                      },
+                      {
+                        "name": "comp_shelf_idx",
+                        "fields": {
+                          "component.shelf": 1
+                        }
+                      },
+                      {
+                        "name": "component_slot_idx",
+                        "fields": {
+                          "component.slot": 1
+                        }
+                      },
+                      {
+                        "name": "comp_port_idx",
+                        "fields": {
+                          "component.port": 1
+                        }
+                      },
+                      {
+                        "name": "comp_ont_idx",
+                        "fields": {
+                          "component.ont": 1
+                        }
+                      },
+                      {
+                        "name": "request_time_idx",
+                        "fields": {
+                          "request-time": -1
+                        }
+                      },
+                      {
+                        "name": "start_time_idx",
+                        "fields": {
+                          "start-time": -1
+                        }
+                      },
+                      {
+                        "name": "finish_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "finish-time": -1
+                        }
+                      },
+                      {
+                        "name": "commit_time_idx",
+                        "fields": {
+                          "commit-time": -1
+                        }
+                      },
+                      {
+                        "name": "rec_svc_id_idx",
+                        "fields": {
+                          "rec-svc-id": -1
+                        }
+                      },
+                      {
+                        "name": "exe_svc_id_idx",
+                        "fields": {
+                          "exe-svc-id": -1
+                        }
+                      },
+                      {
+                        "name": "ctrl_request_id_idx",
+                        "fields": {
+                          "ctrl-request-id": 1
+                        }
+                      },
+                      {
+                        "name": "execution_key_idx",
+                        "fields": {
+                          "execution-key": 1
+                        }
+                      },
+                      {
+                        "name": "ordinal_idx",
+                        "fields": {
+                          "ordinal": 1
+                        }
+                      },
+                      {
+                        "name": "remainder_idx",
+                        "fields": {
+                          "hash-remainder": 1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "taskstage",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "ctrl_task_id_idx",
+                        "fields": {
+                          "ctrl-task-id": 1
+                        }
+                      },
+                      {
+                        "name": "start_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "start-time": 1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "request",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "request_general_idx",
+                        "fields": {
+                          "classifier": 1,
+                          "status": 1,
+                          "task-exec-config.exec-type": 1,
+                          "description": 1
+                        }
+                      },
+                      {
+                        "name": "ctrl_request_id_idx",
+                        "fields": {
+                          "ctrl-request-id": 1
+                        }
+                      },
+                      {
+                        "name": "request_id_idx",
+                        "fields": {
+                          "request-id": 1
+                        }
+                      },
+                      {
+                        "name": "request_name_idx",
+                        "fields": {
+                          "request-name": 1
+                        }
+                      },
+                      {
+                        "name": "status_idx",
+                        "fields": {
+                          "status": 1
+                        }
+                      },
+                      {
+                        "name": "exec_type_idx",
+                        "fields": {
+                          "task-exec-config.exec-type": 1
+                        }
+                      },
+                      {
+                        "name": "description_idx",
+                        "fields": {
+                          "description": 1
+                        }
+                      },
+                      {
+                        "name": "request_time_idx",
+                        "fields": {
+                          "request-time": -1
+                        }
+                      },
+                      {
+                        "name": "finish_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "finish-time": -1
+                        }
+                      },
+                      {
+                        "name": "last_exe_start_idx",
+                        "fields": {
+                          "last-execution-start-time": -1
+                        }
+                      },
+                      {
+                        "name": "last_exe_finish_idx",
+                        "fields": {
+                          "last-execution-finish-time": -1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "execution",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "execution_idx",
+                        "fields": {
+                          "ctrl-request-id": 1,
+                          "execution-key": 1
+                        }
+                      },
+                      {
+                        "name": "execution_key_idx",
+                        "fields": {
+                          "execution-key": 1
+                        }
+                      },
+                      {
+                        "name": "finish_time_idx",
+                        "expireAfterSeconds": 7776000,
+                        "fields": {
+                          "finish-time": 1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "schedule",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "schedule_idx",
+                        "fields": {
+                          "ctrl-request-id": 1,
+                          "service-id": 1
+                        }
+                      },
+                      {
+                        "name": "service_id_idx",
+                        "fields": {
+                          "service-id": 1
+                        }
+                      },
+                      {
+                        "name": "last_check_time_idx",
+                        "expireAfterSeconds": 1200,
+                        "fields": {
+                          "last-check-time": 1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "name": "lock",
+                    "removeIndexIfNotListed": true,
+                    "indexes": [
+                      {
+                        "name": "lock_idx",
+                        "fields": {
+                          "entity-id": 1,
+                          "service-id": 1,
+                          "last-check-time": 1
+                        }
+                      },
+                      {
+                        "name": "service_id_idx",
+                        "fields": {
+                          "service-id": 1
+                        }
+                      },
+                      {
+                        "name": "last_check_time_idx",
+                        "expireAfterSeconds": 1200,
+                        "fields": {
+                          "last-check-time": 1
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "jobConfig": {
+          "lockWatcherConfig": {
+            "intervalSeconds": 60
+          },
+          "schedulePickerConfig": {
+            "intervalSeconds": 60,
+            "pickIfCurrentBeforeScheduleMillis": 30000,
+            "ignoreIfCurrentAfterScheduleMillis": 1800000
+          },
+          "historyCleanerConfig": {
+            "taskRetentionPolicy": {
+              "retentionTimeHours": 2160
+            }
+          },
+          "executionWorkerConfig": {
+            "maxConcurrentTask": 300
+          }
+        },
+        "taskTypeConfig": {
+          "fwUpdateConfig": {
+            "inas": {
+              "waitTimeout": 720000
+            },
+            "olt": {
+              "preferRepoType": "ftp",
+              "commitPackageAfterActivatedMillis": 30000
+            },
+            "roadm": {
+              "preferRepoType": "{{ $repoTypeRoadm }}",
+              "delayBetweenStage": 10000
+            }
+          },
+          "download": {
+            "olt": {
+              "preferRepoType": "ftp"
+            }
+          },
+          "upgrade": {
+            "olt": {
+              "commitPackageAfterActivatedMillis": 30000
+            }
+          },
+          "configBackup": {
+            "olt": {
+              "waitTimeout": 360000,
+              "delayBetweenStage": 10000
+            },
+            "roadm": {
+              "preferRepoType": "{{ $repoTypeRoadm }}"
+            }
+          },
+          "configRestore": {
+            "olt": {
+              "waitTimeout": 360000,
+              "delayBetweenStage": 10000
+            },
+            "roadm": {
+              "preferRepoType": "{{ $repoTypeRoadm }}"
+            }
+          }
+        },
+        "deviceModel": [
+          {
+            "vendor": "dzs",
+            "modelName": "V1-16XC",
+            "systemType": "olt",
+            "yangModelSet": "bbf",
+            "type": "pizza",
+            "chassisName": "V1-16XC",
+            "componentForMaint": ["card", "V1-16XC_board"],
+            "softwareName": ["image", "NOS"]
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "V6",
+            "systemType": "olt",
+            "yangModelSet": "bbf",
+            "type": "chassis",
+            "chassisName": "chassis",
+            "componentForMaint": ["chassis"],
+            "softwareName": ["package"],
+            "cardModel": {
+              "V-LC-APAP-16": {
+                "name": "V-LC-APAP-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-XGSP-16": {
+                "name": "V-LC-XGSP-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-COMBO-16": {
+                "name": "V-LC-COMBO-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-GPON-32": {
+                "name": "V-LC-GPON-32",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-FC-AEHG4-AEXG4": {
+                "name": "V-FC-AEHG4-AEXG4",
+                "type": "FC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-FC-AEHG2-AEXG4": {
+                "name": "V-FC-AEHG2-AEXG4",
+                "type": "FC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-MC-MGMT-NC": {
+                "name": "V-MC-MGMT-NC",
+                "type": "MC",
+                "softwareName": ["image"]
+              },
+              "V-MC-MGMT-NC-T": {
+                "name": "V-MC-MGMT-NC-T",
+                "type": "MC",
+                "softwareName": ["image"]
+              }
+            }
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "V2",
+            "systemType": "olt",
+            "yangModelSet": "bbf",
+            "type": "chassis",
+            "chassisName": "chassis",
+            "componentForMaint": ["chassis"],
+            "softwareName": ["package"],
+            "cardModel": {
+              "V-LC-APAP-16": {
+                "name": "V-LC-APAP-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-XGSP-16": {
+                "name": "V-LC-XGSP-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-COMBO-16": {
+                "name": "V-LC-COMBO-16",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-LC-GPON-32": {
+                "name": "V-LC-GPON-32",
+                "type": "LC",
+                "componentForMaint": ["card"],
+                "softwareName": ["image", "NOS"]
+              },
+              "V-MC-MGMT-NC": {
+                "name": "V-MC-MGMT-NC",
+                "type": "MC",
+                "softwareName": ["image"]
+              },
+              "V-MC-MGMT-NC-T": {
+                "name": "V-MC-MGMT-NC-T",
+                "type": "MC",
+                "softwareName": ["image"]
+              }
+            }
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "SABER-4400",
+            "systemType": "roadm",
+            "yangModelSet": "openroadm"
+          }
+        ],
+        "remoteHttpService":  {
+          "NetconfSvc": {
+            "service": "NetconfSvc",
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "ConfigMgr": {
+            "service": "ConfigMgr",
+            "connection": {
+              "httpAddress": "http://{{- $config_mgr -}}:8888",
+              "authType": "none"
+            }
+          },
+          "TPCE": {
+            "service": "TPCE",
+            "connection": {
+              "httpAddress": "http://{{- $tpce -}}:8888",
+              "authType": "none"
+            }
+          },
+          "InventoryMgr": {
+            "service": "InventoryMgr",
+            "connection": {
+              "httpAddress": "http://{{- $inventory_mgr -}}:8899",
+              "authType": "none"
+            },
+            "uri": {
+              "InventoryMgrSyncInventory": {
+                "name": "InventoryMgrSyncInventory",
+                "uriPath": "/restconf/operations/inventory-mgr:sync-inventory",
+                "httpMethod": "POST"
+              },
+              "InventoryMgrGetInventory": {
+                "name": "InventoryMgrGetInventory",
+                "uriPath": "/restconf/operations/inventory-mgr:get-inventory",
+                "httpMethod": "POST"
+              }
+            }
+          },
+          "FileMgr": {
+            "service": "FileMgr",
+            "connection": {
+              "httpAddress": "http://{{- $file_mgr -}}:8897",
+              "authType": "none"
+            },
+            "uri": {
+              "FileMgrTriggerFirmware": {
+                "name": "FileMgrTriggerFirmware",
+                "uriPath": "/restconf/operations/file-mgr:trigger-firmware",
+                "httpMethod": "POST"
+              },
+              "FileMgrGetFileServer": {
+                "name": "FileMgrGetFileServer",
+                "uriPath": "/restconf/data/file-mgr:repositories/repository?repo-type=%s",
+                "httpMethod": "GET"
+              },
+              "FileMgrGetBackupPath": {
+                "name": "FileMgrGetBackupPath",
+                "uriPath": "/restconf/data/file-mgr:file-list/file-type=device-backup/path?device-id=%s",
+                "httpMethod": "GET"
+              },
+              "FileMgrGetBackupLocation": {
+                "name": "FileMgrGetBackupLocation",
+                "uriPath": "/restconf/data/file-mgr:file-list/file-type=device-backup/device-id=%s?repo-type=%s",
+                "httpMethod": "GET"
+              },
+              "FileMgrDeleteFile": {
+                "name": "FileMgrDeleteFile",
+                "uriPath": "/restconf/data/file-mgr:file-list/file-type=deviceBackup?path=%s",
+                "httpMethod": "DELETE"
+              },
+              "FileMgrGetReservedPath": {
+                "name": "FileMgrGetReservedPath",
+                "uriPath": "/restconf/data/file-mgr:file-list/file-type=%s/path",
+                "httpMethod": "GET"
+              }
+            }
+          }
+        },
+        "messagingClientConfig": {
+          "entries": [
+            {
+              "serviceIdentifier": "Logging_AEDO",
+              "enabled": true,
+              "serverType": "LOG",
+              "configClass": "com.dzsi.sdnc.common.messaging.log.LogConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.log.LogService",
+              "config": {
+                "type": "PUB",
+                "accepts": ["LOG"],
+                "targets": [
+                  {"classifier": "LOG", "target": "sdnc.task.default"}
+                ],
+                "defaultLogTag": "sdnc.task.default",
+                "adaptersConfig": {
+                  "file": {
+                    "appenderName": "APP"
+                  }
+                }
+              }
+            },
+            {
+              "serviceIdentifier": "NATS",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.TaskMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.config",
+                "queueGroup": "taskmgr",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_for_BBF_OPERs",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.TaskMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://localhost:4222",
+                "subject": "dzs.sdnc.netconf.bbf_opers",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_TASKRESULT",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "ALL",
+                "name": "SDNC.TaskMgr.TaskResult",
+                "accepts": [
+                   "TASK_STATUS", "TASK_EXE_STATUS", "TASK_REQ_STATUS", "MGMT_TASK_STAGE"
+                ],
+                "targets": [
+                   { "classifier": "TASK_STATUS", "target": "dzs.sdnc.task.task_status" },
+                   { "classifier": "MGMT_TASK_STAGE", "target": "dzs.sdnc.task.task_stage" },
+                   { "classifier": "TASK_EXE_STATUS", "target": "dzs.sdnc.task.execution" },
+                   { "classifier": "TASK_REQ_STATUS", "target": "dzs.sdnc.task.request" }
+                ],
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "dzs.sdnc.devicetask",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "KAFKA",
+              "enabled": "{{- $enableKafka -}}",
+              "serverType": "KAFKA",
+              "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+              "config": {
+                "type": "PUB",
+                "accepts": ["TASK_STATUS", "TASK_EXE_STATUS", "TASK_REQ_STATUS"],
+                "targets": [
+                  { "classifier": "TASK_STATUS", "target": "dzs.sdnc.ext.task.task_status" },
+                  { "classifier": "TASK_EXE_STATUS", "target": "dzs.sdnc.ext.task.execution" },
+                  { "classifier": "TASK_REQ_STATUS", "target": "dzs.sdnc.ext.task.request" }
+                ],
+                "producerConfig": {
+                  "bootstrap.servers": "{{- $kafka_socket -}}",
+                  "acks": "all",
+                  "retries": 0,
+                  "linger.ms": 10,
+                  "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+                  "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+                },
+                "producerTopics": [
+                  "dzs.sdnc.task"
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/task.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/task.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

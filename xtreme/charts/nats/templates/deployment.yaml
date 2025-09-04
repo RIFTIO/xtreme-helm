@@ -1,0 +1,143 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2021 DZS Inc
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rw-nats
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rw.nats
+  template:
+    metadata:
+      labels:
+        app: rw.nats
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      securityContext:
+        {{- if and .Values.global.ensureSecurityContext (not (has "appNats" .Values.global.excludeAppsInSecurityContext)) }}
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: {{ .Values.nats.runAsUser }}
+        runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- else }}
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- end }}
+
+      containers:
+        - name: nats-exporter
+          image: "{{ .Values.exporter.image.repository }}:{{ .Values.exporter.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          securityContext:
+          {{- if and .Values.global.ensureSecurityContext (not (has "appNats" .Values.global.excludeAppsInSecurityContext)) }}
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+            runAsUser: {{ .Values.nats.runAsUser }}
+            runAsGroup: {{ .Values.global.defaultGroup }}
+          {{- else }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+
+          ports:
+            - name: rwnats-exp
+              containerPort: 7777
+              protocol: TCP
+
+          {{- if and .Values.global.ensureContainerProbe (not (has "appNats" .Values.global.excludeAppsInContainerProbe)) }}
+          readinessProbe:
+            tcpSocket:
+              port: 8444
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8444
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- end }}
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appNats" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.average" . | nindent 2 }}
+          {{- end }}
+
+          command:
+          - prometheus-nats-exporter
+          args:
+            - -connz
+            - -varz
+            - -subz
+            - "http://localhost:8444"
+
+        - name: nats
+          securityContext:
+          {{- if and .Values.global.ensureSecurityContext (not (has "appNats" .Values.global.excludeAppsInSecurityContext)) }}
+            {{ toYaml .Values.global.partialSecurityContext | nindent 12 }}
+            runAsUser: {{ .Values.nats.runAsUser }}
+            runAsGroup: {{ .Values.global.defaultGroup }}
+          {{- else }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          {{- if and .Values.global.ensureContainerProbe (not (has "appNats" .Values.global.excludeAppsInContainerProbe)) }}
+          readinessProbe:
+            tcpSocket:
+              port: 8444
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8444
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- end }}
+
+          ports:
+            - name: rwnats
+              containerPort: 4222
+              protocol: TCP
+
+          command:
+          - /nats-server
+          args: ["--config", "/config/rw-nats.conf", "-m", "8444"]
+
+          volumeMounts:
+          - name: rw-nats-config
+            mountPath: /config
+            readOnly: false
+
+          {{- if and .Values.global.ensureResourceQuota (not (has "appNats" .Values.global.excludeAppsInResourceQuota)) }}
+          {{- include "common.average" . | nindent 2 }}
+          {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      volumes:
+        - name: rw-nats-config
+          configMap:
+            name: rw-nats-config

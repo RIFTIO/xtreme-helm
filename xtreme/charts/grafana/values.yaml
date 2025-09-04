@@ -1,0 +1,54 @@
+# Copyright 2020 RIFT Inc
+# Default values for grafana.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+grafanafullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+grafana:
+  image:
+    repository: rt.cloud.dzsi.local/docker/rw.grafana
+    tag: "1.8"
+    pullPolicy: IfNotPresent
+  resources: {}
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  capabilities: []
+  service:
+    type: ClusterIP
+    port: 8300
+  provisioning: "/config/provisioning"
+  coreDir: null
+  externalAddress: null
+  runAsUser: 1024
+
+# Hostname or IP address through which launchpad can be externally accessed
+# This value is mandatory except if service type is "LoadBalancer"
+externalAddress: null
+
+imagePullSecrets: []
+
+grafanaStorage:
+  storageClassName: null
+  capacity: 20Gi
+  localStore: {}
+  manual: {}
+  nfs: {}

@@ -1,0 +1,23 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "grafana.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.grafana
+spec:
+  ports:
+  - name: rw-grafana
+    port: {{ .Values.grafana.service.port }}
+    targetPort: {{ .Values.grafana.service.port }}
+    {{- if .Values.grafana.service.nodePort }}
+    nodePort: {{ .Values.grafana.service.nodePort }}
+    {{- end }}
+  selector:
+    app: rw.grafana
+  type: {{ .Values.grafana.service.type }}
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}

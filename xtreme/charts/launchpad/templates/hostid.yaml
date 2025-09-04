@@ -1,0 +1,20 @@
+# Copyright 2020 RIFT Inc
+{{- $hostid := uuidv4 | quote }}
+
+{{- $secret := (lookup "v1" "Secret" .Values.global.namespace.name "hostid") }}
+{{- if and ($secret) (.Release.IsUpgrade) }}
+{{- $hostid = $secret.data.hostid | b64dec }}
+{{- end -}}
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hostid
+  labels:
+    {{- include "launchpad.labels" . | nindent 4 }}
+  namespace: {{ .Values.global.namespace.name }}
+type: Opaque
+stringData:
+  hostid: {{ $hostid }}
+

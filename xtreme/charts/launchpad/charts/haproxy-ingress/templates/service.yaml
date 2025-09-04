@@ -1,0 +1,45 @@
+# Copyright 2020 RIFT Inc
+#
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: haproxy-ingress
+  annotations:
+    {{- with .Values.global.ingress.ports }}
+    {{- range $data := . }}
+    {{- if $data.proxyPort }}
+    {{ printf "rw-proxy-%s" $data.name | quote }}: {{ $data.proxyPort | quote }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- range $k, $v := .Values.serviceAnnotations }}
+    {{ $k | quote }}: {{ $v | quote }}
+    {{ end }}
+
+  name: {{ include "haproxy.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+spec:
+  selector:
+    run: haproxy-ingress
+  type: {{ .Values.global.ingress.service.type }}
+  {{- if .Values.global.ipv6EnableHaproxy }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+
+{{- range $k, $v := .Values.cloudSpecificServiceSpec }}
+  {{ $k }}: {{ $v }}
+{{ end }}
+
+  {{- with .Values.global.ingress.ports }}
+  ports:
+  {{- range $data := . }}
+  - name: {{ $data.name }}
+    port: {{ $data.port }}
+    targetPort: {{ $data.targetPort }}
+    {{- if $data.nodePort }}
+    nodePort: {{ $data.nodePort }}
+    {{- end }}
+  {{- end }}
+  {{- end }}

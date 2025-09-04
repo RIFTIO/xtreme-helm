@@ -1,0 +1,85 @@
+# Default values for haproxy-ingress.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+image:
+  repository: rt.cloud.dzsi.local/quay.io/jcmoraisjr/haproxy-ingress
+  tag: "v0.10.1"
+  repository_latest: rt.cloud.dzsi.local/docker/haproxy-ingress
+  # v0.13.6 has some bug. See https://github.com/jcmoraisjr/haproxy-ingress/issues/906
+  # tag_latest: v0.13.6-rift
+  tag_latest: v0.13.12-rift
+  pullPolicy: IfNotPresent
+
+exporter:
+  image:
+    repository: rt.cloud.dzsi.local/quay.io/prometheus/haproxy-exporter
+    tag: "v0.11.0"
+    pullPolicy: IfNotPresent
+  runAsUser: 65534
+
+defaultbackend:
+  image:
+    repository: rt.cloud.dzsi.local/docker-local/rw-gcr_io/google_containers/defaultbackend
+    tag: "1.1-dzs"
+    pullPolicy: IfNotPresent
+  runAsUser: 1024
+
+bindPort:
+  http:
+    ":8080,:::8080"
+  https:
+    ":8443,:::8443"
+
+podAnnotations: {}
+
+serviceAnnotations: {}
+
+cloudSpecificServiceSpec: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+haproxyIngress:
+  runAsUser: 65534
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

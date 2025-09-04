@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dzs-sdnc-influxdb
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+  {{- include "sdnc-influxdb.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sdnc-influxdb.selectorLabels" . | nindent 6 }}
+  serviceName: "{{ include "sdnc-influxdb.fullname" . }}"
+  template:
+    metadata:
+      labels:
+        {{- include "sdnc-influxdb.selectorLabels" . | nindent 8 }}
+      {{- if .Values.podLabels }}
+        {{ toYaml .Values.podLabels | indent 8 }}
+      {{- end }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end}}
+      {{- end }}
+      {{- if .Values.securityContext.runAsGroup }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.runAsGroup }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 | trim }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 | trim }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 | trim }}
+      {{- end }}
+      serviceAccountName: {{ include "sdnc-influxdb.serviceAccountName" . }}
+      containers:
+        - name: {{ template "sdnc-influxdb.fullname" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8086
+              protocol: TCP
+          env:
+            # This behavior allows for the InfluxDB container to reboot post-setup without encountering "DB is already set up" errors.
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: setup
+            ### Required ###
+            - name: INFLUXDB_ADMIN_USER
+              value: {{ .Values.adminUser.user }}
+            - name: INFLUXDB_ADMIN_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.adminUser.existingSecret }}
+                  name: {{ .Values.adminUser.existingSecret -}}
+                  {{ else }}
+                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  {{- end }}
+                  key: admin-password
+            ################
+            # The duration the system's initial bucket should retain data. If not set, the initial bucket will retain data forever.
+            - name: DOCKER_INFLUXDB_INIT_RETENTION
+              value: {{ .Values.adminUser.retention_policy }}
+            - name: INFLUXDB_ADMIN_USER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.adminUser.existingSecret }}
+                  name: {{ .Values.adminUser.existingSecret -}}
+                  {{ else }}
+                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  {{- end }}
+                  key: admin-token
+            {{- with .Values.env }}
+            # Extra environment variables from .Values.env
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.securityContext }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.path | default "/health" }}
+              port: http
+              scheme: {{ .Values.livenessProbe.scheme | default "HTTP" }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds | default 1 }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.path | default "/health" }}
+              port: http
+              scheme: {{ .Values.readinessProbe.scheme | default "HTTP" }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds | default 10 }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds | default 1 }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold | default 1 }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold | default 3 }}
+          volumeMounts:
+          - name: data
+            mountPath: /bitnami/influxdb
+          {{- if .Values.initScripts.enabled }}
+          - name: init
+            mountPath: /docker-entrypoint-initdb.d
+          {{- end }}
+      {{- if .Values.initScripts.enabled }}
+      volumes:
+        - name: init
+          configMap:
+            name: {{ include "sdnc-influxdb.fullname" . }}-init
+            defaultMode: 0744
+      {{- end }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.influxStorage.capacity }}
+      storageClassName: {{ .Values.influxStorage.storageClassName }}

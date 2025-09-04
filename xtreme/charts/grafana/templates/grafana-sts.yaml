@@ -1,0 +1,185 @@
+# Copyright 2020 RIFT Inc
+# Copyright 2021-2022 DZS Inc
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rw-grafana
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.grafana
+spec:
+  selector:
+    matchLabels:
+      app: rw.grafana
+  replicas: 1
+  serviceName: {{ include "grafana.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: rw.grafana
+        release: {{ .Release.Name }}
+    spec:
+      imagePullSecrets:
+        {{ if .Values.imagePullSecrets }}
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+        {{ else }}
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+        {{- end }}
+
+      {{- if and .Values.global.ensureSecurityContext (not (has "appGrafana" .Values.global.excludeAppsInSecurityContext)) }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: {{ .Values.grafana.runAsUser }}
+        runAsGroup: {{ .Values.global.defaultGroup }}
+      {{- include "runAsFsGroup" . | nindent 6 }}
+      {{- else }}
+      {{- $podSecurityContext := .Values.podSecurityContext }}
+      {{- if $podSecurityContext }}
+      securityContext:
+      {{-   toYaml $podSecurityContext | nindent 8 }}
+      {{- else }}
+      {{- $globalPodSecurityContext := .Values.global.podSecurityContext }}
+      {{- if $globalPodSecurityContext }}
+      securityContext:
+      {{-   toYaml $globalPodSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- end }}
+
+      hostAliases:
+      {{- range $i, $value := .Values.global.hostAliases }}
+      - ip: {{ $value.ip | quote }}
+        hostnames:
+        {{- range $value.hostnames }}
+        - {{ . }}
+        {{- end }}
+      {{- end }}
+
+      containers:
+      - name: grafana
+        image: {{ .Values.grafana.image.repository -}} : {{- .Values.grafana.image.tag }}
+        imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
+        command: ["./bin/grafana-server", "--config", "/config/grafana.ini"]
+        env:
+        - name: GF_PATHS_PROVISIONING
+          value: {{ .Values.grafana.provisioning }}
+        ports:
+        - containerPort: {{ .Values.grafana.service.port }}
+          name: grafana-port
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appGrafana" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.grafana.runAsUser }}
+          runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- else }}
+        {{- $securityContext := .Values.securityContext }}
+        {{- if $securityContext }}
+        securityContext:
+        {{-   toYaml $securityContext | nindent 10 }}
+        {{- end }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureResourceQuota (not (has "appGrafana" .Values.global.excludeAppsInResourceQuota)) }}
+        {{- include "common.small" . }}
+        {{- end }}
+
+        {{- if and .Values.global.ensureContainerProbe (not (has "appGrafana" .Values.global.excludeAppsInContainerProbe)) }}
+        {{- toYaml .Values.global.commonProbe | nindent 8 }}
+        {{- end }}
+
+        volumeMounts:
+        - name: dashboard-provision
+          mountPath: /config/provisioning/dashboards
+          readOnly: false
+        - name: datasource-provision
+          mountPath: /config/provisioning/datasources
+          readOnly: false
+        - name: dashboards
+          mountPath: /config/dashboards
+          readOnly: false
+        - name: grafana-config
+          mountPath: /config
+          readOnly: false
+        - name: home-dashboard
+          mountPath: /config/home
+          readOnly: false
+        - name: data
+          mountPath: /data
+          readOnly: false
+
+      initContainers:
+      - name: init-grafana
+        image: {{ .Values.grafana.image.repository -}} : {{- .Values.grafana.image.tag }}
+        imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
+        command: ["/bin/bash"]
+        args: ["-c", 'while true; do if [ -f "/config/grafana.ini" ]; then break; else sleep 2; fi; done']
+        volumeMounts:
+        - name: dashboard-provision
+          mountPath: /config/provisioning/dashboards
+          readOnly: false
+        - name: datasource-provision
+          mountPath: /config/provisioning/datasources
+          readOnly: false
+        - name: dashboards
+          mountPath: /config/dashboards
+          readOnly: false
+        - name: grafana-config
+          mountPath: /config
+          readOnly: false
+        - name: data
+          mountPath: /data
+          readOnly: false
+
+        {{- if and .Values.global.ensureSecurityContext (not (has "appGrafana" .Values.global.excludeAppsInSecurityContext)) }}
+        securityContext:
+          {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}
+          runAsUser: {{ .Values.grafana.runAsUser }}
+          runAsGroup: {{ .Values.global.defaultGroup }}
+        {{- end }}
+
+      {{- with .Values.grafana.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.grafana.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.grafana.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: dashboard-provision
+          configMap:
+            name: dashboard-provision
+            defaultMode: 0755
+        - name: datasource-provision
+          configMap:
+            name: datasource-provision
+            defaultMode: 0755
+        - name: dashboards
+          configMap:
+            name: dashboards
+            defaultMode: 0755
+        - name: grafana-config
+          configMap:
+            name: grafana-config
+            defaultMode: 0755
+        - name: home-dashboard
+          configMap:
+            name: home-dashboard
+            defaultMode: 0755
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.grafanaStorage.capacity }}
+      storageClassName: {{ .Values.grafanaStorage.storageClassName }}

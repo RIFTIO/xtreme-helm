@@ -1,0 +1,31 @@
+# Copyright 2020 RIFT Inc
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-prelaunch
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  prometheus-prelaunch.sh: |
+    #!/bin/sh
+    echo "Running prometheus prelaunch script"
+    echo "`id`"
+    chown -R "1000" /data
+    chmod -R 777 /data
+    echo "data directory set with 777 permission"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-prometheus-conf
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  prometheus.yaml: |
+    global:
+      evaluation_interval: 30s
+      scrape_interval: 10s
+    rule_files:
+    - prometheus_rules.yaml
+
+  prometheus_rules.yaml: |
+    groups: ~

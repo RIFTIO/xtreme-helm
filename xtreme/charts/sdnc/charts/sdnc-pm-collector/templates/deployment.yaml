@@ -1,0 +1,118 @@
+# Copyright 2022 DZS Inc
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dzs-sdnc-pm-collector
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+    {{- include "pm-collector.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "pm-collector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "actuator/prometheus"
+        prometheus.io/type: "sdnc-service"
+        prometheus.io/port: "{{ .Values.service.port }}"
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "pm-collector.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pm-collector.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+            - name: RW_SDNC_INVENTORY_MGR_SVC_NAME
+              value: {{ include "rnc-inventory-mgr.fqdn" . }}
+            {{- if and (eq .Values.global.install.kafka true) (eq .Values.global.enableKafka_pmCollector true) }}
+            - name: RW_KAFKA_SVC_NAME
+              value: {{ include "kafkaBootstrap.fqdn" . }}
+            {{- end }} 
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(RW_SDNC_INVENTORY_MGR_SVC_NAME):8899"
+            {{- if and (eq .Values.global.install.kafka true) (eq .Values.global.enableKafka_pmCollector true) }}
+            - --host="$(RW_KAFKA_SVC_NAME):9092"
+            {{- end }}
+            - --timeout=120s
+            - --verbose
+
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+            - name: config-volume
+              mountPath: /config
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: JAVA_OPTS
+              value: {{ .Values.java.opts }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: "fluentd"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12}}
+          image: "{{ .Values.fluentd.image.repository }}:{{ .Values.fluentd.image.tag }}"
+          imagePullPolicy: {{ .Values.fluentd.image.pullPolicy }}
+          command: ["fluentd"]
+          args: ["-c", "/fluentd/etc/fluent.conf"]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /fluentd/etc
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ .Values.sdnc.volume.log.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.sdnc.volume.log.pvc.name }}
+        - name: config-volume
+          configMap:
+            name: {{ include "pm-collector.fullname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

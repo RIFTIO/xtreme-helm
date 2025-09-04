@@ -1,0 +1,72 @@
+# Copyright 2021-2022 DZS Inc
+# Copyright 2020-2021 RIFT Inc
+#
+{{- if .Values.global.aeoNamespacePrefix }}
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: haproxy-ingress-role
+  namespace: {{ include "aeo.namespace" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - endpoints
+  - secrets
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - services
+  - pods
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "extensions"
+  - "networking.k8s.io"
+  resources:
+  - ingresses/status
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - "extensions"
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  - ingressclasses
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: haproxy-ingress-role-binding
+  namespace: {{ include "aeo.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: haproxy-ingress-role
+subjects:
+- kind: ServiceAccount
+  name: haproxy-ingress-service-account
+  namespace: {{ .Values.global.namespace.name }}
+{{- end }}

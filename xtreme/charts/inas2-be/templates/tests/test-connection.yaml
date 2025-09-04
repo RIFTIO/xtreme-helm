@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "inas2-be.fullname" . }}-test-connection"
+  labels:
+    {{- include "inas2-be.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "inas2-be.fullname" . }}:{{ .Values.service.port12 }}']
+  restartPolicy: Never

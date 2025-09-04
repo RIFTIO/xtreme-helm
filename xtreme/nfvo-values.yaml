@@ -1,0 +1,45 @@
+# Copyright 2022 DZS Inc
+
+global:
+  namespace:
+    name: xtreme
+  install:
+    zms: false
+    inas: false
+    sdnc: false
+    explore: false
+    aeo: false
+    kafka: false
+    clusterLogger: false
+
+  ingress:
+    createClusterRole: true
+    service:
+      type: LoadBalancer
+    # FQDN or IP address using which launchpad can be externally accessed.
+    # This value is mandatory except if service type is "LoadBalancer".
+    externalAddress: null
+
+launchpad:
+  cluster_logger:
+    createClusterRole: false
+  launchpad:
+    appSelector: nfvo
+    image:
+      repository: rt.cloud.dzsi.local/docker/launchpad/dzs
+      pullPolicy: Always     # This is only for images tagged based on branch
+      tag: "master"
+  aeo:
+    image:
+      controller:
+        pullPolicy: Always
+        tag: "master"
+      serviceWorker:
+        pullPolicy: Always
+        tag: "master"
+      resourceWorker:
+        pullPolicy: Always
+        tag: "master"
+      tmfServer:
+        pullPolicy: Always
+        tag: "master"

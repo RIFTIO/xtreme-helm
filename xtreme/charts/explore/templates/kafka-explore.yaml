@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: explore-kafka-cm
+  namespace: {{ include "explore.namespace" . }}
+data:
+  config.ini: |
+    [kafka]
+    bootstrap.servers={{ include "kafkaBootstrap.fqdn" . }}:9092
+
+    [consumer]
+    group.id=sdnc_explore_group
+    auto.commit.interval.ms=0
+    auto.offset.reset=latest
+    enable.auto.commit=false
+    enable.auto.offset.store=false
+    max.poll.interval.ms=120000
+    session.timeout.ms=60000
+    heartbeat.interval.ms=300000
+
+    [database]
+    host={{ .Values.global.chiDb.host }}
+    port={{ .Values.global.chiDb.port }}
+    http_port={{ .Values.global.chiDb.httpPort }}
+    username=demo
+    password=demo
+    database=sdnc
+
+    [collector]
+    host={{ include "pm-collector.fqdn" . }}
+    port=8888
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: explore-kafka
+  namespace: {{ include "explore.namespace" . }}
+spec:
+  selector:
+    app: explore-kafka
+  ports:
+    - protocol: "TCP"
+      port: 8002
+      targetPort: http
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: explore-kafka
+  namespace: {{ include "explore.namespace" . }}
+spec:
+  selector:
+    matchLabels:
+      app: explore-kafka
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: explore-kafka
+    spec:
+      containers:
+        - name: explore-kafka
+          image: {{ .Values.kafkaExplore.image.repository }}:{{ .Values.kafkaExplore.image.tag }}
+          imagePullPolicy: {{ .Values.kafkaExplore.image.pullPolicy }}
+          ports:
+            - containerPort: 8002
+          volumeMounts:
+          - name: config
+            mountPath: /config
+      volumes:
+      - name: config
+        configMap:
+          name: explore-kafka-cm

@@ -1,0 +1,18 @@
+# Copyright 2022 DZS Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rw-prometheus-replicator-config
+  namespace: {{ .Values.global.namespace.name }}
+data:
+  config.json: |
+    {
+      "environment": {},
+      "source": {
+        "prometheus": {
+          "port": 8008
+        },
+        "transformPlugin": "noop"
+      },
+      "target": []
+    }

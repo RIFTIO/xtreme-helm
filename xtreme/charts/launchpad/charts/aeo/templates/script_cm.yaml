@@ -1,0 +1,9 @@
+# Copyright 2022 DZS Inc
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scripts
+  namespace: {{ include "aeo.namespace" . }}
+data:
+  dummy: |
+

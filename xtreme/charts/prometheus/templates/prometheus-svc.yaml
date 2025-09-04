@@ -1,0 +1,25 @@
+# Copyright 2020 RIFT Inc
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "prometheus.fullname" . }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: rw.prometheus
+spec:
+  ports:
+  {{- range $name, $port := .Values.prometheus.ports }}
+  - name: {{ $name }}
+    port: {{ $port }}
+    targetPort: {{ $port }}
+  {{- end }}
+  - name: rw-prom-pushgateway
+    port: {{ .Values.prometheus.pushGateway.port }}
+    targetPort: 9091
+  type: {{ .Values.prometheus.service.type }}
+  {{- if .Values.global.ipv6Mode }}
+  ipFamilies:
+  - IPv6
+  {{- end }}
+  selector:
+    app: rw.prometheus

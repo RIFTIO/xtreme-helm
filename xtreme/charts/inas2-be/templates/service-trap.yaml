@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "inas2-be.fullname" . }}-trap
+  namespace: {{ include "inas.namespace" . }}
+  labels:
+    {{- include "inas2-be.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+#    - port: {{ .Values.service.port1 }}
+#      protocol: {{ .Values.service.protocal1 }}
+#      name: {{ .Values.service.name1 }}
+#      targetPort: {{ .Values.service.port1 }}
+    - port: {{ .Values.service.port7 }}
+      protocol: {{ .Values.service.protocal7 }}
+      name: {{ .Values.service.name7 }}
+      targetPort: {{ .Values.service.port7 }}
+  selector:
+    {{- include "inas2-be.selectorLabels" . | nindent 4 }}
+  externalTrafficPolicy: Local

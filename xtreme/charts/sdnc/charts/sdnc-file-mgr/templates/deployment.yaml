@@ -1,0 +1,129 @@
+# Copyright 2022 DZS Inc
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dzs-sdnc-file-mgr
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+    {{- include "file-mgr.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "file-mgr.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "actuator/prometheus"
+        prometheus.io/type: "sdnc-service"
+        prometheus.io/port: "{{ .Values.service.port }}"
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "file-mgr.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "file-mgr.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+            - name: RW_FTP_SVC_NAME
+              value: {{ include "ftp.fqdn" . }}
+            - name: RW_SFTP_SVC_NAME
+              value: {{ include "sftp.fqdn" . }}
+            - name: RW_ARTIFACTORY_SVC_NAME
+              value: {{ include "artifactory.fqdn" . }}
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(RW_FTP_SVC_NAME):21"
+            - --host="$(RW_SFTP_SVC_NAME):{{ .Values.sftp.port }}"
+            - --host="$(RW_ARTIFACTORY_SVC_NAME):8082"
+            - --timeout=120s
+            - --verbose
+
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+            - name: config-volume
+              mountPath: /config
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_RELEASE_NAME
+              value: {{ .Values.global.namespace.name }}
+            - name: RW_ARTIFACTORY_FULLNAME
+              value: {{ include "artifactory.fullname" . }}
+            - name: RW_FTP_FULLNAME
+              value: {{ include "ftp.fullname" . }}
+            - name: RW_SFTP_FULLNAME
+              value: {{ include "sftp.fullname" . }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: JAVA_OPTS
+              value: {{ .Values.java.opts }}
+          ports:
+            - name: http
+              containerPort: 8897
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: "fluentd"
+          securityContext: 
+            {{- toYaml .Values.securityContext | nindent 12}}
+          image: "{{ .Values.fluentd.image.repository }}:{{ .Values.fluentd.image.tag }}"
+          imagePullPolicy: {{ .Values.fluentd.image.pullPolicy }}
+          command: ["fluentd"]
+          args: ["-c", "/fluentd/etc/fluent.conf"]          
+          volumeMounts:
+            - name: config-volume
+              mountPath: /fluentd/etc
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ .Values.sdnc.volume.log.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.sdnc.volume.log.pvc.name }}
+        - name: config-volume
+          configMap:
+            name: {{ include "file-mgr.fullname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
