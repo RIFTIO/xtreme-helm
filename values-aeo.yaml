@@ -1,5 +1,8 @@
 global: 
   sdncImgtag: 13.3.0.1010155
+  namespace:
+    name: demo
+    create: false
 launchpad:
   launchpad:
     appSelector: aeo

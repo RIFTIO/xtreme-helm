@@ -5,6 +5,18 @@ global:
   pvcmetadata:
     storageClass: ""
 
+    pceNetconfConfigmgr:
+      storageClass: null
+
+    logPceNetconfConfigmgr:
+      storageClass: null
+
+    persistence:
+      storageClass: null
+
+    persistenceFtp:
+      storageClass: null
+
 mongodb:
   mongoStorage:
     storageClassName: null
