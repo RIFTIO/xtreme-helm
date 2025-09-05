@@ -1,7 +1,7 @@
 global: 
   sdncImgtag: 13.3.0.1010155
   namespace:
-    name: demo
+    name: jlm
     create: false
 launchpad:
   launchpad:

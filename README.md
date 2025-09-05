@@ -1,6 +1,9 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
+PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
+the ZHONE Inc container image repository currently hosted on dockerhub. 
+
 files in this dir
 * README.md this file
 * repos.yaml -- values to use public repos
