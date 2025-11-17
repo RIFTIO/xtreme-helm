@@ -1,0 +1,88 @@
+#!/bin/bash 
+
+NS="demo"
+if [ "$1" == "clean" ]; then
+  helm uninstall xtreme
+  kubectl delete pvc -n ${NS} --all
+  kubectl delete pvc -n aeo-${NS} --all
+  exit
+fi
+
+values=${1:-values-13.3.1.yaml}
+chart=${2:-./xtreme-13.3.0.tgz}
+shift
+shift
+
+if [ ! -f ${values} ]; then 
+    echo values file $values not found
+    echo args are values-file chart-file
+    exit 1
+fi
+if [ ! -f ${chart} ]; then 
+    echo chart file $chart not found
+    echo args are values-file chart-file
+    exit 1
+fi
+
+if [ ! -d xtreme ]; then
+    echo expanding $chart
+    tar xzf ${chart}
+fi
+
+  if [ -f dockerhub-token ]; then
+       token=$(cat dockerhub-token)
+  else
+       echo please put dockerhub token in file dockerhub-token
+       echo contact Zhone sales if you don\'t have one yet
+       exit 1
+  fi
+  for ns in ${NS} aeo-${NS}; do
+    kubectl create ns $ns || true
+    kubectl create -n $ns secret docker-registry dzs-secret --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
+    kubectl create -n $ns secret docker-registry harbor --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
+  done
+
+  echo creating CRDs...
+  for f in xtreme/charts/kafka/crds/*; do echo $f; kubectl apply -f $f; done
+  exit
+
+
+
+  echo install...
+  # you may need to add more yaml files here, e.g. for overriding the default port
+  helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml || exit 1
+
+  echo waiting for xtreme ingress service to obtain IP
+  HN=""
+  fqdn=false
+  while [ -z "$HN" ]; do
+    echo -n "."
+      sleep 1
+      HN=$(kubectl get -n zhone svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+      if [ -z "$HN" ]; then
+        HN=$(kubectl get -n zhone svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+      else
+        fqdn=true
+      fi
+  done
+echo HOSTNAME/IP is $HN
+
+echo waiting for DNS
+if $fqdn; then
+  while ! host $HN; do
+    sleep 1
+  done
+  echo HOSTNAME is $HN and is resolving
+fi
+
+echo waiting for service
+while ! curl -kv https://$HN >/dev/null 2>&1; do
+  echo -n "."
+  sleep 1
+done
+
+echo waiting for launchpad
+while curl -kv https://$HN 2>&1 | grep 'HTTP/2 503'; do
+  sleep 10
+done
+
