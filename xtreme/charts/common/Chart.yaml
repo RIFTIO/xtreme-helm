@@ -1,6 +1,6 @@
 apiVersion: v2
-appVersion: 0.1.0
-description: A library Helm chart that provides common logic across DZS eXtreme charts
 name: common
+description: A library Helm chart that provides common logic across DZS eXtreme charts
 type: library
 version: 0.1.0
+appVersion: "0.1.0"

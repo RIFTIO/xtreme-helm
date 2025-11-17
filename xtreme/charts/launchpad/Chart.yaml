@@ -11,14 +11,14 @@ dependencies:
 - name: haproxy-ingress
   repository: file://./charts/haproxy-ingress
   version: "0.1"
-- condition: global.install.aeo
-  name: aeo
+- name: aeo
   repository: file://./charts/aeo
-  version: 0.1.0
-- condition: global.install.clusterLogger
-  name: cluster_logger
+  version: "0.1.0"
+  condition: global.install.aeo
+- name: cluster_logger
   repository: file://./charts/cluster_logger
-  version: 0.1.0
+  version: "0.1.0"
+  condition: global.install.clusterLogger
 description: A Helm chart for RIFT.ware Launchpad
 name: launchpad
 type: application

@@ -390,10 +390,10 @@ launchpad:
     image:
       pullPolicy: Always
       repository: rt.cloud.dzsi.local/docker/rw.aeo
-      tag: 13.3.0.1010164
+      tag: __image_version__
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
     # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
-    # version: 13.3.0.1010164
+    # version: __image_version__
     securityContext:
       enabled: False
       # Set this to secondary group id that is being used by the
@@ -403,21 +403,21 @@ launchpad:
       runAsUser: 1001
       # The primary group for the user.
       runAsGroup: 1001
-    upgradeFrom: 13.3.0.1010164
+    upgradeFrom: __image_version__
   aeo:
     image:
       controller:
         pullPolicy: Always
-        tag: 13.3.0.1010164
+        tag: __image_version__
       serviceWorker:
         pullPolicy: Always
-        tag: 13.3.0.1010164
+        tag: __image_version__
       resourceWorker:
         pullPolicy: Always
-        tag: 13.3.0.1010164
+        tag: __image_version__
       tmfServer:
         pullPolicy: Always
-        tag: 13.3.0.1010164
+        tag: __image_version__
   storage:
     accessMode: ReadWriteOnce
     capacity: 80Gi

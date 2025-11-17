@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dzs-sdnc-artifactory-postgresql
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+  {{- include "sdnc-artifactory-postgresql.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sdnc-artifactory-postgresql.selectorLabels" . | nindent 6 }}
+  serviceName: "{{ include "sdnc-artifactory-postgresql.fullname" . }}"
+  template:
+    metadata:
+      labels:
+        {{- include "sdnc-artifactory-postgresql.selectorLabels" . | nindent 8 }}
+      {{- if .Values.podAnnotations }}
+      annotations:
+        {{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- end }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end}}
+      {{- end}}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      containers:
+      - env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: POSTGRESQL_PORT_NUMBER
+          value: "5432"
+        - name: POSTGRESQL_VOLUME_DIR
+          value: /bitnami/postgresql
+        - name: PGDATA
+          value: /bitnami/postgresql/data
+        - name: POSTGRES_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-postgres-password
+              name: "{{ include "sdnc-artifactory-postgresql.fullname" . }}"
+        - name: POSTGRES_USER
+          value: artifactory
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: "{{ include "sdnc-artifactory-postgresql.fullname" . }}"
+        - name: POSTGRES_DB
+          value: artifactory
+        - name: POSTGRESQL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-postgres-password
+              name: "{{ include "sdnc-artifactory-postgresql.fullname" . }}"
+        - name: POSTGRESQL_USER
+          value: artifactory
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: "{{ include "sdnc-artifactory-postgresql.fullname" . }}"
+        - name: POSTGRESQL_DB
+          value: artifactory
+        - name: POSTGRESQL_ENABLE_LDAP
+          value: "no"
+        - name: POSTGRESQL_ENABLE_TLS
+          value: "no"
+        - name: POSTGRESQL_LOG_HOSTNAME
+          value: "false"
+        - name: POSTGRESQL_LOG_CONNECTIONS
+          value: "false"
+        - name: POSTGRESQL_LOG_DISCONNECTIONS
+          value: "false"
+        - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+          value: "off"
+        - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+          value: error
+        - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+          value: pgaudit
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 10 }}
+        name: {{ template "sdnc-artifactory-postgresql.fullname" . }}
+        ports:
+        - containerPort: 5432
+          name: tcp-postgresql
+          protocol: TCP
+        startupProbe:
+          {{- toYaml .Values.startupProbe | nindent 10 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        volumeMounts:
+        - mountPath: /opt/bitnami/postgresql/share/postgresql.conf.sample
+          name: postgresql-sample-config
+          subPath: postgresql.conf.sample
+        - mountPath: /bitnami/postgresql/conf/conf.d/
+          name: postgresql-extended-config
+        - mountPath: /bitnami/postgresql
+          name: data
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+      - configMap:
+          name: {{ include "sdnc-artifactory-postgresql.fullname" . }}-sample-configuration
+        name: postgresql-sample-config
+      - configMap:
+          defaultMode: 420
+          name: {{ include "sdnc-artifactory-postgresql.fullname" . }}-extended-configuration
+        name: postgresql-extended-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.artifactorypostgresqlStorage.capacity }}
+      storageClassName: {{ .Values.artifactorypostgresqlStorage.storageClassName }}

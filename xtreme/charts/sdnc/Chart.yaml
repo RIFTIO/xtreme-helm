@@ -1,49 +1,67 @@
 apiVersion: v2
-appVersion: 1.16.0
-dependencies:
-- condition: global.install.deviceSimulator
-  name: simulator
-  repository: file://.charts/simulator
-- condition: install.artifactory
-  name: sdnc-artifactory
-  repository: file://.charts/sdnc-artifactory
-- condition: install.fileManager
-  name: sdnc-file-mgr
-  repository: file://.charts/sdnc-file-mgr
-- condition: install.pmCollector
-  name: sdnc-influxdb
-  repository: file://.charts/sdnc-influxdb
-- condition: install.pmCollector
-  name: sdnc-pm-collector
-  repository: file://.charts/sdnc-pm-collector
-- condition: install.alarmSvc
-  name: sdnc-alarm-svc
-  repository: file://.charts/sdnc-alarm-svc
-- condition: install.inventoryMgr
-  name: sdnc-inventory-mgr
-  repository: file://.charts/sdnc-inventory-mgr
-- condition: install.taskMgr
-  name: sdnc-task-mgr
-  repository: file://.charts/sdnc-task-mgr
-- condition: install.netconfSvc
-  name: sdnc-netconf-svc
-  repository: file://.charts/sdnc-netconf-svc
-- condition: install.configMgr
-  name: sdnc-config-mgr
-  repository: file://.charts/sdnc-config-mgr
-- condition: install.transportpce
-  name: sdnc-transportpce
-  repository: file://.charts/sdnc-transportpce
-- condition: install.sdncConnector
-  name: sdnc-connector
-  repository: file://.charts/sdnc-connector
-- condition: install.envoy
-  name: envoy
-  repository: file://.charts/envoy
-- condition: install.gnpy
-  name: sdnc-gnpy
-  repository: file://./charts/sdnc-gnpy
-description: A Helm chart for Kubernetes
 name: sdnc
+description: A Helm chart for Kubernetes
+
+# A chart can be either an 'application' or a 'library' chart.
+#
+# Application charts are a collection of templates that can be packaged into versioned archives
+# to be deployed.
+#
+# Library charts provide useful utilities or functions for the chart developer. They're included as
+# a dependency of application charts to inject those utilities and functions into the rendering
+# pipeline. Library charts do not define any templates and therefore cannot be deployed.
 type: application
+
+# This is the chart version. This version number should be incremented each time you make changes
+# to the chart and its templates, including the app version.
+# Versions are expected to follow Semantic Versioning (https://semver.org/)
 version: 0.1.0
+
+# This is the version number of the application being deployed. This version number should be
+# incremented each time you make changes to the application. Versions are not expected to
+# follow Semantic Versioning. They should reflect the version the application is using.
+# It is recommended to use it with quotes.
+appVersion: "1.16.0"
+dependencies:
+- name: simulator
+  repository: file://.charts/simulator
+  condition: global.install.deviceSimulator
+- name: sdnc-artifactory
+  repository: file://.charts/sdnc-artifactory
+  condition: install.artifactory
+- name: sdnc-file-mgr
+  repository: file://.charts/sdnc-file-mgr
+  condition: install.fileManager
+- name: sdnc-influxdb
+  repository: file://.charts/sdnc-influxdb
+  condition: install.pmCollector
+- name: sdnc-pm-collector
+  repository: file://.charts/sdnc-pm-collector
+  condition: install.pmCollector
+- name: sdnc-alarm-svc
+  repository: file://.charts/sdnc-alarm-svc
+  condition: install.alarmSvc
+- name: sdnc-inventory-mgr
+  repository: file://.charts/sdnc-inventory-mgr
+  condition: install.inventoryMgr
+- name: sdnc-task-mgr
+  repository: file://.charts/sdnc-task-mgr
+  condition: install.taskMgr
+- name: sdnc-netconf-svc
+  repository: file://.charts/sdnc-netconf-svc
+  condition: install.netconfSvc
+- name: sdnc-config-mgr
+  repository: file://.charts/sdnc-config-mgr
+  condition: install.configMgr
+- name: sdnc-transportpce
+  repository: file://.charts/sdnc-transportpce
+  condition: install.transportpce
+- name: sdnc-connector
+  repository: file://.charts/sdnc-connector
+  condition: install.sdncConnector
+- name: envoy
+  repository: file://.charts/envoy
+  condition: install.envoy
+- name: sdnc-gnpy
+  repository: file://./charts/sdnc-gnpy
+  condition: install.gnpy
