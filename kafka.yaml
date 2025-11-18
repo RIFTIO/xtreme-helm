@@ -1,0 +1,11 @@
+# Copyright 2025 Zhone Inc
+#
+# in some cases, kafka dies trying to ascertain the version of k8s
+# this snippet circumvents the problem
+# make sure the version is correct by running 
+#                kubectl get nodes -o wide
+
+kafka:
+  extraEnvs:
+  - name: STRIMZI_KUBERNETES_VERSION
+    value: "major=1,minor=33"

@@ -1,0 +1,45 @@
+# Copyright 2025 Zhone
+#
+# These are example settings for running the entire service behind a single IP address
+# we move the services away from port 22 because that is in use by k8s and then 
+# we enable ip-port sharing
+
+
+global:
+  ingress:
+    service:
+      type: LoadBalancer
+
+launchpad:
+  haproxy-ingress:
+    serviceAnnotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+
+sftp:
+  service:
+    type: LoadBalancer
+    port: 2222
+    annotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+ftp:
+  service:
+    annotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+sdnc:
+  sdnc-netconf-svc:
+    sftp:
+      port: 2222
+  sdnc-config-mgr:
+    sftp:
+      port: 2222
+  sdnc-transportpce:
+    sftp:
+      port: 2222
+  sdnc-file-mgr:
+    createClusterRole: true
+    sftp:
+      port: 2222
+  sdnc-artifactory:
+    service:
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
