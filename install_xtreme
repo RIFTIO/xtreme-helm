@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-NS="demo"
+NS="${NS:-demo}"
 if [ "$1" == "clean" ]; then
   helm uninstall xtreme
   kubectl delete pvc -n ${NS} --all
@@ -8,8 +8,8 @@ if [ "$1" == "clean" ]; then
   exit
 fi
 
-values=${1:-values-13.3.1.yaml}
-chart=${2:-./xtreme-13.3.0.tgz}
+values=${1:-values-aeo.yaml}
+chart=${2:-./xtreme}
 shift
 shift
 
@@ -18,7 +18,7 @@ if [ ! -f ${values} ]; then
     echo args are values-file chart-file
     exit 1
 fi
-if [ ! -f ${chart} ]; then 
+if [ ! -e ${chart} ]; then 
     echo chart file $chart not found
     echo args are values-file chart-file
     exit 1
@@ -44,13 +44,14 @@ fi
 
   echo creating CRDs...
   for f in xtreme/charts/kafka/crds/*; do echo $f; kubectl apply -f $f; done
-  exit
 
 
 
   echo install...
   # you may need to add more yaml files here, e.g. for overriding the default port
-  helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml || exit 1
+  #helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml --set global.namespace.name=$NS --dry-run
+  #exit
+  helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml --set global.namespace.name=$NS || exit 1
 
   echo waiting for xtreme ingress service to obtain IP
   HN=""
@@ -58,9 +59,9 @@ fi
   while [ -z "$HN" ]; do
     echo -n "."
       sleep 1
-      HN=$(kubectl get -n zhone svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+      HN=$(kubectl get -n ${NS} svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
       if [ -z "$HN" ]; then
-        HN=$(kubectl get -n zhone svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        HN=$(kubectl get -n ${NS} svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
       else
         fqdn=true
       fi

@@ -3,7 +3,7 @@
 # for some reason null does not work for the pvcmetadata.storageClass
 global:
   pvcmetadata:
-    storageClass: ""
+    storageClass: local-path
 
     pceNetconfConfigmgr:
       storageClass: null

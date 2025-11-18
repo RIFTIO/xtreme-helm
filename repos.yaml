@@ -17,7 +17,7 @@ initContainer:
 mongodb:
   image:
     registry: docker.io
-    repository: bitnami/mongodb
+    repository: dzscloudadmin/mongodb
   busybox:
     image:
       repository: busybox
@@ -27,7 +27,7 @@ mongodb:
   metrics:
     image:
       registry: docker.io
-      repository: bitnami/mongodb-exporter
+      repository: dzscloudadmin/mongodb-exporter
 
 prometheus:
   replicator:
@@ -108,7 +108,8 @@ launchpad:
       repository_latest: dzscloudadmin/haproxy-ingress
     defaultbackend:
       image:
-        repository: dzscloudadmin/defaultbackend
+        repository: registry.k8s.io/defaultbackend
+        tag: 1.4
         pullPolicy: IfNotPresent
     exporter:
       image:
@@ -134,7 +135,7 @@ nats:
     repository: nats
   exporter:
     image:
-      repository: bitnami/nats-exporter
+      repository: dzscloudadmin/nats-exporter
 
 redis:
   image:
@@ -245,4 +246,7 @@ sdnc:
   sdnc-gnpy:
     image:
       repository: dzscloudadmin/dzs-gnpy
+  sdnc-influxdb:
+    image:
+      repository: dzscloudadmin/influxdb
 
