@@ -1,34 +1,92 @@
 #!/bin/bash 
 
-NS="${NS:-demo}"
-if [ "$1" == "clean" ]; then
+NS="demo"
+default_values="values-aeo.yaml storage.yaml repos.yaml"
+chart="xtreme"
+init=true
+install=true
+clean=false
+dryrun=false
+check=true
+
+
+help() {
+cat <<EOF
+    USAGE: 
+--chart path      helm chart
+--values path     values file. May be used more than once. default is $default_values
+--ns namespace    override the namespace 
+--init            ONLY create the CRDs and docker secrets. Only needs to be done once
+--install         ONLY install
+--dry-run         do not install, just do a dry-run
+--clean           clean up
+--check       just check if service is up
+
+NOTE: that the default is to do init and install
+
+typical usage sequences
+    --init, then --dry-run, then --install, then maybe --check, then --clean
+OR
+    none of the above :)
+EOF
+exit 1
+}
+
+
+while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
+    case $1 in
+        --chart) chart=$2; shift;;
+        --values) values="$values $2"; shift;;
+        --ns) NS=$2; shift;;
+        --init) install=false; check=false;;
+        --install) init=false; check=false;;
+        --dry-run) dryrun=true; init=false; install=false; check=false;;
+        --clean) clean=true;;
+        --check) install=false; init=false;;
+        *) help;;
+    esac
+    shift
+done
+
+if [ -z "$values" ]; then
+    values="${default_values}"
+fi
+
+cat <<EOF
+    namespace is $NS
+    install is $install dry-run is $dryrun
+    check is $check
+    init is $init
+    clean is $clean
+    chart is $chart
+    values are $values
+EOF
+
+rc=0
+for file in $chart $values; do
+    if [ ! -e $file ]; then
+        echo $file not found
+        rc=1
+    fi
+done
+if [ $rc != 0 ]; then
+    exit 1
+fi
+
+
+
+if $clean; then
   helm uninstall xtreme
-  kubectl delete pvc -n ${NS} --all
-  kubectl delete pvc -n aeo-${NS} --all
+  for ns in ${NS} aeo-${NS}; do
+    kubectl delete pvc -n ${ns} --all
+    kubectl delete secret -n ${ns} --all
+  done
   exit
 fi
 
-values=${1:-values-aeo.yaml}
-chart=${2:-./xtreme}
-shift
-shift
 
-if [ ! -f ${values} ]; then 
-    echo values file $values not found
-    echo args are values-file chart-file
-    exit 1
-fi
-if [ ! -e ${chart} ]; then 
-    echo chart file $chart not found
-    echo args are values-file chart-file
-    exit 1
-fi
 
-if [ ! -d xtreme ]; then
-    echo expanding $chart
-    tar xzf ${chart}
-fi
-
+if $init; then
   if [ -f dockerhub-token ]; then
        token=$(cat dockerhub-token)
   else
@@ -42,16 +100,31 @@ fi
     kubectl create -n $ns secret docker-registry harbor --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
   done
 
+    if [ ! -d xtreme ]; then
+       echo expanding $chart
+       tar xzf ${chart}
+    fi
+
   echo creating CRDs...
   for f in xtreme/charts/kafka/crds/*; do echo $f; kubectl apply -f $f; done
+fi
 
+for file in $values; do
+    flags="$flags -f $file"
+done
 
+if $dryrun; then
+    helm install xtreme ${chart} $flags --set global.namespace.name=$NS --dry-run
+    exit 0
+fi
 
+if $install; then
+   
   echo install...
-  # you may need to add more yaml files here, e.g. for overriding the default port
-  #helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml --set global.namespace.name=$NS --dry-run
-  #exit
-  helm install xtreme ${chart} -f ${values} -f repos.yaml -f storage.yaml --set global.namespace.name=$NS || exit 1
+  helm install xtreme ${chart} $flags --set global.namespace.name=$NS || exit 1
+fi
+
+if $check; then
 
   echo waiting for xtreme ingress service to obtain IP
   HN=""
@@ -66,24 +139,25 @@ fi
         fqdn=true
       fi
   done
-echo HOSTNAME/IP is $HN
+    echo HOSTNAME/IP is $HN
 
-echo waiting for DNS
-if $fqdn; then
-  while ! host $HN; do
-    sleep 1
-  done
-  echo HOSTNAME is $HN and is resolving
+    echo waiting for DNS
+    if $fqdn; then
+        while ! host $HN; do
+            sleep 1
+        done
+        echo HOSTNAME is $HN and is resolving
+    fi
+
+    echo waiting for service
+    while ! curl -kv https://$HN >/dev/null 2>&1; do
+        echo -n "."
+        sleep 1
+    done
+
+    echo waiting for launchpad
+    while curl -kv https://$HN 2>&1 | grep 'HTTP/2 503'; do
+        sleep 10
+    done
+
 fi
-
-echo waiting for service
-while ! curl -kv https://$HN >/dev/null 2>&1; do
-  echo -n "."
-  sleep 1
-done
-
-echo waiting for launchpad
-while curl -kv https://$HN 2>&1 | grep 'HTTP/2 503'; do
-  sleep 10
-done
-
