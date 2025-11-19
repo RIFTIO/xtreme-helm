@@ -8,6 +8,7 @@ install=true
 clean=false
 dryrun=false
 check=true
+action=install
 
 
 help() {
@@ -18,6 +19,7 @@ cat <<EOF
 --ns namespace    override the namespace 
 --init            ONLY create the CRDs and docker secrets. Only needs to be done once
 --install         ONLY install
+--upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
 --clean           clean up
 --check       just check if service is up
@@ -40,6 +42,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --ns) NS=$2; shift;;
         --init) install=false; check=false;;
         --install) init=false; check=false;;
+        --upgrade) action=upgrade; init=false;;
         --dry-run) dryrun=true; init=false; install=false; check=false;;
         --clean) clean=true;;
         --check) install=false; init=false;;
@@ -47,6 +50,9 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
     esac
     shift
 done
+if [ $# -gt 0 ]; then 
+    help
+fi
 
 if [ -z "$values" ]; then
     values="${default_values}"
@@ -120,8 +126,8 @@ fi
 
 if $install; then
    
-  echo install...
-  helm install xtreme ${chart} $flags --set global.namespace.name=$NS || exit 1
+  echo $action ....
+  helm $action xtreme ${chart} $flags --set global.namespace.name=$NS || exit 1
 fi
 
 if $check; then
