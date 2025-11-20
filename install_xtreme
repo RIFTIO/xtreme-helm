@@ -24,7 +24,7 @@ cat <<EOF
 --clean           clean up
 --check       just check if service is up
 
-NOTE: that the default is to do init and install
+NOTE: that the default is to do init + install + check but if you specify a step, only that step is run
 
 typical usage sequences
     --init, then --dry-run, then --install, then maybe --check, then --clean

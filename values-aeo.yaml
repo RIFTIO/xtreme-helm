@@ -16,7 +16,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/rw.aeo
       tag: 13.3.1.1010260
-    upgradeFrom: null
+    upgradeFrom: 13.3.1.1010260
   aeo:
     image:
       controller:
