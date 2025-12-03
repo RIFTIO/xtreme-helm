@@ -261,6 +261,8 @@ global:
   # set nodeportServiceEnable to true and then configure the ports below
   nodeportServiceEnable: false
   nodeportService:
+    name: "nodeport-rm"
+    appLabel: "xtreme"
     ports:
       mongo: 1004
       redis: 1005
