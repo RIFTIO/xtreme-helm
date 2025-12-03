@@ -9,7 +9,8 @@ metadata:
 spec:
   containers:
     - name: wget
-      image: busybox
+      image: {{ .Values.global.busybox.image.repository }}:{{ .Values.global.busybox.image.tag }}
+      imagePullPolicy: {{ .Values.global.busybox.image.pullPolicy | quote }}
       command: ['wget']
       args: ['{{ include "sdnc-connector.fullname" . }}:{{ .Values.service.port }}']
   restartPolicy: Never

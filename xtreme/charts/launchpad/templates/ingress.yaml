@@ -73,6 +73,9 @@ metadata:
     cert-manager.io/issuer: acme-issuer
     {{- end }}
     {{- end }}
+    {{- with .Values.global.ingress.extraAnnotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
   labels:
     {{- if .Values.global.customLabels }}
     helm.toolkit.fluxcd.io/name: {{ include "launchpad.name" . }}

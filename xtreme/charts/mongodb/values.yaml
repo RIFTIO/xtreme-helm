@@ -10,11 +10,6 @@
 ## Override the namespace for resource deployed by the chart, but can itself be overridden by the local namespaceOverride
 #   namespaceOverride: my-global-namespace
 #
-busybox:
-  image:
-    repository: rt.cloud.dzsi.local/docker-hub/busybox
-    pullPolicy: IfNotPresent
-
 mongodb:
   runAsUser: 1024
 

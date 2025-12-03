@@ -123,7 +123,13 @@ class SDConfig(object):
             self._rw_services[prefix].node_ports = node_ports
 
             if service_type == "LoadBalancer":
-                self._rw_services[prefix].external_ip = status["loadBalancer"]["ingress"][0]["ip"]
+                if "ip" in status["loadBalancer"]["ingress"][0]:
+                    self._rw_services[prefix].external_ip = status["loadBalancer"]["ingress"][0]["ip"]
+                elif "hostname" in status["loadBalancer"]["ingress"][0]:
+                    self._rw_services[prefix].external_ip = status["loadBalancer"]["ingress"][0]["hostname"]
+                else:
+                    self._rw_services[prefix].external_ip = "xtreme.cluster.local"
+                logging.info(f"found LoadBalancer service {prefix} with external_ip {self._rw_services[prefix].external_ip}")
 
             # If haproxy-ingress, fill out proxy port details from the annotation
             # The annotation for proxy port starts with "rw-proxy-" prefix followed

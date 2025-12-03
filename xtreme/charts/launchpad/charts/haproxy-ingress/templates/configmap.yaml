@@ -31,6 +31,6 @@ data:
   {{- end }}
   config-frontend: |
     http-response replace-header Set-Cookie (.*) \1;\ Secure
-    http-request deny if !{ path -i -m beg /.well-known/acme-challenge } !{ ssl_fc }
+    http-request redirect scheme https if !{ path -i -m beg /.well-known } !{ ssl_fc }
   config-backend: |
     timeout server 500s

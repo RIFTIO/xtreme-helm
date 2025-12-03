@@ -29,20 +29,18 @@ data:
 
     # Set passive mode parameters:
     PASV_ADDRESS=""
+    token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+    cacert="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    API="https://kubernetes.default/api/v1/namespaces/${POD_NAMESPACE}/services/${RELEASE_NAME}-ftp"
+    AWK='/"(clusterIP|ip)":/ {ip=$2} END {gsub(/[\" ,]/, "", ip); print ip}'
     while [ -z "$PASV_ADDRESS" ]; do
-        PASV_ADDRESS=$(curl --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://kubernetes.default/api/v1/namespaces/${POD_NAMESPACE}/services/${RELEASE_NAME}-ftp | grep 'ip":' | awk -F'"ip":' '{print $2}' | awk -F\" '{print $2}')
-
-        #if [ "$PASV_ADDRESS" = "**IPv4**" ]; then
-        #    export PASV_ADDRESS=$(/sbin/ip route|awk '/default/ { print $3 }')
-        #fi
-
-        PASV_ADDRESS=$(echo "$PASV_ADDRESS" | tr -d '[:space:]')
-
+        PASV_ADDRESS=$(curl --cacert $cacert -H "Authorization: Bearer ${token}" ${API} | awk "$AWK")
         if [ -z "$PASV_ADDRESS" ]; then
                 echo "Waiting for PASV_ADDRESS to be available..."
                 sleep 5
         fi
     done
+    echo PASV address is \"${PASV_ADDRESS}\"
 
     echo "pasv_address=${PASV_ADDRESS}" >> /etc/vsftpd/vsftpd.conf
     echo "pasv_max_port=${PASV_MAX_PORT}" >> /etc/vsftpd/vsftpd.conf

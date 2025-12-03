@@ -60,8 +60,8 @@ spec:
       {{- if .Values.enableVolumePermissions }}
       initContainers:
       - name: redis-pl-perm
-        image: {{ .Values.busybox.image.repository }}
-        imagePullPolicy: {{ .Values.busybox.image.pullPolicy | quote }}
+        image: {{ .Values.global.busybox.image.repository }}:{{ .Values.global.busybox.image.tag }}
+        imagePullPolicy: {{ .Values.global.busybox.image.pullPolicy | quote }}
         command: ["chown", "-R", "{{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }}", /data]
         securityContext:
           runAsUser: 0

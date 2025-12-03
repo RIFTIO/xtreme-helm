@@ -18,6 +18,9 @@ metadata:
   namespace: {{ .Values.global.namespace.name }}
   annotations:
     ingress.kubernetes.io/rewrite-target: "/"
+    {{- with .Values.global.ingress.extraAnnotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   {{- if .Values.global.ingress.class.name }}
   {{- if eq .Values.global.ingress.class.namespaced true }}

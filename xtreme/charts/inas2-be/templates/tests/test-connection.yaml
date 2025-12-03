@@ -9,7 +9,7 @@ metadata:
 spec:
   containers:
     - name: wget
-      image: busybox
+      image: {{ .Values.global.busybox.image.repository }}:{{ .Values.global.busybox.image.tag }}
       command: ['wget']
       args: ['{{ include "inas2-be.fullname" . }}:{{ .Values.service.port12 }}']
   restartPolicy: Never
