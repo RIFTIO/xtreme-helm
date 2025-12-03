@@ -14,7 +14,7 @@ zookeeper:
 watchNamespaces: []
 watchAnyNamespace: false
 
-defaultImageRegistry: quay.io
+defaultImageRegistry: rt.cloud.dzsi.local/quay.io
 defaultImageRepository: strimzi
 defaultImageTag: 0.34.0
 

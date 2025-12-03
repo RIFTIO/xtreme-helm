@@ -47,11 +47,6 @@ prometheus:
     rwprom: 9090
   coreDir: null
 
-  busybox:
-    image:
-      repository: rt.cloud.dzsi.local/docker-hub/busybox
-      pullPolicy: IfNotPresent
-
   configWatch:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/weaveworks/watch

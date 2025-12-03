@@ -151,7 +151,7 @@ spec:
             value: {{ .Values.image.controller.tag | default .Chart.AppVersion }}
           ports:
           - containerPort: 11010
-            name: prom-metrics
+            name: prom-metrics-2
 
           volumeMounts:
           {{- with .Values.devSetup }}

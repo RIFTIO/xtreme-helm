@@ -9,10 +9,6 @@ image:
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "7.2.0-v6"
-busybox:
-  image:
-    repository: rt.cloud.dzsi.local/docker-hub/busybox
-    pullPolicy: IfNotPresent
 redTunnel:
   image:
     repository: rt.cloud.dzsi.local/docker/rw-redtunnel
