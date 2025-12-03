@@ -37,3 +37,8 @@ notes
 The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
 in the primary namespace are up, the pods in the aeo- namespace can start. Many of these will have crashed at
 least once due to the timeouts during init. These will restart on their own, so just be patient. 
+
+branches in this repo
+
+main -- production 
+zhone -- as delivered by engineering 
