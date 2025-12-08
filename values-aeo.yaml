@@ -4,7 +4,7 @@ global:
   #- ip: "10.157.136.200"
   #  hostnames:
   #  - "jlm1.lab.dzsi.local"
-  sdncImgtag: 13.3.1.1010254
+  sdncImgtag: 13.5.0.1010629
   namespace:
     name: demo
     create: false
@@ -15,21 +15,21 @@ launchpad:
     appSelector: aeo
     image:
       repository: rt.cloud.dzsi.local/docker/rw.aeo
-      tag: 13.3.1.1010260
+      tag: 13.5.0.1010657
     upgradeFrom: null
   aeo:
     image:
       controller:
-        tag: 13.3.1.1010260
+        tag: 13.5.0.1010657
         pullPolicy: IfNotPresent
       serviceWorker:
-        tag: 13.3.1.1010260
+        tag: 13.5.0.1010657
         pullPolicy: IfNotPresent
       resourceWorker:
-        tag: 13.3.1.1010260
+        tag: 13.5.0.1010657
         pullPolicy: IfNotPresent
       tmfServer:
-        tag: 13.3.1.1010260
+        tag: 13.5.0.1010657
         pullPolicy: IfNotPresent
       scriptExec:
         pullPolicy: IfNotPresent
