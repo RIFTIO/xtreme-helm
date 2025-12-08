@@ -7,6 +7,9 @@
 global:
   imagePullSecrets:
     - name: dzs-secret
+  busybox:
+    image:
+      repository: busybox
 
 initContainer:
   waitForDep:
@@ -250,3 +253,5 @@ sdnc:
     image:
       repository: dzscloudadmin/influxdb
 
+kafka:
+  defaultImageRegistry: quay.io
