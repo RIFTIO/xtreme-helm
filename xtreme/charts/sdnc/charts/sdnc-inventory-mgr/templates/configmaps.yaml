@@ -7,6 +7,10 @@
 {{- $redis_svc := include "redis.fqdn" . }}
 {{- $kafka_socket := include "kafka.socket" . }}
 {{- $enableKafka := .Values.global.enableKafka_inventoryMgr }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $alarm_svc := include "rnc-alarm-svc.fqdn" . }}
+{{- $transportpce_svc := include "rnc-transportpce.fqdn" . }}
+{{- $snmpgw := include "snmpgw.fqdn" . }}
 
 apiVersion: v1
 
@@ -120,6 +124,13 @@ data:
             },
             "supportLastChanged": true
           },
+          "legacy-roadm": {
+            "connection": {
+              "httpAddress": "http://{{- $snmpgw -}}:8881",
+              "authType": "none"
+            },
+            "supportLastChanged": false
+          },
           "inas": {
             "connection": {
               "httpAddress": "http://{{- $inas_svc -}}:30522",
@@ -200,10 +211,11 @@ data:
               "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
               "config": {
                 "type": "ALL",
-                "accepts": ["CONFIG_CHANGE", "INV_SYNC_RES"],
+                "accepts": ["CONFIG_CHANGE", "INV_SYNC_RES", "MAINTENANCE"],
                 "targets": [
-                    {"classifier": "CONFIG_CHANGE", "target": "dzs.sdnc.config_change"},
-                    {"classifier": "INV_SYNC_RES", "target": "dzs.sdnc.inv_sync"}
+                    { "classifier": "CONFIG_CHANGE", "target": "dzs.sdnc.config_change" },
+                    { "classifier": "INV_SYNC_RES", "target": "dzs.sdnc.inv_sync" },
+                    { "classifier": "MAINTENANCE", "target": "zhone.sdnc.inventory" }
                 ],
                 "name": "SDNC.InventoryMgr",
                 "useEnvVarToGetNatsSvcName": true,
@@ -271,6 +283,78 @@ data:
               }
             }
           ]
+        },
+        "externalDb":  {
+          "type": "mongo",
+          "mongo": {
+            "entries": [
+              {
+                "enabled": true,
+                "id": "default",
+                "mandatory":  true,
+                "connectionString": "mongodb://{{- $mongo_db -}}:8006/equipment?retryWrites=false",
+                "dbName": "equipment",
+                "collections": [
+                ]
+              }
+            ]
+          }
+        },
+        "remoteHttpService": {
+          "NetconfSvc": {
+            "service": "NetconfSvc",
+            "connection": {
+              "httpAddress": "http://{{- $netconf_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "ConfigMgr": {
+            "service": "ConfigMgr",
+            "connection": {
+              "httpAddress": "http://{{- $config_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "Alarm": {
+            "service": "Alarm",
+            "connection": {
+              "httpAddress": "http://{{- $alarm_svc -}}:8898",
+              "authType": "none"
+            },
+            "uri": {
+              "SyncAlarm": {
+                "name": "SyncAlarm",
+                "uriPath": "/api/v1/alarm-sync/device/%s/sync",
+                "httpMethod": "POST"
+              },
+              "GetAlarmSyncStatus": {
+                "name": "GetAlarmSyncStatus",
+                "uriPath": "/restconf/operations/alarm-svc:get-sync-result",
+                "httpMethod": "POST"
+              }
+            }
+          },
+          "SNMPGW": {
+            "service": "SNMPGW",
+            "connection": {
+              "httpAddress": "http://{{- $snmpgw -}}:8881",
+              "authType": "none"
+            }
+          },
+          "TPCE": {
+            "service": "TPCE",
+            "connection": {
+              "httpAddress": "http://{{- $transportpce_svc -}}:8888",
+              "authType": "none"
+            },
+            "uri": {
+              "TPCERefreshTopology": {
+                "name": "TPCERefreshTopology",
+                "uriPath": "/restconf/operations/tpce:refresh-topology",
+                "httpMethod": "POST"
+              }
+            }
+          }
         }
       }
     }

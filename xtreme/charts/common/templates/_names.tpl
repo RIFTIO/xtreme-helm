@@ -25,7 +25,7 @@ App name generator
 Service name prefix for strimzi kafka
 */}}
 {{- define "kafka.prefix" -}}
-dzs-strimzi
+zhone-strimzi
 {{- end -}}
 
 {{/*
@@ -269,6 +269,20 @@ App name for SDNC Task Mgr FQDN.
 {{- end -}}
 
 {{/*
+App name for SDNC SNMPGW.
+*/}}
+{{- define "snmpgw.fullname" -}}
+{{ include "common.fullname" (list . "sdnc-snmpgw") -}}
+{{- end -}}
+
+{{/*
+App name for SDNC SNMPGW FQDN.
+*/}}
+{{- define "snmpgw.fqdn" -}}
+{{ include "snmpgw.fullname" . -}}.{{- include "sdnc.namespace" . }}
+{{- end -}}
+
+{{/*
 App name for SDNC PM Collector.
 */}}
 {{- define "pm-collector.fullname" -}}
@@ -308,20 +322,6 @@ App name for SDNC influxdb FQDN.
 */}}
 {{- define "influxdb.fqdn" -}}
 {{ include "influxdb.fullname" . -}}.{{- include "sdnc.namespace" . }}
-{{- end -}}
-
-{{/*
-App name for SDNC Artifactory.
-*/}}
-{{- define "artifactory.fullname" -}}
-{{ include "common.fullname" (list . "sdnc-artifactory") -}}
-{{- end -}}
-
-{{/*
-App name for SDNC artifactory FQDN.
-*/}}
-{{- define "artifactory.fqdn" -}}
-{{ include "artifactory.fullname" . -}}.{{- include "sdnc.namespace" . }}
 {{- end -}}
 
 {{/*

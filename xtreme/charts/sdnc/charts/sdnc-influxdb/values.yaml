@@ -5,7 +5,8 @@
 replicaCount: 1
 
 image:
-  repository: docker.io/bitnami/influxdb
+  repository: dzscloudadmin/influxdb
+  #tag: 3.4.1-debian-12-r0
   tag: 2.6.1
   pullPolicy: IfNotPresent
 
@@ -102,7 +103,7 @@ adminUser:
   ## The password and token are obtained from an existing secret. The expected
   ## keys are `admin-password` and `admin-token`.
   ## If set, the password and token values above are ignored.
-  # existingSecret: influxdb-auth
+  #existingSecret: influxdb-auth
 
 # Possible `storageClassName` values:
 #   - local-storage

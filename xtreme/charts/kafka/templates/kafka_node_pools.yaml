@@ -1,0 +1,54 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: kafka-controller
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  replicas: 1
+  roles:
+    - controller
+  resources:
+      requests:
+        memory: 2Gi
+        cpu: "2"
+      limits:
+        memory: 4Gi
+        cpu: "4"
+  storage:
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: 5Gi
+          kraftMetadata: shared
+          deleteClaim: false
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: kafka-broker
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  replicas: 1
+  roles:
+    - broker
+  resources:
+      requests:
+        memory: 2Gi
+        cpu: "2"
+      limits:
+        memory: 4Gi
+        cpu: "4"
+  storage:
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: 5Gi
+          kraftMetadata: shared
+          deleteClaim: false
+

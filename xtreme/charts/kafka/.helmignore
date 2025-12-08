@@ -14,12 +14,10 @@
 *.swp
 *.bak
 *.tmp
-*.orig
 *~
 # Various IDEs
 .project
 .idea/
 *.tmproj
-.vscode/
-README.md
-OWNERS
+# Unit Tests
+tests/

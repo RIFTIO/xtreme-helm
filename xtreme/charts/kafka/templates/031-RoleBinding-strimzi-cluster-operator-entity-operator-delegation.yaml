@@ -1,7 +1,11 @@
-{{- if .Values.rbac.create }}
+{{- if .Values.rbac.create -}}
 {{- $namespace := .Values.global.namespace.name -}}
 {{- $root := . -}}
-{{- range append .Values.watchNamespaces .Release.Namespace }}
+{{- $watchNamespaces := .Values.watchNamespaces -}}
+{{- if $root.Values.watchAnyNamespace }}
+  {{- $watchNamespaces = list -}}  
+{{- end }}
+{{- range append $watchNamespaces .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 {{- if $root.Values.watchAnyNamespace }}
@@ -11,7 +15,9 @@ kind: RoleBinding
 {{- end }}
 metadata:
   name: strimzi-cluster-operator-entity-operator-delegation
+  {{- if not $root.Values.watchAnyNamespace }}
   namespace: {{ $namespace }}
+  {{- end }}
   labels:
     app: {{ template "strimzi.name" $root }}
     chart: {{ template "strimzi.chart" $root }}

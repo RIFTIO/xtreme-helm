@@ -1,0 +1,165 @@
+# Copyright 2025 ZHONE Technologies
+
+{{- $nats_svc := include "nats.fqdn" . }}
+{{- $mongo_db := include "mongodb.fqdn" . }}
+
+apiVersion: v1
+
+metadata:
+  name: {{ include "snmpgw.fullname" . }}
+  namespace: {{ include "sdnc.namespace" . }}
+kind: ConfigMap
+
+data:
+  log4j2.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <Configuration status="WARN" monitorInterval="30">
+        <Properties>
+            <Property name="LOG_PATTERN">%d{ISO8601} | %-5p | snmpgw | %t | %c{1} | %m%n</Property>
+            <Property name="LOG_PATTERN_TEST">%m%n</Property>
+            <Property name="APP_LOG_ROOT">./logs</Property>
+            <Property name="APP_LOG">/data/log/snmpgw</Property>
+        </Properties>
+        <Appenders>
+            <Console name="Console" target="SYSTEM_OUT" follow="true">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+            </Console>
+            <RollingFile name="appLog"
+                         fileName="${APP_LOG_ROOT}/snmpgw.log"
+                         filePattern="${APP_LOG_ROOT}/snmpgw-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+            <RollingFile name="APP"
+                         fileName="${APP_LOG}/snmpgw.log"
+                         filePattern="${APP_LOG}/snmpgw-%d{yyyy-MM-dd}-%i.log">
+                <PatternLayout pattern="${LOG_PATTERN_TEST}" />
+                <Policies>
+                    <SizeBasedTriggeringPolicy size="19500KB" />
+                </Policies>
+                <DefaultRolloverStrategy max="5" />
+            </RollingFile>
+        </Appenders>
+        <Loggers>
+            <Root level="info">
+                <AppenderRef ref="Console" />
+                <AppenderRef ref="appLog" />
+            </Root>
+            <Logger name="APP" level="info">
+                <AppenderRef ref="APP"/>
+            </Logger>
+        </Loggers>
+    </Configuration>
+
+  application.properties: |
+    spring.jackson.date-format=yyyy-MM-dd HH:mm:ssZ
+    server.port = 8881
+    api.version = 1
+    serviceconfig.file = config/serviceconfig.json
+    spring.jackson.parser.allow_comments=true
+    spring.jackson.serialization.FAIL_ON_EMPTY_BEANS=false
+    management.security.enabled=false
+    management.endpoints.web.exposure.include = *
+
+  serviceconfig.json: |
+    {
+      "serviceConfig": {
+        "serviceName": "snmpgw",
+        "trapListener": {
+          "enabled": true,
+          "bindingAddress": "0.0.0.0",
+          "bindingPort": "{{ .Values.service.notificationListenerPort }}",
+          "poolSize": 4
+        },
+        "externalDb":  {
+          "type": "mongo",
+          "mongo": {
+            "entries": [
+              {
+                "enabled": true,
+                "id": "default",
+                "mandatory":  true,
+                "connectionString": "mongodb://{{- $mongo_db -}}:8006/snmpgw?retryWrites=false",
+                "dbName": "snmpgw"
+              }
+            ]
+          }
+        },
+        "messagingClientConfig": {
+          "entries": [
+            {
+              "serviceIdentifier": "NATS",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "PUB",
+                "accepts": [
+                  "ALARM",
+                  "CONFIG"
+                ],
+                "targets": [
+                  {
+                    "classifier": "ALARM",
+                    "target": "dzs.sdnc.alarm"
+                  },
+                  {
+                    "classifier": "CONFIG",
+                    "target": "dzs.sdnc.config"
+                  }
+                ],
+                "name": "SDNC.SnmpGw",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "defaultPubSubject": "dzs.sdnc.netconf_pub.default",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            }
+          ]
+        }
+      }
+    }
+
+  fluent.conf: |
+
+    <source>
+      @type tail
+      path {{ .Values.sdnc.volume.log.pvc.mountPath }}/snmpgw.log
+      pos_file {{ .Values.sdnc.volume.log.pvc.mountPath }}/snmpgw.log.pos
+      tag sdnc.*
+      read_from_head true
+      <parse>
+        @type json
+        time_key evt_time_gmt
+        time_format %Y-%m-%dT%H:%M:%SZ
+      </parse>
+    </source>
+
+    <match sdnc**>
+      @type mongo
+      host {{ include "mongodb.fqdn" . }}
+      port 8006
+      database events
+      collection sdnc
+
+      # authentication
+      user {{ .Values.global.eventsDB.username }}
+      password {{ .Values.global.eventsDB.password }}
+
+      <inject>
+        time_key evt_time_gmt
+      </inject>
+
+      <buffer>
+        flush_interval 5s
+      </buffer>
+    </match>

@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-gnpy
+  name: zhone-sdnc-gnpy
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "gnpy.labels" . | nindent 4 }}

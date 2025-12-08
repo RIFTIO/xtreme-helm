@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-pm-collector
+  name: zhone-sdnc-pm-collector
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "pm-collector.labels" . | nindent 4 }}

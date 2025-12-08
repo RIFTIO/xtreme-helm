@@ -26,9 +26,6 @@ dependencies:
 - name: simulator
   repository: file://.charts/simulator
   condition: global.install.deviceSimulator
-- name: sdnc-artifactory
-  repository: file://.charts/sdnc-artifactory
-  condition: install.artifactory
 - name: sdnc-file-mgr
   repository: file://.charts/sdnc-file-mgr
   condition: install.fileManager
@@ -65,3 +62,6 @@ dependencies:
 - name: sdnc-gnpy
   repository: file://./charts/sdnc-gnpy
   condition: install.gnpy
+- name: sdnc-snmpgw
+  repository: file://./charts/sdnc-snmpgw
+  condition: install.snmpgw

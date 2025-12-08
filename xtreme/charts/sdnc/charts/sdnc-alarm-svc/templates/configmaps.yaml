@@ -10,6 +10,7 @@
 {{- $kafka_socket := include "kafka.socket" . }}
 {{- $enableKafka := .Values.global.enableKafka_alarmSvc }}
 {{- $transportpce_svc := include "rnc-transportpce.fqdn" . }}
+{{- $snmpgw := include "snmpgw.fqdn" . }}
 
 apiVersion: v1
 
@@ -477,6 +478,12 @@ data:
           },
           {
             "vendor": "dzs",
+            "modelName": "V1-16XC-E",
+            "systemType": "olt",
+            "type": "pizza"
+          },
+          {
+            "vendor": "dzs",
             "modelName": "V6",
             "systemType": "olt",
             "type": "chassis"
@@ -509,6 +516,13 @@ data:
             "service": "TPCE",
             "connection": {
               "httpAddress": "http://{{- $transportpce_svc -}}:8888",
+              "authType": "none"
+            }
+          },
+          "SNMPGW": {
+            "service": "SNMPGW",
+            "connection": {
+              "httpAddress": "http://{{- $snmpgw -}}:8881",
               "authType": "none"
             }
           }
@@ -597,6 +611,26 @@ data:
                 "natsPort": 4222,
                 "servers": "nats://{{- $nats_svc -}}:4222",
                 "subject": "dzs.sdnc.int.cancelalarmsync",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_MAINT",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.AlarmSvc",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "zhone.sdnc.inventory",
                 "connectionTimeoutSeconds": 10,
                 "maxReconnects": -1,
                 "reconnectWaitSeconds": 2,

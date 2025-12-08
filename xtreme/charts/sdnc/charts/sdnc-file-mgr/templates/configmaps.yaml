@@ -1,6 +1,5 @@
 # Copyright 2022 DZS Inc
 
-{{- $artifactory_svc := include "artifactory.fqdn" . }}
 {{- $sftp_svc := include "sftp.fqdn" . }}
 {{- $ftp_svc := include "ftp.fqdn" . }}
 {{- $mongo_db := include "mongodb.fqdn" . }}
@@ -82,15 +81,6 @@ data:
        "serviceConfig":{
           "serviceName":"filemgr",
           "repoList":[
-             {
-                "credential":{
-                   "password":"password",
-                   "user-id":"admin"
-                },
-                "remoteAddress":"http://artifactory-external-ip:8082/artifactory/xtreme",
-                "repo-id":"dzslocal",
-                "repo-type":"artifactory"
-             },
              {
                 "credential":{
                    "password":"ftpuser123",

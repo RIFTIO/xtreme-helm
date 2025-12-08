@@ -2,8 +2,8 @@ apiVersion: v2
 name: xtreme
 description: Consolidated Helm Chart for DZS Xtreme products
 type: application
-version: 13.3.1
-appVersion: 13.3.1
+version: 13.5.0
+appVersion: 13.5.0
 dependencies:
   - name: common
     repository: file://./charts/common
@@ -26,7 +26,7 @@ dependencies:
     condition: global.install.orchestrator
   - name: kafka
     repository: file://./charts/kafka
-    version: 0.34.0
+    version: 0.48.0
     condition: global.install.kafka
   - name: launchpad
     repository: file://.charts/launchpad

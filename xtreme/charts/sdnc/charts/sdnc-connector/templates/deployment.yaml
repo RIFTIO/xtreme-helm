@@ -3,7 +3,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-ui
+  name: zhone-sdnc-ui
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "sdnc-connector.labels" . | nindent 4 }}

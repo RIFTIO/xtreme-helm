@@ -1,0 +1,68 @@
+# Copyright 2025 Zhone Technologies
+# Custom values for k3s installation
+# This is a YAML-formatted file
+# Declare variables to override the default values
+
+global: 
+  pvcmetadata:
+    storageClass: local-path
+  sdncImgtag: 13.3.0.1010155 
+  namespace:
+    create: false
+    name: dzs
+sftp:
+  service:
+    type: LoadBalancer
+    port: 2222
+    annotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+ftp:
+  service:
+    annotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+sdnc:
+  sdnc-netconf-svc:
+    sftp:
+      port: 2222
+  sdnc-config-mgr:
+    sftp:
+      port: 2222
+  sdnc-transportpce:
+    sftp:
+      port: 2222
+  sdnc-file-mgr:
+    createClusterRole: true
+    sftp:
+      port: 2222
+  sdnc-snmpgw:
+    service:
+      annotations:
+        metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+launchpad:
+  haproxy-ingress:
+    serviceAnnotations:
+      metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
+  launchpad:
+    appSelector: aeo
+    image:
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 13.3.0.1010169
+# to upgrade from 13.1 use 13.1.0.1009769
+# to install 13.3 use 13.3.0.1010169
+    upgradeFrom: 13.3.0.1010169
+  aeo:
+    image:
+      controller:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      serviceWorker:
+        tag: 13.3.0.1010169 
+        pullPolicy: IfNotPresent
+      resourceWorker:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      tmfServer:
+        tag: 13.3.0.1010169
+        pullPolicy: IfNotPresent
+      scriptExec:
+        pullPolicy: IfNotPresent

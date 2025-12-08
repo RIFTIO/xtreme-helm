@@ -13,7 +13,7 @@ natsfullnameOverride: ""
 
 global:
   pvcmetadata:
-    storageClass: local-path
+    storageClass: null
 
     pceNetconfConfigmgr:
       storageClass: null
@@ -356,6 +356,8 @@ global:
   sdnc:
     sdnc-file-mgr:
       createClusterRole: true
+    sdnc-snmpgw:
+      createClusterRole: true
   # Global config ends here
 
 storage:
@@ -498,6 +500,13 @@ sdnc:
       log:
         pvc:
           storageClassName: null
+  sdnc-snmpgw:
+    image:
+      pullPolicy: Always
+    volume:
+      log:
+        pvc:
+          storageClassName: null
 
   sdnc-pm-collector:
     service:
@@ -527,6 +536,3 @@ sdnc:
       nodePort: 32128
     image:
       pullPolicy: Always
-  sdnc-artifactory:
-    sdnc-artifactory-postgresql:
-      nodeSelector: {}

@@ -1,0 +1,57 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: {{ include "kafka.prefix" . }}
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  kafka:
+    version: 4.1.0
+    replicas: 1
+    metadataVersion: "4.1"
+    config:
+      auto.create.topics.enable: true
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+      group.initial.rebalance.delay.ms: 250
+    logging:
+       type: inline
+       loggers:
+          # Kafka 4.0+ uses Log4j2
+          rootLogger.level: INFO 
+    listeners:
+       - name: plain
+         port: 9092
+         type: internal
+         tls: false
+         configuration:
+             useServiceDnsDomain: true
+       - name: tls
+         port: 9093
+         type: internal
+         tls: true
+         authentication:
+             type: tls
+    livenessProbe:
+       initialDelaySeconds: 15
+       timeoutSeconds: 5
+    readinessProbe:
+       initialDelaySeconds: 15
+       timeoutSeconds: 5
+    storage:
+      type: jbod
+      volumes:
+        - id: 0
+          type: persistent-claim
+          size: 5Gi
+          kraftMetadata: shared
+          deleteClaim: false
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+
+

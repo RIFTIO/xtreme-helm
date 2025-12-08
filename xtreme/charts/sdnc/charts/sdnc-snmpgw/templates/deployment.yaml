@@ -1,0 +1,213 @@
+# Copyright 2025 ZHONE Technologies
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zhone-sdnc-snmpgw
+  namespace: {{ include "sdnc.namespace" . }}
+  labels:
+    {{- include "snmpgw.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "snmpgw.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "actuator/prometheus"
+        prometheus.io/type: "sdnc-service"
+        prometheus.io/port: "{{ .Values.service.port }}"
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "snmpgw.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "snmpgw.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: RW_MONGODB_SVC_NAME
+              value: {{ include "mongodb.fqdn" . }}
+          command:
+            - /wait-for
+          args:
+            - --host="$(RW_NATS_SVC_NAME):4222"
+            - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --timeout=120s
+            - --verbose
+        - name: wait-lb
+          image: bitnami/kubectl:latest
+          volumeMounts:
+            - name: podinfo
+              mountPath: /etc/podinfo
+              readOnly: true
+            - name: shared-config
+              mountPath: /shared-config
+          env:
+            - name: FIXED_SNMPGW_EXTERNAL_ADDRESS
+              value: {{ .Values.service.externalIP }}
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              if [ -n "$FIXED_SNMPGW_EXTERNAL_ADDRESS" ]; then
+                  echo "Fixed external address: $FIXED_SNMPGW_EXTERNAL_ADDRESS"
+                  echo "$FIXED_SNMPGW_EXTERNAL_ADDRESS" > /shared-config/external-ip-address
+                  exit 0
+              fi
+              set -euo pipefail
+              export GODEBUG="tls13=0"
+              NAMESPACE=$(cat /etc/podinfo/namespace)
+              POD_NAME=$(cat /etc/podinfo/name)
+              POD_LABELS=$(cat /etc/podinfo/labels)
+
+              echo "Pod: $POD_NAME in namespace: $NAMESPACE"
+              echo "Pod labels: $POD_LABELS"
+
+              SELECTOR=$(echo "$POD_LABELS" | sed -E 's/([a-z0-9.-]+)="?([^"]*)"?/\1=\2/g' | tr '\n' ',' | sed 's/,$//')
+              STABLE_SELECTOR=$(echo "$SELECTOR" | sed -E 's/,?pod-template-hash=[^,]+//g' | sed -E 's/^,//; s/,$//')
+              echo "Label selector: $STABLE_SELECTOR"
+
+              SERVICE_NAME=$(kubectl get svc -n "$NAMESPACE" \
+                -l "$STABLE_SELECTOR" \
+                -o jsonpath="{.items[?(@.spec.type=='LoadBalancer')].metadata.name}" | tr ' ' '\n' | head -n1)
+
+              if [ -z "$SERVICE_NAME" ]; then
+                echo "ERROR: No LoadBalancer Service found matching pod labels!"
+                exit 1
+              fi
+
+              echo "Discovered Service: $SERVICE_NAME"
+              echo "$SERVICE_NAME" > /shared-config/service-name
+              echo "Looking for external IP address"
+              COUNTER=0
+              while [ "$COUNTER" -lt "5" ]; do
+                SNMPGW_EXTERNAL_ADDRESS=$(kubectl get svc "$SERVICE_NAME" -n "$NAMESPACE" \
+                  -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+
+                if [ -n "$SNMPGW_EXTERNAL_ADDRESS" ]; then
+                  echo "External address ready: $SNMPGW_EXTERNAL_ADDRESS"
+                  echo "$SNMPGW_EXTERNAL_ADDRESS" > /shared-config/external-ip-address
+                  exit 0
+                else
+                  sleep 6
+                  COUNTER=$(( COUNTER + 1 ))
+                  echo "$(date +"%Y-%m-%d %H:%M:%S") - external IP unavailable"
+                fi
+              done
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+            - name: config-volume
+              mountPath: /config
+            - name: shared-config
+              mountPath: /shared-config
+          env:
+            - name: RW_NATS_SVC_NAME
+              value: {{ include "nats.fqdn" . }}
+            - name: SDNC_SNMPGW_NAME
+              value: {{ include "snmpgw.fqdn" . }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RW_RELEASE_NAME
+              value: {{ .Values.global.namespace.name }}
+            - name: JAVA_OPTS
+              value: {{ .Values.java.opts }}
+          command: ["sh", "-c"]
+          args:
+            - |
+              echo "SNMPGW NAMESPACE: $POD_NAMESPACE"
+              if [ -f /shared-config/service-name ]; then
+                export SNMPGW_SERVICE_NAME=$(cat /shared-config/service-name)
+                echo "SNMPGW_SERVICE_NAME: $SNMPGW_SERVICE_NAME"
+              else
+                echo "File /shared-config/service-name does not existed"
+              fi
+              if [ -f /shared-config/external-ip-address ]; then
+                export SNMPGW_EXTERNAL_ADDRESS=$(cat /shared-config/external-ip-address)
+                echo "SNMPGW_EXTERNAL_ADDRESS: $SNMPGW_EXTERNAL_ADDRESS"
+              else
+                echo "File /shared-config/external-ip-address does not existed"
+                apk update && apk add curl bash
+                export SNMPGW_EXTERNAL_ADDRESS=$(curl --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://kubernetes.default/api/v1/namespaces/${POD_NAMESPACE}/services/${SNMPGW_SERVICE_NAME} | grep 'ip":' | awk -F'"ip":' '{print $2}' | awk -F\" '{print $2}' | xargs)
+                echo "SNMPGW_EXTERNAL_ADDRESS: $SNMPGW_EXTERNAL_ADDRESS"
+              fi
+              exec {{ .Values.java.startCommand }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: udp
+              containerPort: {{ .Values.service.notificationListenerPort }}
+              protocol: UDP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        - name: "fluentd"
+          securityContext: 
+            {{- toYaml .Values.securityContext | nindent 12}}
+          image: "{{ .Values.fluentd.image.repository }}:{{ .Values.fluentd.image.tag }}"
+          imagePullPolicy: {{ .Values.fluentd.image.pullPolicy }}
+          command: ["fluentd"]
+          args: ["-c", "/fluentd/etc/fluent.conf"]          
+          volumeMounts:
+            - name: config-volume
+              mountPath: /fluentd/etc
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ .Values.sdnc.volume.log.name }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.sdnc.volume.log.pvc.name }}
+        - name: config-volume
+          configMap:
+            name: {{ include "snmpgw.fullname" . }}
+        - name: shared-config
+          emptyDir: {}
+        - name: podinfo
+          downwardAPI:
+            items:
+              - path: "namespace"
+                fieldRef:
+                  fieldPath: metadata.namespace
+              - path: "name"
+                fieldRef:
+                  fieldPath: metadata.name
+              - path: "labels"
+                fieldRef:
+                  fieldPath: metadata.labels
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

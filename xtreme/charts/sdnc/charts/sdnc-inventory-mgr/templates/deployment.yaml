@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-inventory-mgr
+  name: zhone-sdnc-inventory-mgr
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "inventory-mgr.labels" . | nindent 4 }}

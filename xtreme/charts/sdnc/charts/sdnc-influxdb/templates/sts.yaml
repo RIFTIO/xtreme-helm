@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: dzs-sdnc-influxdb
+  name: zhone-sdnc-influxdb
   namespace: {{ include "sdnc.namespace" . }}
   labels:
   {{- include "sdnc-influxdb.labels" . | nindent 4 }}
