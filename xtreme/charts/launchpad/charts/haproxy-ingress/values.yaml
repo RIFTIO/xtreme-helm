@@ -35,8 +35,8 @@ exporter:
 
 defaultbackend:
   image:
-    repository: rt.cloud.dzsi.local/docker/rw-gcr_io/google_containers/defaultbackend
-    tag: "1.1-dzs"
+    repository: rt.cloud.dzsi.local/registry.k8s.io/defaultbackend
+    tag: 1.4
     pullPolicy: IfNotPresent
   runAsUser: 1024
 
