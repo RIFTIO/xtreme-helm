@@ -11,7 +11,7 @@ check=true
 
 
 help() {
-cat <<EOF
+cat >&2 <<EOF 
     USAGE: 
 --chart path      helm chart
 --values path     values file. May be used more than once. default is $default_values
@@ -52,7 +52,7 @@ if [ -z "$values" ]; then
     values="${default_values}"
 fi
 
-cat <<EOF
+cat >&2 <<EOF
     namespace is $NS
     install is $install dry-run is $dryrun
     check is $check
@@ -65,7 +65,7 @@ EOF
 rc=0
 for file in $chart $values; do
     if [ ! -e $file ]; then
-        echo $file not found
+        echo $file not found >&2
         rc=1
     fi
 done
@@ -90,8 +90,8 @@ if $init; then
   if [ -f dockerhub-token ]; then
        token=$(cat dockerhub-token)
   else
-       echo please put dockerhub token in file dockerhub-token
-       echo contact Zhone sales if you don\'t have one yet
+       echo please put dockerhub token in file dockerhub-token >&2
+       echo contact Zhone sales if you don\'t have one yet >&2
        exit 1
   fi
   for ns in ${NS} aeo-${NS}; do
@@ -101,12 +101,12 @@ if $init; then
   done
 
     if [ ! -d xtreme ]; then
-       echo expanding $chart
+       echo expanding $chart >&2
        tar xzf ${chart}
     fi
 
-  echo creating CRDs...
-  for f in xtreme/charts/kafka/crds/*; do echo $f; kubectl apply -f $f; done
+  # echo creating CRDs... >&2
+  # for f in xtreme/charts/kafka/crds/*; do echo $f >&2; kubectl apply -f $f; done
 fi
 
 for file in $values; do
@@ -120,17 +120,17 @@ fi
 
 if $install; then
    
-  echo install...
+  echo install... >&2
   helm install xtreme ${chart} $flags --set global.namespace.name=$NS || exit 1
 fi
 
 if $check; then
 
-  echo waiting for xtreme ingress service to obtain IP
+  echo waiting for xtreme ingress service to obtain IP >&2
   HN=""
   fqdn=false
   while [ -z "$HN" ]; do
-    echo -n "."
+    echo -n "." >&2
       sleep 1
       HN=$(kubectl get -n ${NS} svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
       if [ -z "$HN" ]; then
@@ -139,23 +139,23 @@ if $check; then
         fqdn=true
       fi
   done
-    echo HOSTNAME/IP is $HN
+    echo HOSTNAME/IP is $HN >&2
 
-    echo waiting for DNS
+    echo waiting for DNS >&2
     if $fqdn; then
         while ! host $HN; do
             sleep 1
         done
-        echo HOSTNAME is $HN and is resolving
+        echo HOSTNAME is $HN and is resolving >&2
     fi
 
-    echo waiting for service
+    echo waiting for service >&2
     while ! curl -kv https://$HN >/dev/null 2>&1; do
-        echo -n "."
+        echo -n "." >&2
         sleep 1
     done
 
-    echo waiting for launchpad
+    echo waiting for launchpad >&2
     while curl -kv https://$HN 2>&1 | grep 'HTTP/2 503'; do
         sleep 10
     done
