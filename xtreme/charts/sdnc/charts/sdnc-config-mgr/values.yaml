@@ -3,7 +3,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: "dzs-sdnc-config-mgr"
+appName: "zhone-sdnc-config-mgr"
 svcName: "config"
 moduleName: "config-mgr"
 
@@ -41,6 +41,7 @@ lighty:
       { "nameSpace": "http://dzsi.com/inas-2022-02-22", "name":"dzs-inas-2022-02-22", "revision": "2022-02-22" },
       { "nameSpace": "http://dzsi.com/openroadm-2020-05-29", "name": "dzs-roadm-2020-05-29", "revision": "2020-05-29" },
       { "nameSpace": "http://dzsi.com/openroadm-2023-05-26", "name": "dzs-roadm-2023-05-26", "revision": "2023-05-26" },
+      { "nameSpace": "http://dzsi.com/dzs-legacy-roadm-2025-10-20", "name": "dzs-legacy-roadm-2025-10-20", "revision": "2025-10-20" },
       { "nameSpace": "urn:opendaylight:daexim-internal", "name": "data-export-import-internal", "revision": "2016-09-21" },
       { "nameSpace": "urn:opendaylight:daexim", "name": "data-export-import", "revision": "2016-09-21" }'
   # If using cluster (not single-node deployment), don't forget to increase replica count
@@ -86,6 +87,10 @@ lighty:
           }
         },
         "modelIdentifiers":  [
+            {
+              "identifierClass": "com.dzsi.sdnc.config.model.identifier.impl.LegacyRoadmModelIdentifer",
+              "description": "O-series model identifier"
+            },
             {
                 "identifierClass":  "com.dzsi.sdnc.config.model.identifier.impl.DzsZms20211229",
                 "description": "ZMS server Yang revision"
@@ -164,6 +169,13 @@ lighty:
               "httpAddress": "http://netconf-svc-dzs-rnc:8888",
               "authType": "none"
             }
+          },
+          "SNMPGW": {
+           "service": "SNMPGW",
+           "connection": {
+             "httpAddress": "http://snmpgw-app:8881",
+             "authType": "none"
+           }
           },
           "InventoryMgr": {
             "service": "InventoryMgr",
@@ -296,6 +308,26 @@ lighty:
                     "servers": "nats://nats-svc-name:4222",
                     "subject": "dzs.sdnc.config",
                     "defaultSubject": "dzs.sdnc.event",
+                    "connectionTimeoutSeconds": 10,
+                    "maxReconnects": -1,
+                    "reconnectWaitSeconds": 2,
+                    "reconnectBufferSize": -1
+                  }
+                },
+                {
+                  "serviceIdentifier": "NATS_MAINT",
+                  "enabled": true,
+                  "serverType": "NATS",
+                  "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+                  "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+                  "config": {
+                    "type": "SUB",
+                    "name": "SDNC.ConfigMgr",
+                    "useEnvVarToGetNatsSvcName": true,
+                    "envNatsSvcName": "RW_NATS_SVC_NAME",
+                    "natsPort": 4222,
+                    "servers": "nats://nats-svc-name:4222",
+                    "subject": "zhone.sdnc.inventory",
                     "connectionTimeoutSeconds": 10,
                     "maxReconnects": -1,
                     "reconnectWaitSeconds": 2,

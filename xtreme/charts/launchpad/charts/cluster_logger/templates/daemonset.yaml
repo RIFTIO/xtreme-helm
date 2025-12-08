@@ -102,6 +102,8 @@ spec:
           readOnly: true
         - name: conf
           mountPath: /dzs/fluentd/conf
+        - name: fplugin
+          mountPath: /fluentd/plugins
 
       terminationGracePeriodSeconds: 30
       volumes:
@@ -114,4 +116,8 @@ spec:
       - name: conf
         configMap:
           name: rw-logger-conf
+          defaultMode: 0644
+      - name: fplugin
+        configMap:
+          name: rw-fluentd-plugin
           defaultMode: 0644

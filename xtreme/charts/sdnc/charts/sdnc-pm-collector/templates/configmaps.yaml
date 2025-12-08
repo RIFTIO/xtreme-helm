@@ -149,6 +149,11 @@ data:
               "QSFPDdDco_validity": 7776000,
               "AcPcs_Rx_validity": 7776000,
               "AcPcs_Tx_validity": 7776000,
+              "Breakout_ETH_Rx_validity" : 7776000,
+              "Breakout_ETH_Tx_validity" : 7776000,
+              "BreakoutMetaDXPcs_Rx_validity" : 7776000,
+              "BreakoutMetaDXPcs_Tx_validity" : 7776000,
+              "QSFPPlusOptical_validity" : 7776000,
               "OTN_validity": 7776000
             }
           },
@@ -486,7 +491,7 @@ data:
             }],
             "inventory-class": "interface",
             "inventory-field": "id",
-            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"],  "id": ["ETH100G","ETH400G"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
             "parameters": [
                 {
                     "name": "Total Octets",
@@ -666,7 +671,7 @@ data:
             }],
             "inventory-class": "interface",
             "inventory-field": "id",
-            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"],  "id": ["ETH100G","ETH400G"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4400", "TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
             "parameters": [
                 {
                     "name": "Total Octets",
@@ -847,7 +852,7 @@ data:
             }],
             "inventory-class": "port",
             "inventory-field": "additionalInfo.circuit-pack",
-            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP28", "QSFP-DD"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
             "parameters": [
                 {
                     "name": "Block Errors",
@@ -910,7 +915,7 @@ data:
             }],
             "inventory-class": "port",
             "inventory-field": "additionalInfo.circuit-pack",
-            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP28", "QSFP-DD"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
             "parameters": [
                 {
                     "name": "Block Errors",
@@ -945,7 +950,7 @@ data:
             }],
             "inventory-class": "port",
             "inventory-field": "additionalInfo.circuit-pack",
-            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+            "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP28", "QSFP-DD"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
             "parameters": [
                 {
                     "name": "PWR Rx MAX",
@@ -2704,6 +2709,524 @@ data:
             ]
           },
           {
+            "profile-id": "BreakoutEthernetRX",
+      "profile-display-name": "ETHERNET(INGRESS)",
+      "resource-type": "_interface",
+      "bucket-type": "Breakout_ETH_Rx_validity",
+      "enabled": "true",
+      "description": "",
+      "interval": 15,
+      "timeout": 30,
+      "retry-count": 3,
+      "target-model": [{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2020-05-29",
+        "node-type": "xpdr"
+      },{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2023-05-26",
+        "node-type": "xpdr"
+      }],
+      "inventory-class": "interface",
+      "inventory-field": "id",
+      "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "id": ["ETH10G"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+      "parameters": [
+        {
+          "name": "Total Octets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Total%20Octets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Total Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Total%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Broadcast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Broadcast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Multicast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Multicast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Unicast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Unicast%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Dropped Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Dropped%20Frames,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition": { "additionalInfo.module-type": ["TMX-4400"] },
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Undersize Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Undersize%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition": { "additionalInfo.module-type": ["TMX-4400"] },
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Oversize Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Oversize%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Fragments",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Fragments,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "CRC Alignment Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,CRC%20Alignment%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Jabbers",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,Jabbers,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "64 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,64%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "65-127 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,65-127%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "128-255 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,128-255%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "256-511 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,256-511%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "512-1023 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,512-1023%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "1024-1518 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,1024-1518%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "1519-2047 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,1519-2047%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "2048-4095 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,2048-4095%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "4096-8191 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,4096-8191%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "over 8192 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetRX,[name]/historical-pm=vendorExtension,over%208192%20Octet%20Packets,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        }
+      ]
+    },
+    {
+      "profile-id": "BreakoutEthernetTX",
+      "profile-display-name": "ETHERNET(EGRESS)",
+      "resource-type": "_interface",
+      "bucket-type": "Breakout_ETH_Tx_validity",
+      "enabled": "true",
+      "description": "",
+      "interval": 15,
+      "timeout": 30,
+      "retry-count": 3,
+      "target-model": [{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2020-05-29",
+        "node-type": "xpdr"
+      },{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2023-05-26",
+        "node-type": "xpdr"
+      }],
+      "inventory-class": "interface",
+      "inventory-field": "id",
+      "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "id": ["ETH10G"], "model-name" : ["ETH"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+      "parameters": [
+        {
+          "name": "Total Octets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Total%20Octets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Total Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Total%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Broadcast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Broadcast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Multicast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Multicast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Unicast Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Unicast%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Dropped Frames",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Dropped%20Frames,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition": {
+            "additionalInfo.module-type": ["TMX-4400"]
+          },
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Undersize Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Undersize%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition": {
+            "additionalInfo.module-type": ["TMX-4400"]
+          },
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Oversize Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Oversize%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Fragments",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Fragments,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "CRC Alignment Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,CRC%20Alignment%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "Jabbers",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,Jabbers,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "64 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,64%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "65-127 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,65-127%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "128-255 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,128-255%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "256-511 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,256-511%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "512-1023 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,512-1023%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "1024-1518 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,1024-1518%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "1519-2047 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,1519-2047%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "2048-4095 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,2048-4095%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "4096-8191 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,4096-8191%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        },
+        {
+          "name": "over 8192 Octet Packets",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutEthernetTX,[name]/historical-pm=vendorExtension,over%208192%20Octet%20Packets,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "number",
+          "displayType": "realValue",
+          "ignore-condition" : {"additionalInfo.module-type" : ["TMX-4400"]},
+          "time-field": "completion-time"
+        }
+      ]
+    },
+    {
+      "profile-id": "BreakoutMetaDXPcs-RX",
+      "profile-display-name": "PCS(INGRESS)",
+      "resource-type": "_circuitpack",
+      "bucket-type": "BreakoutMetaDXPcs_Rx_validity",
+      "enabled": "true",
+      "description": "",
+      "interval": 15,
+      "timeout": 30,
+      "retry-count": 3,
+      "target-model": [{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2020-05-29",
+        "node-type": "xpdr"
+      },
+      {
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2023-05-26",
+        "node-type": "xpdr"
+      }],
+      "inventory-class": "port",
+      "inventory-field": "additionalInfo.position",
+      "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP-PLUS"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+      "parameters": [
+        {
+          "name": "Block Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Block%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "BIP Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20BIP%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PCS Pre FEC Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PCS Post FEC Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Post%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PCS Pre FEC BER",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20BER,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValueExponential",
+          "time-field": "completion-time"
+        }
+      ]
+    },
+    {
+      "profile-id": "BreakoutMetaDXPcs-TX",
+      "profile-display-name": "PCS(EGRESS)",
+      "resource-type": "_circuitpack",
+      "bucket-type": "BreakoutMetaDXPcs_Tx_validity",
+      "enabled": "true",
+      "description": "",
+      "interval": 15,
+      "timeout": 30,
+      "retry-count": 3,
+      "target-model": [{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2020-05-29",
+        "node-type": "xpdr"
+      },
+      {
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2023-05-26",
+        "node-type": "xpdr"
+      }],
+      "inventory-class": "port",
+      "inventory-field": "additionalInfo.position",
+      "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP-PLUS"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+      "parameters": [
+        {
+          "name": "Block Errors",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-TX,[name]/historical-pm=vendorExtension,PCS%20Block%20Errors,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        }
+      ]
+    },
+    {
+      "profile-id": "QSFPPlusOptical",
+      "profile-display-name": "OPTICAL",
+      "resource-type": "_circuitpack",
+      "bucket-type": "QSFPPlusOptical_validity",
+      "enabled": "true",
+      "description": "",
+      "interval": 15,
+      "timeout": 30,
+      "retry-count": 3,
+      "target-model": [{
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2020-05-29",
+        "node-type": "xpdr"
+      },
+      {
+        "vendor": "dzs",
+        "system-type": "roadm",
+        "revision": "2023-05-26",
+        "node-type": "xpdr"
+      }],
+      "inventory-class": "port",
+      "inventory-field": "additionalInfo.position",
+      "inventory-condition" : {"additionalInfo.node-type" : ["xpdr"], "model-name": ["QSFP-PLUS"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["TMX-4401", "TMX-4402", "TMX-4403", "TMX-4404"]},
+      "parameters": [
+        {
+          "name": "PWR Rx MAX",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPPlusOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "dBm",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PWR Tx MAX",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPPlusOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "dBm",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PWR Rx MIN",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPPlusOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+          "unit": "dBm",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        },
+        {
+          "name": "PWR Tx MIN",
+          "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,QSFPPlusOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+          "unit": "dBm",
+          "displayType": "realValue",
+          "time-field": "completion-time"
+        }
+      ]
+    },
+          {
             "profile-id": "ZMS Traffic",
             "resource-type": "_interface",
             "bucket-type": "device",
@@ -2853,6 +3376,26 @@ data:
                 "servers": "nats://{{- $nats_svc -}}:4222",
                 "subject": "dzs.sdnc.config",
                 "queueGroup": "pmcollector",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_MAINT",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.PMCollector",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "zhone.sdnc.inventory",
                 "connectionTimeoutSeconds": 10,
                 "maxReconnects": -1,
                 "reconnectWaitSeconds": 2,

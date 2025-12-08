@@ -52,7 +52,7 @@ service:
 
 repo:
   type:
-    roadm: ftp
+    sftp: sftp
 
 sdnc:
   volume:

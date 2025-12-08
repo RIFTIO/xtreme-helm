@@ -6,6 +6,7 @@ Default Template for Configmaps. All Sub-Charts under this Chart can include the
 
 {{- $nats_svc := include "nats.fqdn" . }}
 {{- $gnpy_svc := include "gnpy.fqdn" . }}
+{{- $configmgr_svc := include "rnc-config-mgr.fqdn" . }}
 {{- $netconf_svc := include "rnc-netconf-svc.fqdn" . }}
 {{- $inventory_mgr := include "rnc-inventory-mgr.fqdn" . }}
 {{- $inas_svc := include "inas-be.fqdn" . }}
@@ -13,6 +14,7 @@ Default Template for Configmaps. All Sub-Charts under this Chart can include the
 {{- $sftp_svc := include "sftp.fqdn" . }}
 {{- $kafka_socket := include "kafka.socket" . }}
 {{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $snmpgw := include "snmpgw.fqdn" . }}
 
 
 apiVersion: v1
@@ -197,10 +199,10 @@ data:
             ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "transportpce-svc" $transportpce_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_netconf) }}
         {{- end }}
         {{- if contains "dzs-config-mgr" .Values.image.name }}
-            ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "netconf-svc-dzs-rnc" $netconf_svc | replace "inventory-mgr-dzs-rnc" $inventory_mgr | replace "transportpce-svc" $transportpce_svc | replace "inas2-be" $inas_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_configMgr) }}
+            ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "netconf-svc-dzs-rnc" $netconf_svc | replace "inventory-mgr-dzs-rnc" $inventory_mgr | replace "transportpce-svc" $transportpce_svc | replace "inas2-be" $inas_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_configMgr) | replace "snmpgw-app" $snmpgw  }}
         {{- end }}
         {{- if contains "dzs-transportpce" .Values.image.name }}
-            ,{{ .Values.lighty.serviceConfig | replace "enableNbinotification" (toString .Values.global.enableKafka_tpce) | replace "gnpy-svc-name" $gnpy_svc }}
+            ,{{ .Values.lighty.serviceConfig | replace "enableNbinotification" (toString .Values.global.enableKafka_tpce) | replace "gnpy-svc-name" $gnpy_svc | replace "configmgr-svc-name" $configmgr_svc | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_tpce)}}
         {{- end }}
     }
 

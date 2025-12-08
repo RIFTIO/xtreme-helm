@@ -3,7 +3,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: "dzs-sdnc-netconf-svc"
+appName: "zhone-sdnc-netconf-svc"
 svcName: "netconf"
 moduleName: "netconf-svc"
 fullnameOverride: ""
@@ -63,18 +63,6 @@ lighty:
          "mapping": {
            "dzs": [
              {
-               "namespace": "http://www.ipinfusion.com/CMLSchema/dasan",
-               "module": "dasan",
-               "system-type": "device",
-               "notification-stream": "NETCONF"
-             },
-             {
-               "namespace": "http://www.ipinfusion.com/CMLSchema/dzs",
-               "module": "dzs",
-               "system-type": "device",
-               "notification-stream": "NETCONF"
-             },
-             {
                "namespace": "http://dzsi.com/zms",
                "module": "zms",
                "system-type": "zms",
@@ -124,68 +112,15 @@ lighty:
            "systemType": "olt",
            "type": "pizza",
            "chassisName": "V1-16XC",
-           "boardName": "V1-16XC_board"
+           "boardName": "card"
          },
          {
            "vendor": "dzs",
-           "modelName": "V6-SIM",
+           "modelName": "V1-16XC-E",
            "systemType": "olt",
-           "type": "chassis",
-           "chassisName": "chassis",
-           "slotConfig": {
-             "slotMap": {
-               "slot-lc1": {
-                 "name": "slot-lc1",
-                 "port": 30994,
-                 "type": "LC"
-               },
-               "slot-lc2": {
-                 "name": "slot-lc2",
-                 "port": 30995,
-                 "type": "LC"
-               },
-               "slot-lc3": {
-                 "name": "slot-lc3",
-                 "port": 30996,
-                 "type": "LC"
-               },
-               "slot-lc4": {
-                 "name": "slot-lc4",
-                 "port": 30997,
-                 "type": "LC"
-               },
-               "slot-lc5": {
-                 "name": "slot-lc5",
-                 "port": 30998,
-                 "type": "LC"
-               },
-               "slot-lc6": {
-                 "name": "slot-lc6",
-                 "port": 30999,
-                 "type": "LC"
-               },
-               "slot-fc1": {
-                 "name": "slot-fc1",
-                 "port": 30992,
-                 "type": "FC"
-               },
-               "slot-fc2": {
-                 "name": "slot-fc2",
-                 "port": 30993,
-                 "type": "FC"
-               },
-               "slot-mc1": {
-                 "name": "slot-mc1",
-                 "port": 30990,
-                 "type": "MC"
-               },
-               "slot-mc2": {
-                 "name": "slot-mc2",
-                 "port": 30991,
-                 "type": "MC"
-               }
-             }
-           }
+           "type": "pizza",
+           "chassisName": "V1-16XC-E",
+           "boardName": "card"
          },
          {
            "vendor": "dzs",
@@ -293,37 +228,6 @@ lighty:
                "slot-mc2": {
                  "name": "slot-mc2",
                  "port": 830,
-                 "type": "MC"
-               }
-             }
-           }
-         },
-         {
-           "vendor": "dzs",
-           "modelName": "V2-SIM",
-           "systemType": "olt",
-           "type": "chassis",
-           "chassisName": "chassis",
-           "slotConfig": {
-             "slotMap": {
-               "slot-lc1": {
-                 "name": "slot-lc1",
-                 "port": 30794,
-                 "type": "LC"
-               },
-               "slot-lc2": {
-                 "name": "slot-lc2",
-                 "port": 30795,
-                 "type": "LC"
-               },
-               "slot-mc1": {
-                 "name": "slot-mc1",
-                 "port": 30790,
-                 "type": "MC"
-               },
-               "slot-mc2": {
-                 "name": "slot-mc2",
-                 "port": 30791,
                  "type": "MC"
                }
              }
@@ -571,12 +475,16 @@ lighty:
              "config": {
                "type": "PUB",
                "accepts": [
-                 "ROADM_TCA"
+                 "ROADM_TCA", "ONU_PRESENCE_STATE_CHANGE"
                ],
                "targets": [
                  {
                    "classifier": "ROADM_TCA",
                    "target": "dzs.sdnc.netconf.roadm_notis"
+                 },
+                 {
+                   "classifier": "ONU_PRESENCE_STATE_CHANGE",
+                   "target": "dzs.sdnc.netconf.onu_presence_state_change"
                  }
                ],
                "producerConfig": {

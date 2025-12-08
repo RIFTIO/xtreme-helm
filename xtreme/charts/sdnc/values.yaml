@@ -6,7 +6,6 @@ global:
     password: "dzs123!!"
 
 install:
-  artifactory: true
   fileManager: true
   pmCollector: true
   alarmSvc: true
@@ -18,3 +17,4 @@ install:
   sdncConnector: true
   envoy: false
   gnpy: true
+  snmpgw: true

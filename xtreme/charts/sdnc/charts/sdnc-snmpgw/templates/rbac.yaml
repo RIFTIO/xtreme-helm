@@ -1,0 +1,27 @@
+{{- if index .Values.global.sdnc "sdnc-snmpgw" "createClusterRole" }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "sdnc.namespace" . }}-rw-snmpgw-clusterrole
+  labels:
+    {{- include "snmpgw.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+{{- end }}
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "sdnc.namespace" . }}-rw-snmpgw-clusterrolebinding
+  labels:
+    {{- include "snmpgw.labels" . | nindent 4 }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "sdnc.namespace" . }}-rw-snmpgw-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: {{ include "snmpgw.serviceAccountName" . }}
+  namespace: {{ include "sdnc.namespace" . }}

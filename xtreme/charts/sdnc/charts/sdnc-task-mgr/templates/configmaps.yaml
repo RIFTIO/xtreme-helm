@@ -12,7 +12,7 @@
 {{- $sftp := include "sftp.fqdn" . }}
 {{- $kafka_socket := include "kafka.socket" . }}
 {{- $enableKafka := .Values.global.enableKafka_taskMgr }}
-{{- $repoTypeRoadm := .Values.repo.type.roadm }}
+{{- $repoTypeSftp := .Values.repo.type.sftp }}
 
 apiVersion: v1
 
@@ -507,17 +507,17 @@ data:
               "waitTimeout": 720000
             },
             "olt": {
-              "preferRepoType": "ftp",
+              "preferRepoType": "{{ $repoTypeSftp }}",
               "commitPackageAfterActivatedMillis": 30000
             },
             "roadm": {
-              "preferRepoType": "{{ $repoTypeRoadm }}",
+              "preferRepoType": "{{ $repoTypeSftp }}",
               "delayBetweenStage": 10000
             }
           },
           "download": {
             "olt": {
-              "preferRepoType": "ftp"
+              "preferRepoType": "{{ $repoTypeSftp }}"
             }
           },
           "upgrade": {
@@ -528,19 +528,21 @@ data:
           "configBackup": {
             "olt": {
               "waitTimeout": 360000,
-              "delayBetweenStage": 10000
+              "delayBetweenStage": 10000,
+              "preferRepoType": "{{ $repoTypeSftp }}"
             },
             "roadm": {
-              "preferRepoType": "{{ $repoTypeRoadm }}"
+              "preferRepoType": "{{ $repoTypeSftp }}"
             }
           },
           "configRestore": {
             "olt": {
               "waitTimeout": 360000,
-              "delayBetweenStage": 10000
+              "delayBetweenStage": 10000,
+              "preferRepoType": "{{ $repoTypeSftp }}"
             },
             "roadm": {
-              "preferRepoType": "{{ $repoTypeRoadm }}"
+              "preferRepoType": "{{ $repoTypeSftp }}"
             }
           }
         },
@@ -552,7 +554,17 @@ data:
             "yangModelSet": "bbf",
             "type": "pizza",
             "chassisName": "V1-16XC",
-            "componentForMaint": ["card", "V1-16XC_board"],
+            "componentForMaint": ["card"],
+            "softwareName": ["image", "NOS"]
+          },
+          {
+            "vendor": "dzs",
+            "modelName": "V1-16XC-E",
+            "systemType": "olt",
+            "yangModelSet": "bbf",
+            "type": "pizza",
+            "chassisName": "V1-16XC-E",
+            "componentForMaint": ["card"],
             "softwareName": ["image", "NOS"]
           },
           {
@@ -704,6 +716,16 @@ data:
                 "name": "InventoryMgrGetInventory",
                 "uriPath": "/restconf/operations/inventory-mgr:get-inventory",
                 "httpMethod": "POST"
+              },
+              "InventoryEnterMaintenance": {
+                "name": "InventoryEnterMaintenance",
+                "uriPath": "/restconf/operations/inventory:enter-maintenance",
+                "httpMethod": "POST"
+              },
+              "InventoryExitMaintenance": {
+                "name": "InventoryExitMaintenance",
+                "uriPath": "/restconf/operations/inventory:exit-maintenance",
+                "httpMethod": "POST"
               }
             }
           },
@@ -833,6 +855,26 @@ data:
                 "natsPort": 4222,
                 "servers": "nats://{{- $nats_svc -}}:4222",
                 "subject": "dzs.sdnc.devicetask",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
+              "serviceIdentifier": "NATS_MAINT",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.TaskMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://{{- $nats_svc -}}:4222",
+                "subject": "zhone.sdnc.inventory",
                 "connectionTimeoutSeconds": 10,
                 "maxReconnects": -1,
                 "reconnectWaitSeconds": 2,

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-strimzi-operator
+  name: zhone-strimzi-cluster-operator
   namespace: {{ .Values.global.namespace.name }}
   labels:
     app: {{ template "strimzi.name" . }}
@@ -9,8 +9,19 @@ metadata:
     component: deployment
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.replicas }}
+  {{- with .Values.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  {{- if .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- end }}
   selector:
     matchLabels:
       name: strimzi-cluster-operator
@@ -29,9 +40,15 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount }}
-      {{- if .Values.image.imagePullSecrets }}
+      {{- /* imagePullSecrets is allowed to be for backwards compatibility */ -}}
+      {{- if kindIs "string" .Values.image.imagePullSecrets }}
       imagePullSecrets:
         - name: {{ .Values.image.imagePullSecrets }}
+      {{- else if kindIs "slice" .Values.image.imagePullSecrets }}
+      imagePullSecrets:
+        {{- with .Values.image.imagePullSecrets }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext: {{ toYaml . | nindent 8 }}
@@ -79,9 +96,9 @@ spec:
               {{- end }}
               {{- end }}
             - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
-              value: {{ .Values.fullReconciliationIntervalMs | quote }}
+              value: {{ .Values.fullReconciliationIntervalMs | int64 | quote }}
             - name: STRIMZI_OPERATION_TIMEOUT_MS
-              value: {{ .Values.operationTimeoutMs | quote }}
+              value: {{ .Values.operationTimeoutMs | int64 | quote }}
             {{- template "strimzi.kafka.image.map" . }}
             - name: STRIMZI_DEFAULT_TOPIC_OPERATOR_IMAGE
               value: {{ template "strimzi.image" (set . "key" "topicOperator") }}
@@ -101,9 +118,13 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            {{- if .Values.image.imagePullSecrets }}
+            {{- /* imagePullSecrets is allowed to be for backwards compatibility */ -}}
+            {{- if kindIs "string" .Values.image.imagePullSecrets }}
             - name: STRIMZI_IMAGE_PULL_SECRETS
               value: {{ .Values.image.imagePullSecrets }}
+            {{- else if kindIs "slice" .Values.image.imagePullSecrets }}
+            - name: STRIMZI_IMAGE_PULL_SECRETS
+              value: {{ template "strimzi.listPluck" (dict "list" .Values.image.imagePullSecrets "key" "name") }}
             {{- end }}
             {{- if .Values.image.operatorNamespaceLabels }}
             - name: STRIMZI_OPERATOR_NAMESPACE_LABELS
@@ -127,13 +148,21 @@ spec:
             {{- end }}
             {{- if ne (int .Values.connectBuildTimeoutMs) 300000 }}
             - name: STRIMZI_CONNECT_BUILD_TIMEOUT_MS
-              value: {{ .Values.connectBuildTimeoutMs | quote }}
+              value: {{ .Values.connectBuildTimeoutMs | int64 | quote }}
+            {{- end }}
+            {{- if ne .Values.generatePodDisruptionBudget true}}
+            - name: STRIMZI_POD_DISRUPTION_BUDGET_GENERATION
+              value: {{ .Values.generatePodDisruptionBudget | quote }}
             {{- end }}
             {{- if .Values.extraEnvs }}
 {{ toYaml .Values.extraEnvs | indent 12 }}
             {{- end }}
             - name: STRIMZI_LEADER_ELECTION_ENABLED
+              {{- if .Values.leaderElection.enable }}
               value: "true"
+              {{- else }}
+              value: "false"
+              {{- end }}
             - name: STRIMZI_LEADER_ELECTION_LEASE_NAME
               value: "strimzi-cluster-operator"
             - name: STRIMZI_LEADER_ELECTION_LEASE_NAMESPACE

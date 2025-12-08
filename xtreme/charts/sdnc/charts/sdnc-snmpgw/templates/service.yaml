@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "snmpgw.fullname" . }}
+  labels:
+    {{- include "snmpgw.labels" . | nindent 4 }}
+  namespace: {{ include "sdnc.namespace" . }}
+{{- if .Values.service.annotations }}
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+{{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.notificationListenerPort }}
+      targetPort: udp
+      protocol: UDP
+      name: udp
+  externalTrafficPolicy: Local
+  selector:
+    {{- include "snmpgw.selectorLabels" . | nindent 4 }}

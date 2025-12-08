@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-task-mgr
+  name: zhone-sdnc-task-mgr
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "task-mgr.labels" . | nindent 4 }}

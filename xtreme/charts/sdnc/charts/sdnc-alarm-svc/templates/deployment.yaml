@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dzs-sdnc-alarm-svc
+  name: zhone-sdnc-alarm-svc
   namespace: {{ include "sdnc.namespace" . }}
   labels:
     {{- include "alarm-svc.labels" . | nindent 4 }}

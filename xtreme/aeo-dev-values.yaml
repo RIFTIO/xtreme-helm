@@ -86,7 +86,6 @@ launchpad:
 
 sdnc:
   install:
-    artifactory: true
     fileManager: true
     pmCollector: true
 

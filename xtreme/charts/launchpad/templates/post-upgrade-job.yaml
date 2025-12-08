@@ -8,6 +8,7 @@ metadata:
   namespace: {{ .Values.global.namespace.name }}
   annotations:
     "helm.sh/hook": post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
   template:
     spec:

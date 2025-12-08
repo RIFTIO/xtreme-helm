@@ -4,7 +4,7 @@
 # Declare variables to be passed into your templates.
 #
 
-appName: "dzs-sdnc-transportpce"
+appName: "zhone-sdnc-transportpce"
 svcName: "tpce"
 moduleName: "tpce"
 fullnameOverride: ""
@@ -57,7 +57,38 @@ lighty:
     "tapi": false,
     "olmtimer1": "3000",
     "olmtimer2": "30000",
-    "gnpyServer": "http://gnpy-svc-name:8008"
+    "gnpyServer": "http://gnpy-svc-name:8008",
+    "configMgrServer" : "http://configmgr-svc-name:8888",
+    "messagingClientConfig": {
+      	"entries": [
+        {
+          "serviceIdentifier": "KAFKA",
+          "enabled": enableKafka,
+          "serverType": "KAFKA",
+          "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+          "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+          "config": {
+            "type": "PUB",
+            "accepts": [ "POWERBALANCING" ],
+            "targets": [
+              {
+                "classifier": "POWERBALANCING",
+                "target": "dzs.sdnc.powerBalancing"
+              }
+            ],
+            "producerConfig": {
+              "bootstrap.servers": "kafka-headless",
+              "acks": "all",
+              "client.dns.lookup": "use_all_dns_ips",
+              "retries": 0,
+              "linger.ms": 10,
+              "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+              "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
+            }
+          }
+        }
+      ]
+    }
   }'
 
   initData:
