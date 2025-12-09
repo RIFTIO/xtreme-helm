@@ -17,7 +17,7 @@ cat >&2 <<EOF
 --chart path      helm chart
 --values path     values file. May be used more than once. default is $default_values
 --ns namespace    override the namespace 
---init            ONLY create the CRDs and docker secrets. Only needs to be done once
+--init            ONLY create the docker secrets. Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
