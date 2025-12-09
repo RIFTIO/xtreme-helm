@@ -111,8 +111,12 @@ if $init; then
        tar xzf ${chart}
     fi
 
-  # echo creating CRDs... >&2
-  # for f in xtreme/charts/kafka/crds/*; do echo $f >&2; kubectl apply -f $f; done
+  echo creating CRDs... >&2
+  for f in xtreme/crds/*
+  do 
+    echo $f >&2
+    kubectl apply -f $f
+  done
 fi
 
 for file in $values; do
