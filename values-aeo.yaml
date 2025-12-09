@@ -4,12 +4,12 @@ global:
   #- ip: "10.157.136.200"
   #  hostnames:
   #  - "jlm1.lab.dzsi.local"
+  #ingress:
+  #  riftExternalAddress: jlm.lab.dzsi.local
   sdncImgtag: 13.5.0.1010629
   namespace:
     name: demo
     create: false
-  #ingress:
-  #  riftExternalAddress: jlm.lab.dzsi.local
 launchpad:
   launchpad:
     appSelector: aeo
