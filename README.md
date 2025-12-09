@@ -7,10 +7,9 @@ or you are inside the zhone lab.
 
 files in this dir
 * README.md this file
-* repos.yaml -- values to use public repos
+* repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
 * values-aeo.yaml -- values to get the latest build
-* kafka.yaml -- values to work around a bug in the kafka message broker
 * ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
@@ -27,10 +26,14 @@ check your storage class (kubectl get storageclases) and update storage.yaml
 run:
 ./install-xtreme 
 
-If you are in the dzs lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
+If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
 when it's done, it will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow
+
+you can run kubectl get pods -n <namespace> -w to watch the startup progress. When all of these pods are up, you can do
+kubectl get pods -n aeo-<namespace> -w to watch it finish up 
+
 
 notes
 
