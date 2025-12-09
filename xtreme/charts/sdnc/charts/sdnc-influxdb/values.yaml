@@ -6,7 +6,6 @@ replicaCount: 1
 
 image:
   repository: rt.cloud.dzsi.local/docker/influxdb
-  #tag: 3.4.1-debian-12-r0
   tag: 2.6.1
   pullPolicy: IfNotPresent
 

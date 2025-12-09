@@ -15,21 +15,21 @@ launchpad:
     appSelector: aeo
     image:
       repository: rt.cloud.dzsi.local/docker/rw.aeo
-      tag: 13.5.0.1010657
+      tag: 13.5.0.1010631
     upgradeFrom: null
   aeo:
     image:
       controller:
-        tag: 13.5.0.1010657
+        tag: 13.5.0.1010631
         pullPolicy: IfNotPresent
       serviceWorker:
-        tag: 13.5.0.1010657
+        tag: 13.5.0.1010631
         pullPolicy: IfNotPresent
       resourceWorker:
-        tag: 13.5.0.1010657
+        tag: 13.5.0.1010631
         pullPolicy: IfNotPresent
       tmfServer:
-        tag: 13.5.0.1010657
+        tag: 13.5.0.1010631
         pullPolicy: IfNotPresent
       scriptExec:
         pullPolicy: IfNotPresent
