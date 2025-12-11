@@ -14,9 +14,9 @@ action=install
 help() {
 cat >&2 <<EOF 
     USAGE: 
---chart path      helm chart
+--chart path      helm chart. default is ./xtreme
 --values path     values file. May be used more than once. default is $default_values
---ns namespace    override the namespace 
+--ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
 --init            ONLY create the docker secrets. Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
