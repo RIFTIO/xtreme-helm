@@ -76,14 +76,14 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12}}
           image: "{{ .Values.image.name }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.daexim.enable }}
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - bash
-                  - /lighty-rnc/k8s-config/postStart.sh
-          {{- end }}
+          #{{- if .Values.daexim.enable }}
+          #lifecycle:
+          #  postStart:
+          #    exec:
+          #      command:
+          #        - bash
+          #        - /lighty-rnc/k8s-config/postStart.sh
+          #{{- end }}
           args: [ "-c","{{ .Values.lighty.configDirectoryName }}/{{ .Values.lighty.configFilename }}",
                   {{- if  not (contains "dzs-transportpce" .Values.image.name) }}
                     "-l","{{ .Values.lighty.configDirectoryName }}/{{ .Values.lighty.loggerConfigFilename }}"

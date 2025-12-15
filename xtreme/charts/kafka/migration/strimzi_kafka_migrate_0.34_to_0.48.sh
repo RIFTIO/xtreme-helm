@@ -18,7 +18,9 @@ IFS=$'\n\t'
 ########################
 DEFAULT_NAMESPACE="default"
 DEFAULT_KAFKA_CR_NAME="dzs-strimzi"
+NEW_KAFKA_CR_NAME="zhone-strimzi"
 OPERATOR_DEPLOYMENT="dzs-strimzi-operator"
+NEW_OPERATOR_DEPLOYMENT="zhone-strimzi-operator"
 KAFKA_VERSION="3.4.0"
 WORKDIR="/tmp/strimzi-upgrade-$$"
 ORG_VER="0.34.0"
@@ -85,6 +87,26 @@ fi
 sleep 8
 done
 }
+
+wait_for_new_kafka_ready() {
+local timeout="${1:-900}"
+info "Waiting for Kafka CR/$NEW_KAFKA_CR_NAME to show Ready condition..."
+local start=$SECONDS
+while true; do
+local ready
+ready="$(kubectl_ns get kafka "$NEW_KAFKA_CR_NAME" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)"
+if [[ "$ready" == "True" ]]; then
+info "Kafka/$NEW_KAFKA_CR_NAME Ready"
+break
+fi
+if (( SECONDS - start > timeout )); then
+kubectl_ns get kafka "$NEW_KAFKA_CR_NAME" -o yaml || true
+die "Timeout waiting for Kafka/$NEW_KAFKA_CR_NAME to become Ready"
+fi
+sleep 8
+done
+}
+
 
 wait_for_kafka_metadata_migration_status() {
 local timeout="${1:-600}"
@@ -426,10 +448,18 @@ spec:
   replicas: 1
   roles:
     - broker
+  resources:
+      requests:
+        memory: 2Gi
+        cpu: "2"
+      limits:
+        memory: 4Gi
+        cpu: "4"
   storage:
-    type: persistent-claim
-    size: 5Gi
-    deleteClaim: false
+          type: persistent-claim
+          size: 5Gi
+          kraftMetadata: shared
+          deleteClaim: false
 EOF
 
 info "Applying KafkaNodePools manifest..."
@@ -464,6 +494,13 @@ spec:
   replicas: 1
   roles:
     - controller
+  resources:
+      requests:
+        memory: 2Gi
+        cpu: "2"
+      limits:
+        memory: 4Gi
+        cpu: "4"
   storage:
     type: persistent-claim
     size: 5Gi
@@ -561,6 +598,251 @@ info "wait for kafka pods to be ready (1 min) "
 sleep 60
 
 }
+
+
+function create_copy_pod() {
+  local pod_name=$1
+  local old_pvc=$2
+  local new_pvc=$3
+  echo "Creating pod $pod_name to copy $old_pvc → $new_pvc..."
+
+  # Delete old pod if exists
+  kubectl delete pod "$pod_name" -n "$NAMESPACE" --ignore-not-found
+
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $pod_name
+  namespace: $NAMESPACE
+spec:
+  restartPolicy: Never
+  containers:
+  - name: pv-copy
+    image: alpine:3.19
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "Installing rsync..."
+        apk add --no-cache rsync
+        echo "Starting rsync copy..."
+        rsync -avh --progress /mnt/old/. /mnt/new/
+        echo "Copy completed."
+    volumeMounts:
+      - name: old
+        mountPath: /mnt/old
+      - name: new
+        mountPath: /mnt/new
+  volumes:
+    - name: old
+      persistentVolumeClaim:
+        claimName: $old_pvc
+    - name: new
+      persistentVolumeClaim:
+        claimName: $new_pvc
+EOF
+}
+
+
+function wait_for_pod_completion() {
+  local pod_name=$1
+  echo "Waiting for pod $pod_name to complete..."
+  echo "Waiting for pod $pod_name to finish..."
+  kubectl wait --for=condition=Initialized pod/$pod_name -n "$NAMESPACE" --timeout=5m
+
+  while true; do
+    phase=$(kubectl get pod "$pod_name" -n "$NAMESPACE" -o jsonpath='{.status.phase}')
+    if [ "$phase" = "Succeeded" ] || [ "$phase" = "Failed" ]; then
+        echo "Pod finished with phase: $phase"
+        break
+    fi
+    sleep 2
+  done
+  echo "Pod $pod_name finished."
+}
+
+function delete_pod() {
+  local pod_name=$1
+  echo "Deleting pod $pod_name..."
+  kubectl delete pod "$pod_name" -n "$NAMESPACE"
+}
+
+
+rename_kafka_resources(){
+
+	 info " Patching KafkaNodePool : kafka-broker "
+        kubectl_ns patch kafkanodepool kafka-broker --type=json \
+        -p="[
+        {\"op\": \"replace\", \"path\": \"/metadata/labels/strimzi.io~1cluster\", \"value\": \"$NEW_KAFKA_CR_NAME\"}
+
+        ]"
+
+        info " Patching KafkaNodePool: kafka-controller"
+        kubectl_ns patch kafkanodepool  kafka-controller  --type=json \
+        -p="[
+        {\"op\": \"replace\", \"path\": \"/metadata/labels/strimzi.io~1cluster\", \"value\": \"$NEW_KAFKA_CR_NAME\"}
+
+        ]"
+
+        info "Patching strimzi-operator operator "
+        kubectl_ns get deploy "$OPERATOR_DEPLOYMENT" -o yaml > "${WORKDIR}/kafka-$NEW_OPERATOR_DEPLOYMENT.yaml"
+        sed "s/name: $OPERATOR_DEPLOYMENT/name: $NEW_OPERATOR_DEPLOYMENT/"   "${WORKDIR}/kafka-$NEW_OPERATOR_DEPLOYMENT.yaml"
+
+        info "creating $NEW_OPERATOR_DEPLOYMENT operator "
+        kubectl_ns  apply -f "${WORKDIR}/kafka-$NEW_OPERATOR_DEPLOYMENT.yaml"
+
+        wait_for_deploy_ready "$OPERATOR_DEPLOYMENT"
+
+        info " Exporting existing Kafka CR to new file"
+        kubectl_ns get kafka $KAFKA_CR_NAME -o yaml > "${WORKDIR}/kafka-$NEW_KAFKA_CR_NAME.yaml"
+
+        # Update metadata.name + spec.kafka.metadata.clusterName if needed
+        sed -i "s/name: $KAFKA_CR_NAME/name: $NEW_KAFKA_CR_NAME/" "${WORKDIR}/kafka-$NEW_KAFKA_CR_NAME.yaml"
+
+
+        info "Applying new Kafka CR with updated name"
+        kubectl_ns apply -f "${WORKDIR}/kafka-$NEW_KAFKA_CR_NAME.yaml"
+        wait_for_new_kafka_ready
+
+	info "Restarting strimzi operator "
+        echo "=== Restarting Strimzi Operator ==="
+
+        kubectl rollout restart deploy -n "${NAMESPACE}" "$OPERATOR_DEPLOYMENT" || warn "Failed to restart operator deployment"
+        wait_for_deploy_ready "$OPERATOR_DEPLOYMENT"
+
+        echo "✓ Strimzi Operator restarted. Reconciliation will now apply the new names."
+        wait_for_new_kafka_ready
+
+}
+
+
+backup_pvc_data(){
+	PVC=$2;
+	OUTPUT="${WORKDIR}/pvc-$PVC-backup.tar.gz"
+	TMP_POD="backup-$PVC"
+	echo "======================================================"
+	echo " SINGLE PVC BACKUP"
+	echo " Namespace : $NAMESPACE"
+	echo " PVC       : $PVC"
+	echo " Backup    : $OUTPUT"
+	echo "======================================================"
+        #############################################
+	# Create temporary pod mounting the PVC
+	#############################################
+	echo "Creating temporary backup pod: $TMP_POD"
+
+	cat <<EOF | kubectl apply -n $NAMESPACE -f -
+	apiVersion: v1
+	kind: Pod
+	metadata:
+  		name: $TMP_POD
+	spec:
+  		containers:
+  		- name: backup
+    		  image: alpine
+    		  command: ["/bin/sh"]
+    		  args: ["-c", "sleep 3600"]
+    		  volumeMounts:
+    		  - name: data
+      		    mountPath: /data
+  		volumes:
+  		- name: data
+    		  persistentVolumeClaim:
+      		  claimName: $PVC
+EOF
+        #############################################
+	# Wait pod ready
+	#############################################
+	kubectl -n $NAMESPACE wait pod/$TMP_POD --for=condition=Ready --timeout=120s
+	#############################################
+	# Create TAR inside pod
+	#############################################
+	echo "Creating TAR archive inside the pod..."
+	kubectl -n $NAMESPACE exec $TMP_POD -- sh -c \
+  	"tar -czvf /tmp/backup.tar.gz -C /data ."
+	#############################################
+	# Copy TAR to local machine
+	#############################################
+	echo "Copying backup archive to: $OUTPUT"
+	kubectl -n $NAMESPACE cp $TMP_POD:/tmp/backup.tar.gz "$OUTPUT"
+        #############################################
+	# Clean up
+	#############################################
+	echo "Deleting temporary pod..."
+	kubectl -n $NAMESPACE delete pod $TMP_POD --force --grace-period=0
+
+	echo "=============================================="
+	echo " PVC BACKUP COMPLETE"
+	echo " File saved: $OUTPUT"
+	echo "=============================================="
+
+}
+
+restore_pvc_data(){
+        PVC=$2
+        BACKUP_FILE=$3
+
+	echo "======================================================"
+	echo " SINGLE PVC RESTORE"
+	echo " Namespace : $NAMESPACE"
+	echo " PVC       : $PVC"
+	echo " Backup    : $BACKUP_FILE"
+	echo "======================================================"
+
+	TMP_POD="restore-$PVC"
+	#############################################
+	# Create temporary restore pod
+	#############################################
+	echo "Creating temporary pod: $TMP_POD"
+
+	cat <<EOF | kubectl apply -n $NAMESPACE -f -
+	apiVersion: v1
+	kind: Pod
+	metadata:
+  		name: $TMP_POD
+	spec:
+  		containers:
+  		- name: restore
+    		  image: alpine
+    		  command: ["/bin/sh"]
+    		  args: ["-c", "sleep 3600"]
+    		  volumeMounts:
+    		  - name: data
+      		    mountPath: /restore
+  		volumes:
+  		- name: data
+    		  persistentVolumeClaim:
+                  claimName: $PVC
+EOF
+	kubectl -n $NAMESPACE wait pod/$TMP_POD --for=condition=Ready --timeout=120s
+	#############################################
+	# Upload backup archive to pod
+	#############################################
+	echo "Copying backup file into pod..."
+	kubectl -n $NAMESPACE cp "$BACKUP_FILE" $TMP_POD:/tmp/restore.tar.gz
+
+	#############################################
+	# Restore files inside PVC
+	#############################################
+	echo "Restoring files inside PVC..."
+	kubectl -n $NAMESPACE exec $TMP_POD -- sh -c \
+  	"tar -xzvf /tmp/restore.tar.gz -C /restore"
+	#############################################
+	# Cleanup
+	#############################################
+	echo "Deleting temporary pod..."
+	kubectl -n $NAMESPACE delete pod $TMP_POD --force --grace-period=0
+
+	echo "=============================================="
+	echo " PVC RESTORE COMPLETE"
+	echo " Restored into PVC: $PVC"
+	echo "=============================================="
+
+
+}
+
 
 ########################
 # Start
@@ -702,6 +984,83 @@ phase3_duration=$((phase3_end_time - phase3_start_time))
 phase3_minutes=$((phase3_duration / 60))
 info " PHASE 3 KAFKA UPGRADE FROM $STEP2_VER TO $TARGET_VER  COMPLETED SUCCESSFULLY in $phase3_duration seconds ( $phase3_minutes minutes). "
 
+# changing kafa resource name from dzs-kafka to zhone-kafka
+info "=== PHASE 4: Changing Kafka resource name ${KAFKA_CR_NAME} to ${NEW_KAFKA_CR_NAME} ==="
+
+phase4_start_time=$SECONDS
+
+rename_kafka_resources
+
+echo "===== Kafka PV Migration started ===="
+
+OLD_BROKER_PVC="data-$KAFKA_CR_NAME-kafka-broker-0"
+NEW_BROKER_PVC="data-$NEW_KAFKA_CR_NAME-kafka-broker-0"
+POD_BROKER="pv-copy-broker"
+
+BROKER_POD_TYPE="${NEW_BROKER_PVC#data-}"
+echo "BROKER_POD_TYPE : $BROKER_POD_TYPE"
+NEW_BROKER_POD_NAME=$(kubectl get pod -n "$NAMESPACE" -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep "$BROKER_POD_TYPE")
+echo "NEW_BROKER_POD_NAME : $NEW_BROKER_POD_NAME"
+
+OLD_CONTROLLER_PVC="data-$KAFKA_CR_NAME-kafka-controller-1"
+NEW_CONTROLLER_PVC="data-$NEW_KAFKA_CR_NAME-kafka-controller-1"
+POD_CONTROLLER="pv-copy-controller"
+
+CONTROLLER_POD_TYPE="${NEW_CONTROLLER_PVC#data-}"
+echo "CONTROLLER_POD_TYPE : $CONTROLLER_POD_TYPE"
+NEW_CONTROLLER_POD_NAME=$(kubectl get pod -n "$NAMESPACE" -o jsonpath="{.items[*].metadata.name}" | tr ' ' '\n' | grep "$CONTROLLER_POD_TYPE")
+echo "NEW_CONTROLLER_POD_NAME : $NEW_CONTROLLER_POD_NAME"
+
+# Create copy pods
+create_copy_pod "$POD_BROKER" "$OLD_BROKER_PVC" "$NEW_BROKER_PVC"
+create_copy_pod "$POD_CONTROLLER" "$OLD_CONTROLLER_PVC" "$NEW_CONTROLLER_PVC"
+
+# Wait for completion
+wait_for_pod_completion "$POD_BROKER"
+wait_for_pod_completion "$POD_CONTROLLER"
+
+# Delete temporary pods
+delete_pod "$POD_BROKER"
+delete_pod "$POD_CONTROLLER"
+
+echo "===== Kafka PV Migration Completed Successfully! ====="
+
+echo "===== Deleting ${KAFKA_CR_NAME} kafka resources started ====="
+
+echo " Deleting old Kafka CR "
+kubectl_ns  delete kafka $KAFKA_CR_NAME 
+sleep 10
+
+#info " deleting $OPERATOR_DEPLOYMENT deployment "
+#kubectl_ns delete deploy "$OPERATOR_DEPLOYMENT" 
+
+info "deleting $KAFKA_CR_NAME kafka pods  "
+kubectl_ns delete pod -l strimzi.io/name="$KAFKA_CR_NAME-kafka"
+
+echo "===== Deleting ${KAFKA_CR_NAME} kafka resources completed Successfully ====="
+
+info "Restarting new kafka pods"
+
+echo "=== Restarting Broker pod ==="
+
+kubectl delete pod -n "${NAMESPACE}" "$NEW_BROKER_POD_NAME" || warn "Failed to restart broker pod"
+sleep 20
+
+info "=== Restarting Controller pod ==="
+
+kubectl delete pod -n "${NAMESPACE}" "$NEW_CONTROLLER_POD_NAME" || warn "Failed to restart controller pod"
+sleep 20
+
+echo "✓ new kafka pods restarted successfully."
+wait_for_new_kafka_ready
+
+
+
+phase4_end_time=$SECONDS
+phase4_duration=$((phase4_end_time - phase4_start_time))
+phase4_minutes=$((phase4_duration / 60))
+info " PHASE 4 KAFKA Resource name change to ${NEW_KAFKA_CR_NAME} COMPLETED SUCCESSFULLY in $phase4_duration seconds ( $phase4_minutes minutes). "
+
 
 # --- Validation steps ---
 info "=== VALIDATION ==="
@@ -709,7 +1068,7 @@ info "Pods in namespace ${NAMESPACE}:"
 kubectl_ns get pods -o wide
 
 info "Kafka CR status:"
-kubectl_ns get kafka "$KAFKA_CR_NAME" -o yaml | sed -n '1,240p'
+kubectl_ns get kafka "$NEW_KAFKA_CR_NAME" -o yaml | sed -n '1,240p'
 
 info "If you migrated from ZooKeeper, confirm there are no zookeeper pods running:"
 kubectl_ns get pods | grep zookeeper || info "No zookeeper pods found (OK) or grep found nothing."
@@ -719,6 +1078,7 @@ duration=$((end_time - start_time))
 minutes=$((duration / 60))
 
 info "Backup files are created at $WORKDIR. please delete them if not needed."
+
 
 echo "Migration task KAFKA UPGRADE FROM $ORG_VER TO $TARGET_VER COMPLETED SUCCESSFULLY  in $duration seconds ( $minutes minutes)."
 

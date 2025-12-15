@@ -2,8 +2,8 @@ apiVersion: v2
 name: xtreme
 description: Consolidated Helm Chart for DZS Xtreme products
 type: application
-version: 13.5.0
-appVersion: 13.5.0
+version: 13.4.0
+appVersion: 13.4.0
 dependencies:
   - name: common
     repository: file://./charts/common
