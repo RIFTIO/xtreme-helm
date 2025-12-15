@@ -48,7 +48,9 @@ spec:
             {{- if and (eq .Values.global.install.kafka true) (eq .Values.global.enableKafka_inventoryMgr true) }}
             - name: RW_KAFKA_SVC_NAME
               value: {{ include "kafkaBootstrap.fqdn" . }}
-            {{- end }} 
+            {{- end }}
+            - name: RW_REDIS_SVC_NAME
+              value: {{ include "redis.fqdn" . }} 
           command:
             - /wait-for
           args:
@@ -58,6 +60,7 @@ spec:
             {{- if and (eq .Values.global.install.kafka true) (eq .Values.global.enableKafka_inventoryMgr true) }}
             - --host="$(RW_KAFKA_SVC_NAME):9092"
             {{- end }}
+            - --host="$(RW_REDIS_SVC_NAME):8012"
             - --timeout=120s
             - --verbose
 
