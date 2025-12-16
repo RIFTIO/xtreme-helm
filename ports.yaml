@@ -39,7 +39,7 @@ sdnc:
     createClusterRole: true
     sftp:
       port: 2222
-  sdnc-artifactory:
+  sdnc-snmpgw:
     service:
       annotations:
         metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
