@@ -2,8 +2,8 @@
 Helm chart for installing Xtreme NFVO or AEO
 
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
-the ZHONE Inc container image repository currently hosted on dockerhub
-or you are inside the zhone lab.
+the Zhone Inc container image repository currently hosted on dockerhub
+or you are inside the Zhone lab.
 
 files in this dir
 * README.md this file
@@ -20,23 +20,42 @@ files in this dir
 
 INSTALLATION 
 
-unless you are in the zhone lab, you must have a token in order to download container 
+Unless you are in the Zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
 this token in a file called dockerhub-token.
+If you are running inside the Zhone lab and using the Zhone registry (by not using repos.yaml), then you can create a dummy dockerhub-token file as
+the contents will not matter, e.g. 
+
+```bash
+echo foo >dockerhub-token
+```
 
 check your storage class (kubectl get storageclases) and update storage.yaml
 
 run:
 
-    ./install-xtreme 
+```bash
+./install-xtreme 
+```
 
 If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
-when it's done, it will query the status forever until it gets a successful response. This can take 10
+When it's done, it will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow
 
-you can run kubectl get pods -n <namespace> -w to watch the startup progress. When all of these pods are up, you can do
-kubectl get pods -n aeo-<namespace> -w to watch it finish up 
+You can run 
+
+```bash 
+kubectl get pods -n <namespace> -w 
+```
+
+to watch the startup progress. When all of these pods are up, you can do
+
+```bash
+kubectl get pods -n aeo-<namespace> -w
+```
+
+to watch it finish up 
 
 
 notes
@@ -46,6 +65,7 @@ in the primary namespace are up, the pods in the aeo- namespace can start. Many 
 least once due to the timeouts during init. These will restart on their own, so just be patient. 
 
 * Be consistent when using the --ns option and use it for every command, including --clean 
+
 
 branches in this repo
 
