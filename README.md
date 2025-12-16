@@ -7,6 +7,9 @@ or you are inside the zhone lab.
 
 files in this dir
 * README.md this file
+* alias.yaml -- values to force xtreme to use a FQDN instead of an IP address. When running on a single node
+                system behind singleIP address (as is done with k3s) then you may need this file. The values in 
+                this file need to bo coordinated with your company's DNS system.
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
 * values-aeo.yaml -- values to get the latest build

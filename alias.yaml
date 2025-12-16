@@ -1,7 +1,7 @@
 # values for setting the hostname. These are needed for k3s and other some other
 # installations
 
-# the hostname should match the riftExternalAddress
+# the hostname should match the externalAddress
 
 global: 
   hostAliases:
@@ -9,4 +9,4 @@ global:
     hostnames:
     - "jlm1.lab.dzsi.local"
   ingress:
-    riftExternalAddress: jlm.lab.dzsi.local
+    externalAddress: jlm1.lab.dzsi.local
