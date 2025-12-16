@@ -27,7 +27,7 @@ this token in a file called dockerhub-token.
 check your storage class (kubectl get storageclases) and update storage.yaml
 
 run:
-./install-xtreme 
+    ./install-xtreme 
 
 If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
@@ -40,11 +40,13 @@ kubectl get pods -n aeo-<namespace> -w to watch it finish up
 
 notes
 
-The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
+* The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
 in the primary namespace are up, the pods in the aeo- namespace can start. Many of these will have crashed at
 least once due to the timeouts during init. These will restart on their own, so just be patient. 
 
+* Be consistent when using the --ns option and use it for every command, including --clean 
+
 branches in this repo
 
-main -- production 
-zhone -- as delivered by engineering 
+* main -- production 
+* zhone -- as delivered by engineering 
