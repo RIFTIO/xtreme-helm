@@ -27,6 +27,7 @@ this token in a file called dockerhub-token.
 check your storage class (kubectl get storageclases) and update storage.yaml
 
 run:
+
     ./install-xtreme 
 
 If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
