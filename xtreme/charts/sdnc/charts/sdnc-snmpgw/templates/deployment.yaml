@@ -43,11 +43,14 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: RW_MONGODB_SVC_NAME
               value: {{ include "mongodb.fqdn" . }}
+            - name: SDNC_ALARM_SVC_NAME
+              value: {{ include "rnc-alarm-svc.fqdn" . }}
           command:
             - /wait-for
           args:
             - --host="$(RW_NATS_SVC_NAME):4222"
             - --host="$(RW_MONGODB_SVC_NAME):8006"
+            - --host="$(SDNC_ALARM_SVC_NAME):8898"
             - --timeout=120s
             - --verbose
         - name: wait-lb
