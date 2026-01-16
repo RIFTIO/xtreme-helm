@@ -1,0 +1,18 @@
+{{- if .Values.ollama.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: ollama
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: ollama
+  ports:
+  - protocol: TCP
+    port: {{ .Values.ollama.service.port }}
+    targetPort: {{ .Values.ollama.service.port }}
+  type: {{ .Values.ollama.service.type }}
+{{- end }}

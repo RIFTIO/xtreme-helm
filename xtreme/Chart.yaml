@@ -56,3 +56,6 @@ dependencies:
   - name: explore
     repository: file://.charts/explore
     condition: global.install.explore
+  - name: llm-stack
+    repository: file://./charts/llm-stack
+    condition: global.install.zhone-ai

@@ -2,7 +2,7 @@
 
 global:
   namespace:
-    name: xtreme
+    name: subin
   install:
     zms: false
     inas: false
@@ -11,6 +11,7 @@ global:
     aeo: false
     kafka: false
     clusterLogger: false
+    zhone-ai: true
 
   ingress:
     createClusterRole: true
@@ -28,7 +29,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       pullPolicy: Always     # This is only for images tagged based on branch
-      tag: "master"
+      tag: 13.2.1.1010830
   aeo:
     image:
       controller:

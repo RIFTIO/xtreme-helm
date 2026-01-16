@@ -1,0 +1,74 @@
+{{- if .Values.persistentVolumes.enabled }}
+---
+# PersistentVolume for open-webui storage
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-openwebui-pv
+  labels:
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.openWebui.storage.size }}
+  accessModes:
+    - {{ .Values.openWebui.storage.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistentVolumes.reclaimPolicy }}
+  storageClassName: {{ .Values.openWebui.storage.storageClassName }}
+  volumeMode: Filesystem
+  hostPath:
+    path: {{ .Values.openWebui.storage.hostPath }}
+    type: DirectoryOrCreate
+---
+# PersistentVolume for ollama storage
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Release.Name }}-ollama-pv
+  labels:
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.ollama.storage.size }}
+  accessModes:
+    - {{ .Values.ollama.storage.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistentVolumes.reclaimPolicy }}
+  storageClassName: {{ .Values.ollama.storage.storageClassName }}
+  volumeMode: Filesystem
+  hostPath:
+    path: {{ .Values.ollama.storage.hostPath }}
+    type: DirectoryOrCreate
+{{- end }}
+---
+# PersistentVolumeClaim for open-webui data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: open-webui-storage
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.openWebui.storage.accessMode }}
+  storageClassName: {{ .Values.openWebui.storage.storageClassName }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.openWebui.storage.size }}
+---
+# PersistentVolumeClaim for ollama data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-storage
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.ollama.storage.accessMode }}
+  storageClassName: {{ .Values.ollama.storage.storageClassName }}
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.ollama.storage.size }}

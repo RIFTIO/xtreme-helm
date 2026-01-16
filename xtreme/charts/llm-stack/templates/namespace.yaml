@@ -1,0 +1,13 @@
+{{/*
+Namespace is managed by parent chart (xtreme).
+This file is intentionally empty when used as a subchart.
+When deploying llm-stack standalone, set createNamespace: true in values.yaml.
+*/}}
+{{- if .Values.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.global.namespace.name | default .Values.namespace }}
+  labels:
+    {{- include "llm-stack.labels" . | nindent 4 }}
+{{- end }}

@@ -162,7 +162,7 @@ global:
   defaultGroup2: 65534
 
   namespace:
-    create: true
+    create: false
     name: demo
   # The imagePullSecrets is provided at both global and per chart level.
   # If defined at per chart level, then that overrides the global value.
@@ -349,6 +349,8 @@ global:
     # For NFVO cluster-logger is by default disabled
     # Enable it while running AEO
     clusterLogger: true
+    # LLM stack (Ollama + Open WebUI) for Zhone AI
+    zhone-ai: true
 
   # Authentication for events DB in mongo
   eventsDB:

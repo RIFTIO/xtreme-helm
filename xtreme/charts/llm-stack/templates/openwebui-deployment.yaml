@@ -1,0 +1,67 @@
+{{- if .Values.openWebui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: open-webui
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.openWebui.replicas }}
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      {{- if .Values.openWebui.initContainer.enabled }}
+      # InitContainer: seeds the PVC from the baked webui model only once
+      initContainers:
+      - name: seed-open-webui-data
+        image: {{ include "llm-stack.openwebui.image" . }}
+        imagePullPolicy: {{ .Values.openWebui.image.pullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -e
+            if [ ! -d /data/uploads ] || [ -z "$(ls -A /data/uploads 2>/dev/null)" ]; then
+              echo "Seeding XTREME custom model into PVC..."
+              cp -a {{ .Values.openWebui.initContainer.seedPath }}/. /data/
+            else
+              echo "Model already present; skipping copy."
+            fi
+        volumeMounts:
+        - name: open-webui-storage
+          mountPath: /data
+      {{- end }}
+
+      containers:
+      - name: open-webui
+        image: {{ include "llm-stack.openwebui.image" . }}
+        imagePullPolicy: {{ .Values.openWebui.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.openWebui.service.targetPort }}
+        env:
+        - name: OLLAMA_BASE_URL
+          value: {{ .Values.openWebui.env.ollamaBaseUrl | quote }}
+        - name: DEFAULT_MODEL
+          value: {{ .Values.openWebui.env.defaultModel | quote }}
+        resources:
+          requests:
+            cpu: {{ .Values.openWebui.resources.requests.cpu | quote }}
+            memory: {{ .Values.openWebui.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.openWebui.resources.limits.cpu | quote }}
+            memory: {{ .Values.openWebui.resources.limits.memory }}
+        volumeMounts:
+        - name: open-webui-storage
+          mountPath: /app/backend/data
+
+      volumes:
+      - name: open-webui-storage
+        persistentVolumeClaim:
+          claimName: open-webui-storage
+{{- end }}
