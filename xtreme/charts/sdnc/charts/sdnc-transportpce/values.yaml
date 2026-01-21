@@ -86,6 +86,26 @@ lighty:
               "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
             }
           }
+        },
+        {
+          "serviceIdentifier": "NATS",
+          "enabled": true,
+          "serverType": "NATS",
+          "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+          "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+          "config": {
+            "type": "SUB",
+            "name": "SDNC.TPCE",
+            "useEnvVarToGetNatsSvcName": true,
+            "envNatsSvcName": "RW_NATS_SVC_NAME",
+            "natsPort": 4222,
+            "servers": "nats://nats-svc-name:4222",
+            "subject": "dzs.sdnc.config",
+            "connectionTimeoutSeconds": 10,
+            "maxReconnects": -1,
+            "reconnectWaitSeconds": 2,
+            "reconnectBufferSize": -1
+          }
         }
       ]
     }
