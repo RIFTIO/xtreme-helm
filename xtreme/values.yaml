@@ -1,4 +1,4 @@
-# Copyright 2022 DZS Inc
+# Copyright 2026 Zhone
 # Default values for sdnc.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
@@ -162,7 +162,7 @@ global:
   defaultGroup2: 65534
 
   namespace:
-    create: false
+    create: true
     name: demo
   # The imagePullSecrets is provided at both global and per chart level.
   # If defined at per chart level, then that overrides the global value.
@@ -350,7 +350,7 @@ global:
     # Enable it while running AEO
     clusterLogger: true
     # LLM stack (Ollama + Open WebUI) for Zhone AI
-    zhone-ai: true
+    zhone-ai: false
 
   # Authentication for events DB in mongo
   eventsDB:

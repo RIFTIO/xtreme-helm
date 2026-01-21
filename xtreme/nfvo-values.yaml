@@ -1,8 +1,9 @@
-# Copyright 2022 DZS Inc
+# Copyright 2022-2024 DZS Inc
+# Copyright 2025-2026 Zhone
 
 global:
   namespace:
-    name: subin
+    name: xtreme
   install:
     zms: false
     inas: false

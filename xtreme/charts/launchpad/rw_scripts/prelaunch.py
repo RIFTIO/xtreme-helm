@@ -1,5 +1,6 @@
 # Copyright 2020-2021 RIFT Inc
 # Copyright 2021-2022 DZS Inc
+# Copyright 2025-2026 Zhone
 
 import asyncio
 import gi
@@ -352,7 +353,7 @@ def get_service_info(token, namespace):
 
 
 def get_zhone_ai_url(token):
-    """Discover open-webui LoadBalancer IP and set ZHONE_AI_URL env var.
+    """Discover open-webui LoadBalancer IP and set ZHONE_AI_ADDRESS env var.
 
     This function queries the Kubernetes API for the open-webui service
     and extracts the LoadBalancer external IP to construct the URL.
@@ -404,8 +405,8 @@ def get_zhone_ai_url(token):
     port = ports[0].get("port", 80) if ports else 80
 
     zhone_ai_url = "http://{}:{}".format(external_ip, port)
-    rwlib.setenv("ZHONE_AI_URL", zhone_ai_url)
-    logging.info("Set ZHONE_AI_URL to {}".format(zhone_ai_url))
+    rwlib.setenv("ZHONE_AI_ADDRESS", zhone_ai_url)
+    logging.info("Set ZHONE_AI_ADDRESS to {}".format(zhone_ai_url))
 
 
 def main():
@@ -443,7 +444,7 @@ def main():
     s.create_config_files(namespace)
     logging.info("Service discovery config files are ready")
 
-    # Setup Zhone AI URL if configured
+    # Setup Zhone AI URL/ADDRESS if configured
     get_zhone_ai_url(token)
 
 
