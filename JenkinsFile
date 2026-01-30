@@ -15,11 +15,14 @@ node('ub24') {
     stage("checkout") {
         deleteDir()
         checkout scm
+        sh "hostname"
+        sh "id"
     }
     stage("build") {
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside() {
+            sh "id"
             sh "helm package xtreme"
        }
     }
