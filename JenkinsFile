@@ -25,17 +25,17 @@ node('ub24') {
             sh "id"
             sh "helm package xtreme"
             sh "echo $HOME"
-            sh "ls -lR $HOME"
+            sh "ls -la $HOME/.jfrog"
        }
     }
     stage("publish") {
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside("-v /net:/net:shared") {
-            release = sh(returnStdout: true, script: "yq .version xtreme/Chart.yaml").trim().replaceAll('"', '')
-            xtreme_chart_url = "helm-dev/xtreme-${release}.tgz"
+            def release = sh(returnStdout: true, script: "yq .version xtreme/Chart.yaml").trim().replaceAll('"', '')
+            def xtreme_chart_url = "helm-dev/xtreme-${release}.tgz"
             print("release is ${release}")
-            chart_pathname = "xtreme-${release}.tgz"
+            def chart_pathname = "xtreme-${release}.tgz"
             print("Xtreme chart is ${chart_pathname}")
 
             // Upload xtreme chart by branch name to helm-dev
