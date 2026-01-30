@@ -38,7 +38,7 @@ node('build') {
             // Upload xtreme chart by branch name to helm-dev
             sh returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet"
             sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
-            print("chart uploaded to ${xtreme_chart_url")
+            print("chart uploaded to ${xtreme_chart_url}")
 
             // publish to helm-release if and only if a tag of format v\d.\d.\d exists
 
@@ -49,7 +49,7 @@ node('build') {
                     error "chart ${xtreme_chart_url} already exists in RT"
                 }
                 sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
-                print("chart uploaded to ${xtreme_chart_url")
+                print("chart uploaded to ${xtreme_chart_url}")
             }
         }
     }
