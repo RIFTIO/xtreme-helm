@@ -9,9 +9,7 @@
 
 */
 
-def branch_name = env.BRANCH_NAME.toLowerCase()
 def devops_img_url  = "rt.cloud.dzsi.local/docker/devops:ub22"
-
 
 node('build') {
     stage("checkout") {
