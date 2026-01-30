@@ -30,7 +30,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       pullPolicy: Always     # This is only for images tagged based on branch
-      tag: 13.2.1.1010830
+      tag: 13.5.0.1010912
   aeo:
     image:
       controller:
