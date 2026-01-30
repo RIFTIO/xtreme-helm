@@ -1,0 +1,56 @@
+#!/usr/bin/env groovy
+/*
+   vi: ts=4 et:
+   Copyright 2022-2023 DZS Inc
+   Copyright 2026 Zhone Technologies, Inc
+
+  26-May-2022 -- JLM -- genesis
+  30-Jan-2026 -- JLM -- re-written for repo xtreme-helm
+
+*/
+
+def branch_name = env.BRANCH_NAME.toLowerCase()
+def devops_img_url  = "rt.cloud.dzsi.local/docker/devops:ub22"
+
+
+node('build') {
+    stage("checkout") {
+        deleteDir()
+        checkout scm
+    }
+    stage("build") {
+        def build_img = docker.image(devops_img_url)
+        build_img.pull()
+        build_img.inside() {
+            sh "helm package extreme"
+       }
+    }
+    stage("publish") {
+        def build_img = docker.image(devops_img_url)
+        build_img.pull()
+        build_img.inside() {
+            release = sh(returnStdout: true, script: "yq .version xtreme/Chart.yaml").trim()
+            xtreme_chart_url = "helm-dev/xtreme-${release}.tgz"
+            print("release is ${release}")
+            chart_pathname = "xtreme-${release}.tgz"
+            print("Xtreme chart is ${chart_pathname}")
+
+            // Upload xtreme chart by branch name to helm-dev
+            sh returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet"
+            sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
+            print("chart uploaded to ${xtreme_chart_url")
+
+            // publish to helm-release if and only if a tag of format v\d.\d.\d exists
+
+            tag = sh(returnStdout: true, script: "git describe --tags").trim()
+            if (tag ==~ 'v\d+\.\d+\.\d+') {
+                xtreme_chart_url = "helm-release/xtreme-${release}.tgz"
+                if (sh(returnStatus: true, script: "jf rt s ${xtreme_chart_url} | jq -re 'if ( map(.path) | length ) == 0 then empty else [] end'") {
+                    error "chart ${xtreme_chart_url} already exists in RT"
+                }
+                sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
+                print("chart uploaded to ${xtreme_chart_url")
+            }
+        }
+    }
+} // node
