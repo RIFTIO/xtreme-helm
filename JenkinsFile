@@ -24,6 +24,8 @@ node('ub24') {
         build_img.inside() {
             sh "id"
             sh "helm package xtreme"
+            sh "echo $HOME"
+            sh "ls -lR $HOME"
        }
     }
     stage("publish") {
@@ -37,8 +39,8 @@ node('ub24') {
             print("Xtreme chart is ${chart_pathname}")
 
             // Upload xtreme chart by branch name to helm-dev
-            sh returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet"
-            sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
+            sh(returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet")
+            sh(script: "jf rt u ${chart_pathname} ${xtreme_chart_url}")
             print("chart uploaded to ${xtreme_chart_url}")
 
             // publish to helm-release if and only if a tag of format v\d.\d.\d exists
