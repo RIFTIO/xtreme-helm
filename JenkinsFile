@@ -29,6 +29,9 @@ node('ub24') {
        }
     }
     stage("publish") {
+        environment {
+            JFROG_CLI_OFFER_FROZEN_VERSION = true
+        }
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside("-v /net:/net:shared") {
