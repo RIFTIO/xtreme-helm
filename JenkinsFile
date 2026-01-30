@@ -9,7 +9,7 @@
 
 */
 
-def devops_img_url  = "rt.cloud.dzsi.local/docker/devops:ub22"
+def devops_img_url  = "rt.cloud.dzsi.local/docker/devops:ub24"
 
 node('ub24') {
     stage("checkout") {
