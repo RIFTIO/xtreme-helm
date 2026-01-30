@@ -27,7 +27,7 @@ node('ub24') {
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside() {
-            release = sh(returnStdout: true, script: "yq .version xtreme/Chart.yaml").trim()
+            release = sh(returnStdout: true, script: "yq .version xtreme/Chart.yaml").trim().replaceAll('"', '')
             xtreme_chart_url = "helm-dev/xtreme-${release}.tgz"
             print("release is ${release}")
             chart_pathname = "xtreme-${release}.tgz"
