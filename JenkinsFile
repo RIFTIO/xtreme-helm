@@ -22,10 +22,7 @@ node('ub24') {
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside("-v /net:/net:shared") {
-            sh "id"
             sh "helm package xtreme"
-            sh "echo $HOME"
-            sh "ls -la $HOME/.jfrog"
        }
     }
     stage("publish") {
@@ -41,6 +38,11 @@ node('ub24') {
             print("release is ${release}")
             def chart_pathname = "xtreme-${release}.tgz"
             print("Xtreme chart is ${chart_pathname}")
+
+            sh "id"
+            sh "echo $HOME"
+            sh "ls -la $HOME/.jfrog"
+            sh "ls -l /home/jenkins/.jfrog"
 
             // Upload xtreme chart by branch name to helm-dev
             sh(returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet")
