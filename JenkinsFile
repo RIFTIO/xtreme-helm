@@ -20,7 +20,7 @@ node('build') {
         def build_img = docker.image(devops_img_url)
         build_img.pull()
         build_img.inside() {
-            sh "helm package extreme"
+            sh "helm package xtreme"
        }
     }
     stage("publish") {
