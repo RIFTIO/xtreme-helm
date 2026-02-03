@@ -3,7 +3,7 @@
 
 global:
   namespace:
-    name: xtreme
+    name: pjb
   install:
     zms: false
     inas: false
@@ -19,8 +19,10 @@ global:
     service:
       type: LoadBalancer
     # FQDN or IP address using which launchpad can be externally accessed.
-    # This value is mandatory except if service type is "LoadBalancer".
-    externalAddress: null
+    # This value is mandatory except if service type is "LoadBalancer" and 
+    # for llm stack(opwenwebui) to work
+    externalAddress: llmlp1.lab.dzsi.local
+    #externalAddress: null
 
 launchpad:
   cluster_logger:

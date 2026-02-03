@@ -45,10 +45,71 @@ spec:
         ports:
         - containerPort: {{ .Values.openWebui.service.targetPort }}
         env:
+        # -----------------------------
+        # Core OpenWebUI settings
+        # -----------------------------
         - name: OLLAMA_BASE_URL
           value: {{ .Values.openWebui.env.ollamaBaseUrl | quote }}
         - name: DEFAULT_MODEL
           value: {{ .Values.openWebui.env.defaultModel | quote }}
+        - name: GLOBAL_LOG_LEVEL
+          value: DEBUG
+        - name: WEBUI_AUTH_AUTO_APPROVE
+          value: "true"
+        - name: DEFAULT_USER_ROLE
+          value: "admin"
+        # -----------------------------
+        # OAuth / OIDC – Xtreme
+        # -----------------------------
+        {{- if .Values.openWebui.env.oauth.enabled }}
+
+        - name: WEBUI_URL
+          value: "{{ .Values.openWebui.env.oauth.webui.scheme }}://{{ .Values.openWebui.env.oauth.webui.host }}"
+
+        - name: ENABLE_OAUTH_SIGNUP
+          value: {{ .Values.openWebui.env.oauth.enableSignup | quote }}
+
+        - name: WEBUI_SECRET_KEY
+          value: {{ .Values.openWebui.env.oauth.webuiSecretKey | quote }}
+
+        - name: ENABLE_LOGIN_FORM
+          value: {{ .Values.openWebui.env.oauth.enableLoginForm | quote }}
+
+        - name: OAUTH_PROVIDER_NAME
+          value: {{ .Values.openWebui.env.oauth.providerName | quote }}
+
+        - name: OAUTH_CLIENT_ID
+          value: {{ .Values.openWebui.env.oauth.clientId | quote }}
+
+        - name: OPENID_PROVIDER_URL
+          value: >-
+                https://{{ .Values.openWebui.env.oauth.provider.serviceName }}:{{ .Values.openWebui.env.oauth.provider.port }}/.well-known/openid-configuration
+
+        - name: OAUTH_SCOPES
+          value: {{ .Values.openWebui.env.oauth.scopes | quote }}
+
+        - name: OAUTH_REDIRECT_URI
+          value: "{{ .Values.openWebui.env.oauth.webui.scheme }}://{{ .Values.openWebui.env.oauth.webui.host }}/oauth/oidc/callback"
+
+        - name: OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.openWebui.env.oauth.clientSecret.name }}
+              key: {{ .Values.openWebui.env.oauth.clientSecret.key }}
+        
+        {{- if .Values.openWebui.env.oauth.tls.existingSecret.enabled }}
+        - name: SSL_CERT_FILE
+          value: "{{ .Values.openWebui.env.oauth.tls.existingSecret.mountPath }}/{{ .Values.openWebui.env.oauth.tls.existingSecret.certFile }}"
+
+        - name: REQUESTS_CA_BUNDLE
+          value: "{{ .Values.openWebui.env.oauth.tls.existingSecret.mountPath }}/{{ .Values.openWebui.env.oauth.tls.existingSecret.certFile }}"
+
+        - name: CURL_CA_BUNDLE
+          value: "{{ .Values.openWebui.env.oauth.tls.existingSecret.mountPath }}/{{ .Values.openWebui.env.oauth.tls.existingSecret.certFile }}"
+        {{- end }}
+
+        {{- end }}
+        
         resources:
           requests:
             cpu: {{ .Values.openWebui.resources.requests.cpu | quote }}
@@ -59,9 +120,20 @@ spec:
         volumeMounts:
         - name: open-webui-storage
           mountPath: /app/backend/data
+        {{- if .Values.openWebui.env.oauth.tls.existingSecret.enabled }}
+        - name: xtreme-ca-cert
+          mountPath: {{ .Values.openWebui.env.oauth.tls.existingSecret.mountPath }}
+          readOnly: true
+        {{- end }}
 
       volumes:
       - name: open-webui-storage
         persistentVolumeClaim:
           claimName: open-webui-storage
+      
+      {{- if .Values.openWebui.env.oauth.tls.existingSecret.enabled }}
+      - name: xtreme-ca-cert
+        secret:
+          secretName: {{ .Values.openWebui.env.oauth.tls.existingSecret.name }}
+      {{- end }}
 {{- end }}
