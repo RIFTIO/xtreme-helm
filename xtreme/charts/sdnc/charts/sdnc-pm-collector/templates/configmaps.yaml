@@ -154,6 +154,10 @@ data:
               "BreakoutMetaDXPcs_Rx_validity" : 7776000,
               "BreakoutMetaDXPcs_Tx_validity" : 7776000,
               "QSFPPlusOptical_validity" : 7776000,
+              "OfaAmpOptical_validity" : 7776000,
+              "OfaOscOptical_validity" : 7776000,
+              "RdmOscOptical_validity" : 7776000,
+              "RdmComOptical_validity" : 7776000,
               "OTN_validity": 7776000
             }
           },
@@ -3226,97 +3230,341 @@ data:
         }
       ]
     },
+    {
+        "profile-id": "OfaAmpOptical",
+        "profile-display-name": "OPTICAL",
+        "resource-type": "_circuitpack",
+        "bucket-type": "OfaAmpOptical_validity",
+        "enabled": "true",
+        "description": "",
+        "interval": 15,
+        "timeout": 30,
+        "retry-count": 3,
+        "target-model": [{
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "xpdr"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "xpdr"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "ila"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "ila"
+        }],
+        "inventory-class": "port",
+        "inventory-field": "additionalInfo.position",
+        "inventory-condition" : {"additionalInfo.node-type" : ["xpdr", "rdm", "ila"], "model-name": ["AMP"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["OFA-2020-D", "OFA-1720-D"]},
+        "parameters": [
+            {
+                "name": "PWR Rx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaAmpOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Tx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaAmpOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Rx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaAmpOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Tx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaAmpOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            }
+        ]
+    },		
+    {
+        "profile-id": "OfaOscOptical",
+        "profile-display-name": "OPTICAL",
+        "resource-type": "_circuitpack",
+        "bucket-type": "OfaOscOptical_validity",
+        "enabled": "true",
+        "description": "",
+        "interval": 15,
+        "timeout": 30,
+        "retry-count": 3,
+        "target-model": [{
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "xpdr"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "xpdr"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "ila"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "ila"
+        }],
+        "inventory-class": "port",
+        "inventory-field": "additionalInfo.position",
+        "inventory-condition" : {"additionalInfo.node-type" : ["xpdr", "rdm", "ila"], "model-name": ["OSC"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["OFA-2020-D", "OFA-1720-D"]},
+        "parameters": [
+            {
+                "name": "PWR Rx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaOscOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Rx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,OfaOscOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            }
+        ]
+    },							
+    {
+        "profile-id": "RdmComOptical",
+        "profile-display-name": "OPTICAL",
+        "resource-type": "_circuitpack",
+        "bucket-type": "RdmComOptical_validity",
+        "enabled": "true",
+        "description": "",
+        "interval": 15,
+        "timeout": 30,
+        "retry-count": 3,
+        "target-model": [{
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "rdm"
+        }],
+        "inventory-class": "port",
+        "inventory-field": "additionalInfo.position",
+        "inventory-condition" : {"additionalInfo.node-type" : ["rdm"], "model-name": ["LC"], "additionalInfo.module-type" : ["RDM-4400"]},
+        "parameters": [
+            {
+                "name": "PWR Rx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmComOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Tx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmComOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MAX,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Rx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmComOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Tx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmComOptical,[name]/historical-pm=vendorExtension,PWR%20Tx%20MIN,nearEnd,tx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            }
+        ]
+    },
+    {
+        "profile-id": "RdmOscOptical",
+        "profile-display-name": "OPTICAL",
+        "resource-type": "_circuitpack",
+        "bucket-type": "RdmOscOptical_validity",
+        "enabled": "true",
+        "description": "",
+        "interval": 15,
+        "timeout": 30,
+        "retry-count": 3,
+        "target-model": [{
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2020-05-29",
+            "node-type": "rdm"
+        },
+        {
+            "vendor": "dzs",
+            "system-type": "roadm",
+            "revision": "2023-05-26",
+            "node-type": "rdm"
+        }],
+        "inventory-class": "port",
+        "inventory-field": "additionalInfo.position",
+        "inventory-condition" : {"additionalInfo.node-type" : ["rdm"], "model-name": ["saber-osc"], "index" : ["1", "2", "3", "4"], "additionalInfo.module-type" : ["RDM-4400"]},
+        "parameters": [
+            {
+                "name": "PWR Rx MAX",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmOscOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MAX,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            },
+            {
+                "name": "PWR Rx MIN",
+                "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,RdmOscOptical,[name]/historical-pm=vendorExtension,PWR%20Rx%20MIN,nearEnd,rx/measurement=15min,1/pmParameterValue",
+                "unit": "dBm",
+                "displayType": "realValue",
+                "time-field": "completion-time"
+            }
+        ]
+    },
+    {
+        "profile-id": "ZMS Traffic",
+        "resource-type": "_interface",
+        "bucket-type": "device",
+        "enabled": "true",
+        "description": "",
+        "interval": 15,
+        "timeout": 30,
+        "retry-count": 3,
+        "target-model": [{
+           "vendor": "dzs",
+           "system-type": "zms",
+           "revision": "2021-12-29"
+        }],
+        "inventory-class": "port",
+        "inventory-field": "id",
+        "parameters": [
           {
-            "profile-id": "ZMS Traffic",
-            "resource-type": "_interface",
-            "bucket-type": "device",
-            "enabled": "true",
-            "description": "",
-            "interval": 15,
-            "timeout": 30,
-            "retry-count": 3,
-            "target-model": [{
-               "vendor": "dzs",
-               "system-type": "zms",
-               "revision": "2021-12-29"
-            }],
-            "inventory-class": "port",
-            "inventory-field": "id",
-            "parameters": [
-              {
-                 "name": "in-octets",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInOctets",
-                 "unit": "bps",
-                 "displayType": "realValue"
-              },
-              {
-                 "name": "out-octets",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutOctets",
-                 "unit": "bps",
-                 "displayType": "realValue"
-              },
-              {
-                 "name":"in-ucastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInUcastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name":"out-ucastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutUcastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name":"in-mcastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInMulticastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name":"out-mcastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutMulticastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name":"in-bcastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInBroadcastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name":"out-bcastpkts",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutBroadcastPkts",
-                 "unit": "pps",
-                 "displayType": "deltaRatePerSec"
-              },
-              {
-                 "name": "in-discards",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInDiscards",
-                 "unit": "number",
-                 "displayType": "delta"
-              },
-              {
-                 "name": "out-discards",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutDiscards",
-                 "unit": "number",
-                 "displayType": "delta"
-              },{
-                 "name": "in-errors",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInErrors",
-                 "unit": "number",
-                 "displayType": "delta"
-              },
-              {
-                 "name": "out-errors",
-                 "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutErrors",
-                 "unit": "number",
-                 "displayType": "delta"
-              }
-            ]
+             "name": "in-octets",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInOctets",
+             "unit": "bps",
+             "displayType": "realValue"
+          },
+          {
+             "name": "out-octets",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutOctets",
+             "unit": "bps",
+             "displayType": "realValue"
+          },
+          {
+             "name":"in-ucastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInUcastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name":"out-ucastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutUcastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name":"in-mcastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInMulticastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name":"out-mcastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutMulticastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name":"in-bcastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCInBroadcastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name":"out-bcastpkts",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifHCOutBroadcastPkts",
+             "unit": "pps",
+             "displayType": "deltaRatePerSec"
+          },
+          {
+             "name": "in-discards",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInDiscards",
+             "unit": "number",
+             "displayType": "delta"
+          },
+          {
+             "name": "out-discards",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutDiscards",
+             "unit": "number",
+             "displayType": "delta"
+          },{
+             "name": "in-errors",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifInErrors",
+             "unit": "number",
+             "displayType": "delta"
+          },
+          {
+             "name": "out-errors",
+             "path": "/Device Ip/Entity Name[name]/Attribute OID/Attribute Value/ifOutErrors",
+             "unit": "number",
+             "displayType": "delta"
           }
-        ],
+        ]
+      }
+    ],
         "externalDb": {
            "type": "mongo",
            "mongo": {
