@@ -99,16 +99,9 @@ class SDConfig(object):
 
             service_type = spec["type"]
             service_name = metadata["name"]
-            release_name = metadata["annotations"]["meta.helm.sh/release-name"]
 
             logging.info("Found service {} of type {}".format(service_name, service_type))
-            logging.info(f"release name is {release_name}")
 
-            if release_name in self._rw_services.keys():
-                release_name = release_name + '-'
-                first, _, last = service_name.partition(release_name)
-                service_name = first + last
-                
             prefix = ""
             for svc in self._rw_services.keys():
                 if svc in service_name:
