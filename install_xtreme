@@ -102,6 +102,11 @@ if $init; then
   fi
   for ns in ${NS} aeo-${NS}; do
     kubectl create ns $ns || true
+    # Xtreme chanrts needs the below label and annotation
+    # TO_DO: Take the release_name and release-name as user args
+    kubectl label namespace $ns app.kubernetes.io/managed-by=Helm
+    kubectl annotate namespace $ns meta.helm.sh/release-name=xtreme meta.helm.sh/release-namespace=default
+    
     kubectl create -n $ns secret docker-registry dzs-secret --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
     kubectl create -n $ns secret docker-registry harbor --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
   done

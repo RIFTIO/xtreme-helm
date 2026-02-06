@@ -21,7 +21,7 @@ global:
     # FQDN or IP address using which launchpad can be externally accessed.
     # This value is mandatory except if service type is "LoadBalancer" and 
     # for llm stack(opwenwebui) to work
-    externalAddress: llmlp1.lab.dzsi.local
+    externalAddress: llmlp.lab.dzsi.local
     #externalAddress: null
 
 launchpad:
@@ -32,7 +32,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       pullPolicy: Always     # This is only for images tagged based on branch
-      tag: 13.5.0.1010912
+      tag: 13.5.0.1010960
   aeo:
     image:
       controller:

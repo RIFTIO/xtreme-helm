@@ -58,6 +58,8 @@ spec:
           value: "true"
         - name: DEFAULT_USER_ROLE
           value: "admin"
+        - name: ENABLE_PERSISTENT_CONFIG
+          value: "false"
         # -----------------------------
         # OAuth / OIDC – Xtreme
         # -----------------------------
