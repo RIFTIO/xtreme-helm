@@ -175,4 +175,6 @@ if $check; then
         sleep 10
     done
 
+    echo "SUCCESS: Hostname is $HN so try https://$HN You may need to click past security warnings unless you've enabled a verifiable cert."
+
 fi
