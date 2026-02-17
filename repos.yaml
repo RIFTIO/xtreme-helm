@@ -81,9 +81,8 @@ launchpad:
 
   launchpad:
     image:
-      repository: dzscloudadmin/rw.aeo
-      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
-    # copied from 11.1
+      repository: dzscloudadmin/launchpad
+      pullPolicy: IfNotPresent
     primitiveExec:
       image:
         repository: dzscloudadmin/rw-primitive-exec
