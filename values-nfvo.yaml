@@ -2,6 +2,21 @@ global:
   namespace:
     name: demo
     create: false
+  install:
+    explore: false
+    inas: false
+    orchestrator: true
+    sdnc: false
+    ftp: false
+    sftp: false
+    zms: false
+    aeo: false
+    kafka: false
+    deviceSimulator: false
+    clusterLogger: false
+    # LLM stack (Ollama + Open WebUI) for Zhone AI
+    zhone-ai: true
+
 launchpad:
   launchpad:
     appSelector: launchpad
@@ -9,3 +24,11 @@ launchpad:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       tag: 13.5.0.1011002
     upgradeFrom: 13.5.0.1011002
+  ingress:
+    createClusterRole: true
+    service:
+      type: LoadBalancer
+    # FQDN or IP address using which launchpad can be externally accessed.
+    # This value is mandatory except if service type is "LoadBalancer" and 
+    # for llm stack(opwenwebui) to work
+    externalAddress: llmlp.lab.dzsi.local
