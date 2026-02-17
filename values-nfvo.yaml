@@ -1,0 +1,11 @@
+global: 
+  namespace:
+    name: demo
+    create: false
+launchpad:
+  launchpad:
+    appSelector: launchpad
+    image:
+      repository: rt.cloud.dzsi.local/docker/launchpad/dzs
+      tag: 13.5.0.1011002
+    upgradeFrom: 13.5.0.1011002
