@@ -3,6 +3,7 @@
 NS="demo"
 default_values="values-aeo.yaml storage.yaml repos.yaml"
 chart="xtreme"
+release="xtreme"
 init=true
 install=true
 clean=false
@@ -17,6 +18,7 @@ cat >&2 <<EOF
 --chart path      helm chart. default is ./xtreme
 --values path     values file. May be used more than once. default is $default_values
 --ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
+--release name    helm release name. default is xtreme
 --init            ONLY create the docker secrets. Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
@@ -40,6 +42,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --chart) chart=$2; shift;;
         --values) values="$values $2"; shift;;
         --ns) NS=$2; shift;;
+        --release) release=$2; shift;;
         --init) install=false; check=false;;
         --install) init=false; check=false;;
         --upgrade) action=upgrade; init=false;;
@@ -60,6 +63,7 @@ fi
 
 cat >&2 <<EOF
     namespace is $NS
+    release is $release
     install is $install dry-run is $dryrun
     check is $check
     init is $init
@@ -82,7 +86,7 @@ fi
 
 
 if $clean; then
-  helm uninstall xtreme
+  helm uninstall ${release}
   for ns in ${NS} aeo-${NS}; do
     kubectl delete pvc -n ${ns} --all
     kubectl delete secret -n ${ns} --all
@@ -124,14 +128,14 @@ for file in $values; do
 done
 
 if $dryrun; then
-    helm install xtreme ${chart} $flags --set global.namespace.name=$NS --dry-run
+    helm install ${release} ${chart} $flags --set global.namespace.name=$NS --dry-run
     exit 0
 fi
 
 if $install; then
    
   echo $action ....
-  helm $action xtreme ${chart} $flags --set global.namespace.name=$NS || exit 1
+  helm $action ${release} ${chart} $flags --set global.namespace.name=$NS || exit 1
 fi
 
 if $check; then
@@ -142,9 +146,9 @@ if $check; then
   while [ -z "$HN" ]; do
     echo -n "." >&2
       sleep 1
-      HN=$(kubectl get -n ${NS} svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+      HN=$(kubectl get -n ${NS} svc/${release}-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
       if [ -z "$HN" ]; then
-        HN=$(kubectl get -n ${NS} svc/xtreme-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        HN=$(kubectl get -n ${NS} svc/${release}-haproxy-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
       else
         fqdn=true
       fi
