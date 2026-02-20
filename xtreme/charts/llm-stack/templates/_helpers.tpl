@@ -43,12 +43,12 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Ollama image name
 */}}
 {{- define "llm-stack.ollama.image" -}}
-{{- printf "%s/%s:%s" .Values.global.imageRegistry .Values.ollama.image.repository .Values.ollama.image.tag }}
+{{- printf "%s:%s" .Values.ollama.image.repository .Values.ollama.image.tag }}
 {{- end }}
 
 {{/*
 Open WebUI image name
 */}}
 {{- define "llm-stack.openwebui.image" -}}
-{{- printf "%s/%s:%s" .Values.global.imageRegistry .Values.openWebui.image.repository .Values.openWebui.image.tag }}
+{{- printf "%s:%s" .Values.openWebui.image.repository .Values.openWebui.image.tag }}
 {{- end }}

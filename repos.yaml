@@ -55,6 +55,8 @@ grafana:
       repository: dzscloudadmin/rw.grafana
 
 launchpad:
+  image:
+    repository: dzscloudadmin/rw.cluster-logger
   aeo:
     initContainer:
       waitForDep:
@@ -272,3 +274,11 @@ sftp:
 ftp:
   image:
      repository: fauria/vsftpd
+
+llm-stack:
+  ollama:
+    image:
+      repository: dzscloudadmin/ollama-with-ministral
+  openWebui:
+    image:
+      repository: dzscloudadmin/open-webui-xtreme

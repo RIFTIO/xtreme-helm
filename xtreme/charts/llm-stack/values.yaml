@@ -2,15 +2,11 @@
 # When standalone, set createNamespace: true and namespace below
 createNamespace: false
 
-# Global image settings
-global:
-  imageRegistry: rt.cloud.dzsi.local/docker/subin
-
 # Ollama configuration
 ollama:
   enabled: true
   image:
-    repository: ollama-with-ministral
+    repository: rt.cloud.dzsi.local/docker/subin/ollama-with-ministral
     tag: "2.0"
     pullPolicy: IfNotPresent
 
@@ -52,7 +48,7 @@ ollama:
 openWebui:
   enabled: true
   image:
-    repository: open-webui-xtreme
+    repository: rt.cloud.dzsi.local/docker/subin/open-webui-xtreme
     tag: "1.6.43"
     pullPolicy: IfNotPresent
 
@@ -94,7 +90,7 @@ openWebui:
       # Public URL of OpenWebUI (Ingress/Route)
       webui:
         scheme: "http"
-        host: owillmlp.lab.dzsi.local #External FQDN of OpenWebUI
+        #host: owillmlp.lab.dzsi.local #External FQDN of OpenWebUI
 
       webuiSecretKey: "hellopenwebui"
 

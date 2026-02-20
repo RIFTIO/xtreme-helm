@@ -12,11 +12,15 @@ files in this dir
                 this file need to bo coordinated with your company's DNS system.
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
-* values-aeo.yaml -- values to get the latest build
+* values-aeo.yaml -- values to get the latest AEO build
+* values-nfvo.yaml -- values to get the latest NFVO build
 * ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
+
+CHANGES 
+* 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
 INSTALLATION 
 
@@ -67,7 +71,14 @@ least once due to the timeouts during init. These will restart on their own, so 
 * Be consistent when using the --ns option and use it for every command, including --clean 
 
 
-branches in this repo
+official branches in this repo
 
 * main -- production 
-* zhone -- as delivered by engineering 
+* zhone -- as delivered by engineering. Deprecated as of 13.4.1
+* release_13.5 -- all of the 13.5.x releases will be tagged on this branch
+* release_13.4.1 -- latest AEO release
+
+official tags 
+* v13.5.0 -- latest NFVO release
+* v13.4.0 -- deprecated. Please use branch release_13.4.1 for AEO  
+* v13.3.2 -- deprecated. Please use v13.5.0 
