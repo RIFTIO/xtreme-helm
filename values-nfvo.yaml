@@ -1,6 +1,7 @@
 global: 
   namespace:
     name: demo
+    create: false
   install:
     explore: false
     inas: false
