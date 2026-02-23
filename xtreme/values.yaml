@@ -411,7 +411,7 @@ launchpad:
     image:
       pullPolicy: Always
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-      tag: 13.5.0.1011002
+      tag: 13.5.0.1011035
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
     # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
     # version: __image_version__
@@ -424,21 +424,21 @@ launchpad:
       runAsUser: 1001
       # The primary group for the user.
       runAsGroup: 1001
-    upgradeFrom: 13.5.0.1011002
+    upgradeFrom: 13.5.0.1011035
   aeo:
     image:
       controller:
         pullPolicy: Always
-        tag: 13.5.0.1011002
+        tag: 13.5.0.1011035
       serviceWorker:
         pullPolicy: Always
-        tag: 13.5.0.1011002
+        tag: 13.5.0.1011035
       resourceWorker:
         pullPolicy: Always
-        tag: 13.5.0.1011002
+        tag: 13.5.0.1011035
       tmfServer:
         pullPolicy: Always
-        tag: 13.5.0.1011002
+        tag: 13.5.0.1011035
   storage:
     accessMode: ReadWriteOnce
     capacity: 80Gi

@@ -29,8 +29,8 @@ launchpad:
     appSelector: launchpad
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-      tag: 13.5.0.1011027
-    upgradeFrom: 13.5.0.1011027
+      tag: 13.5.0.1011035
+    upgradeFrom: 13.5.0.1011035
 
 # values for controlling how the AI is installed
 # these are only needed if global.install.zhone-ai is true
