@@ -23,6 +23,10 @@ CHANGES
 * 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
 INSTALLATION 
+This is an NFVO release. The latest AEO release is 13.4.0. Please checkout tag v13.4.0 to get to that code:
+```bash
+git checkout v13.4.0
+```
 
 Unless you are in the Zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
