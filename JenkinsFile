@@ -53,10 +53,9 @@ node('ub24') {
 
             def tag=""
             try {
-                sh "git pull --tags"
                 tag = sh(returnStdout: true, script: "git describe --tags").trim()
             } catch(e) {
-                tag = "NO TAGS FOUND"
+                tag = ""
             }
             if (tag ==~ /v\d+\.\d+\.\d+/ ) {
                 xtreme_chart_url = "helm-release/xtreme-${release}.tgz"
