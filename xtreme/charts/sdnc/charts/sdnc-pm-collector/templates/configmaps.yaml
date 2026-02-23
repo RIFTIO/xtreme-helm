@@ -3117,21 +3117,21 @@ data:
           "time-field": "completion-time"
         },
         {
-          "name": "PCS Pre FEC Errors",
+          "name": "Pre FEC Errors",
           "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
           "unit": "",
           "displayType": "realValue",
           "time-field": "completion-time"
         },
         {
-          "name": "PCS Post FEC Errors",
+          "name": "Post FEC Errors",
           "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Post%20FEC%20Errors,nearEnd,rx/measurement=15min,1/pmParameterValue",
           "unit": "",
           "displayType": "realValue",
           "time-field": "completion-time"
         },
         {
-          "name": "PCS Pre FEC BER",
+          "name": "Pre FEC BER",
           "path": "/org-openroadm-pm:historical-pm-list/historical-pm-entry=other,BreakoutMetaDXPcs-RX,[name]/historical-pm=vendorExtension,PCS%20Pre%20FEC%20BER,nearEnd,rx/measurement=15min,1/pmParameterValue",
           "unit": "",
           "displayType": "realValueExponential",
