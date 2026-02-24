@@ -16,7 +16,7 @@ image:
   repository: rt.cloud.dzsi.local/docker/zms/zmsubuntu
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "5.0.0.1008774"
+  tag: "5.0.0.1010999"
 
 mariadb:
   repository: rt.cloud.dzsi.local/docker/bitnami/mariadb-galera
