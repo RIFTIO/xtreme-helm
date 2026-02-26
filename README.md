@@ -1,5 +1,10 @@
-# xtreme-helm
-Helm chart for installing Xtreme NFVO or AEO
+# xtreme-helm #
+Helm chart for installing Xtreme/NFVO. 
+
+If you are trying to install Xtreme/AEO, please checkout tag v13.4.0, e.g. 
+```bash
+git checkout v13.4.0
+```
 
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the Zhone Inc container image repository currently hosted on dockerhub
@@ -12,17 +17,20 @@ files in this dir
                 this file need to bo coordinated with your company's DNS system.
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
-* values-aeo.yaml -- values to get the latest AEO build
-* values-nfvo.yaml -- values to get the latest NFVO build
 * ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
+These files have been merged into the chart:
+* values-aeo.yaml is now part of the base values file. 
+* values-nfvo.yaml has been merged into ./xtreme/nfvo-values.yaml 
 
-CHANGES 
+
+
+## CHANGES ## 
 * 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
-INSTALLATION 
+## INSTALLATION ## 
 This is an NFVO release. The latest AEO release is 13.4.0. Please checkout tag v13.4.0 to get to that code:
 ```bash
 git checkout v13.4.0
@@ -57,16 +65,8 @@ You can run
 kubectl get pods -n <namespace> -w 
 ```
 
-to watch the startup progress. When all of these pods are up, you can do
 
-```bash
-kubectl get pods -n aeo-<namespace> -w
-```
-
-to watch it finish up 
-
-
-notes
+## notes ##
 
 * The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
 in the primary namespace are up, the pods in the aeo- namespace can start. Many of these will have crashed at

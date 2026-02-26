@@ -1,5 +1,7 @@
-# Copyright 2026 Zhone
-# Default values for sdnc.
+# Copyright 2026 Zhone Technologies, Inc
+# Default values for sdnc/AEO
+# also include nfvo-values.yaml if installing xtreme/NFVO
+#
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -33,7 +35,7 @@ global:
     persistenceFtp:
       storageClass: null
  
-  sdncImgtag: 13.5.0.1010926
+  sdncImgtag: 13.4.0.1010739
 
   # If switched to "true", Kafka service will be enabled; If switched to "false", Kafka service will be disabled.
   enableKafka_netconf: true
@@ -407,11 +409,14 @@ redis:
 
 launchpad:
   launchpad:
-    appSelector: launchpad
+    appSelector: aeo
     image:
-      pullPolicy: Always
-      repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-      tag: 13.5.0.1011035
+      pullPolicy: IfNotPresent
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 13.4.0.1010742
+    # this must be set properly for upgrades
+    # upgradeFrom: 13.5.0.1011035
+    #
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
     # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
     # version: __image_version__
@@ -424,21 +429,20 @@ launchpad:
       runAsUser: 1001
       # The primary group for the user.
       runAsGroup: 1001
-    upgradeFrom: 13.5.0.1011035
   aeo:
     image:
       controller:
-        pullPolicy: Always
-        tag: 13.5.0.1011035
+        pullPolicy: IfNotPresent
+        tag: 13.4.0.1010742
       serviceWorker:
-        pullPolicy: Always
-        tag: 13.5.0.1011035
+        pullPolicy: IfNotPresent
+        tag: 13.4.0.1010742
       resourceWorker:
-        pullPolicy: Always
-        tag: 13.5.0.1011035
+        pullPolicy: IfNotPresent
+        tag: 13.4.0.1010742
       tmfServer:
-        pullPolicy: Always
-        tag: 13.5.0.1011035
+        pullPolicy: IfNotPresent
+        tag: 13.4.0.1010742
   storage:
     accessMode: ReadWriteOnce
     capacity: 80Gi

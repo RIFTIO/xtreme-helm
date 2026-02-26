@@ -1,7 +1,10 @@
-#!/bin/bash 
+#!/bin/bash
+
+# Copyright 2026 Zhone Technologies, Inc
+
 
 NS="demo"
-default_values="values-aeo.yaml storage.yaml repos.yaml"
+default_values="xtreme/nfvo-values.yaml storage.yaml repos.yaml"
 chart="xtreme"
 release="xtreme"
 init=true
@@ -132,15 +135,17 @@ for file in $values; do
     flags="$flags -f $file"
 done
 
+flags="$flags --set global.namespace.name=$NS --set global.namespace.create=false"
+
 if $dryrun; then
-    helm install ${release} ${chart} $flags --set global.namespace.name=$NS --dry-run
+    helm $action ${release} ${chart} $flags --dry-run
     exit 0
 fi
 
 if $install; then
    
   echo $action ....
-  helm $action ${release} ${chart} $flags --set global.namespace.name=$NS || exit 1
+  helm $action ${release} ${chart} $flags || exit 1
 fi
 
 if $check; then
