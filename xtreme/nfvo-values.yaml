@@ -1,18 +1,25 @@
 # Copyright 2022-2024 DZS Inc
-# Copyright 2025-2026 Zhone
-
+# Copyright 2025-2026 Zhone Technologies, Inc
+#
+# overrides for installing Xtreme/NFVO
+#
+#
 global:
   namespace:
     name: demo
   install:
-    zms: false
-    inas: false
-    sdnc: false
-    explore: false
     aeo: false
-    kafka: false
     clusterLogger: false
+    deviceSimulator: false
+    explore: false
+    ftp: false
+    inas: false
+    kafka: false
+    orchestrator: true
+    sdnc: false
+    sftp: false
     zhone-ai: true
+    zms: false
 
   ingress:
     createClusterRole: true
@@ -20,8 +27,8 @@ global:
       type: LoadBalancer
     # FQDN or IP address using which launchpad can be externally accessed.
     # This value is mandatory except if service type is "LoadBalancer" and
-    # for llm stack(opwenwebui) to work
-    #externalAddress: llmlp.lab.dzsi.local
+    # for llm stack(opwenwebui) to work, e.g.
+    # externalAddress: llmlp.lab.dzsi.local
     externalAddress: null
 
 launchpad:
@@ -32,18 +39,21 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       pullPolicy: Always     # This is only for images tagged based on branch
-      tag: 13.5.0.1010960
-  aeo:
-    image:
-      controller:
-        pullPolicy: Always
-        tag: "master"
-      serviceWorker:
-        pullPolicy: Always
-        tag: "master"
-      resourceWorker:
-        pullPolicy: Always
-        tag: "master"
-      tmfServer:
-        pullPolicy: Always
-        tag: "master"
+      tag: 13.5.0.1011035
+    upgradeFrom: 13.5.0.1011035
+
+# values for controlling how the AI is installed
+# these are only needed if global.install.zhone-ai is true
+llm-stack:
+  openWebui:
+    env:
+      oauth:
+        providerName: "Xtreme"
+        clientId: "openwebui"   # Note this value must match with the client ID field in the OIDC client in Xtreme
+        scopes: "openid"
+        # Client secret comes from existing secret
+        clientSecret:
+          create: true
+          name: openwebui-oidc-client
+          key: client-secret
+          value: "openwebui@123" # This value must match with the client secret field in the OIDC client in Xtreme
