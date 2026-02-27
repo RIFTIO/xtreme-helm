@@ -38,9 +38,9 @@ launchpad:
     appSelector: nfvo
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-      pullPolicy: Always     # This is only for images tagged based on branch
-      tag: 13.5.0.1011035
-    upgradeFrom: 13.5.0.1011035
+      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
+      tag: 13.5.0.1011018
+    upgradeFrom: 13.5.0.1011018
 
 # values for controlling how the AI is installed
 # these are only needed if global.install.zhone-ai is true
