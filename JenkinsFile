@@ -39,11 +39,6 @@ node('ub24') {
             def chart_pathname = "xtreme-${release}.tgz"
             print("Xtreme chart is ${chart_pathname}")
 
-            sh "id"
-            sh "echo $HOME"
-            sh "ls -la $HOME/.jfrog"
-            sh "ls -l /home/jenkins/.jfrog"
-
             // Upload xtreme chart by branch name to helm-dev
             sh(returnStatus: true, script: "jf rt delete ${xtreme_chart_url} --quiet")
             sh(script: "jf rt u ${chart_pathname} ${xtreme_chart_url}")
@@ -53,6 +48,7 @@ node('ub24') {
 
             def tag=""
             try {
+                sh "git fetch --tags"
                 tag = sh(returnStdout: true, script: "git describe --tags").trim()
             } catch(e) {
                 tag = ""
