@@ -54,11 +54,12 @@ node('ub24') {
             }
             if (tag ==~ /v\d+\.\d+\.\d+/ ) {
                 xtreme_chart_url = "helm-release/xtreme-${release}.tgz"
-                if (sh(returnStatus: true, script: "jf rt s ${xtreme_chart_url} | jq -re 'if ( map(.path) | length ) == 0 then empty else [] end'")) {
-                    error "chart ${xtreme_chart_url} already exists in RT"
+                if (sh(returnStatus: true, script: "jf rt s ${xtreme_chart_url} | grep ${release}")) {
+                    print "chart ${xtreme_chart_url} already exists in RT"
+                } else { 
+                    sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
+                    print("chart uploaded to ${xtreme_chart_url}")
                 }
-                sh "jf rt u ${chart_pathname} ${xtreme_chart_url}"
-                print("chart uploaded to ${xtreme_chart_url}")
             }
         }
     }
