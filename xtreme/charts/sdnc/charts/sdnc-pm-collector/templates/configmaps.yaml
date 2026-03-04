@@ -3400,7 +3400,7 @@ data:
         }],
         "inventory-class": "port",
         "inventory-field": "additionalInfo.position",
-        "inventory-condition" : {"additionalInfo.node-type" : ["rdm"], "model-name": ["LC"], "additionalInfo.module-type" : ["RDM-4400"]},
+        "inventory-condition" : {"additionalInfo.node-type" : ["rdm"], "model-name": ["LC"], "additionalInfo.module-type" : ["RDM-4400"], "id": ["DEG"]},
         "parameters": [
             {
                 "name": "PWR Rx MAX",
