@@ -76,11 +76,8 @@ openWebui:
       enableSignup: "true"
       enableLoginForm: "true"
 
-      # URL for Xtreme launchpad service
-      # Must math with externalAddress defined 
-      # at launchpad values file
+      # OIDC provider URL is built from global.ingress.externalAddress (set in parent values)
       provider:
-        serviceName: llmlp.lab.dzsi.local
         port: 443
 
       providerName: "Xtreme"

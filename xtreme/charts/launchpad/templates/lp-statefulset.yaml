@@ -444,6 +444,10 @@ spec:
           value: "open-webui"
         - name: ZHONE_AI_NAMESPACE
           value: {{ .Values.global.namespace.name }}
+        {{- if .Values.global.isOpenShiftRoute }}
+        - name: ZHONE_AI_ROUTE_HOST
+          value: {{ .Values.global.zhoneAi.routeHost | quote }}
+        {{- end }}
         {{- end }}
         {{- range $name, $value := .Values.launchpad.env }}
         - name: {{ $name }}

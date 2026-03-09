@@ -1,0 +1,23 @@
+{{- if and .Values.openWebui.enabled .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.route.name | default "nfvso-ai" }}
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: open-webui
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  host: {{ required "route.host must be set for the OpenWebUI OpenShift Route." .Values.route.host | quote }}
+  port:
+    targetPort: {{ .Values.openWebui.service.targetPort }}
+  tls:
+    {{- $tls := .Values.route.tls | default dict }}
+    termination: {{ $tls.termination | default "edge" }}
+    insecureEdgeTerminationPolicy: {{ $tls.insecureEdgeTerminationPolicy | default "Redirect" }}
+  to:
+    kind: Service
+    name: open-webui
+    weight: 100
+  wildcardPolicy: None
+{{- end }}
