@@ -353,10 +353,12 @@ def get_service_info(token, namespace):
 
 
 def get_zhone_ai_url(token):
-    """Discover open-webui LoadBalancer IP and set ZHONE_AI_ADDRESS env var.
+    """Discover open-webui address and set ZHONE_AI_ADDRESS env var.
 
-    This function queries the Kubernetes API for the open-webui service
-    and extracts the LoadBalancer external IP to construct the URL.
+    For OpenShift Route deployments, ZHONE_AI_ROUTE_HOST is set directly and
+    used as the address without querying the Kubernetes service.
+    For LoadBalancer deployments, the service external IP is discovered via the
+    Kubernetes API.
     """
     service_name = os.getenv("ZHONE_AI_SERVICE_NAME")
     namespace = os.getenv("ZHONE_AI_NAMESPACE")
@@ -367,6 +369,13 @@ def get_zhone_ai_url(token):
 
     if not namespace:
         logging.warning("ZHONE_AI_NAMESPACE not set, skipping Zhone AI URL setup")
+        return
+
+    route_host = os.getenv("ZHONE_AI_ROUTE_HOST")
+    if route_host:
+        zhone_ai_url = "https://{}".format(route_host)
+        rwlib.setenv("ZHONE_AI_ADDRESS", zhone_ai_url)
+        logging.info("Set ZHONE_AI_ADDRESS to {} (OpenShift Route)".format(zhone_ai_url))
         return
 
     # Query specific service
