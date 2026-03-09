@@ -59,6 +59,15 @@ lighty:
     "olmtimer2": "30000",
     "gnpyServer": "http://gnpy-svc-name:8008",
     "configMgrServer" : "http://configmgr-svc-name:8888",
+    "remoteHttpService": {
+      "SNMPGW": {
+         "service": "SNMPGW",
+         "connection": {
+           "httpAddress": "http://snmpgw-app:8881",
+           "authType": "none"
+         }
+      }
+    },
     "messagingClientConfig": {
       	"entries": [
         {

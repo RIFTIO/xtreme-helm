@@ -202,7 +202,7 @@ data:
             ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "netconf-svc-dzs-rnc" $netconf_svc | replace "inventory-mgr-dzs-rnc" $inventory_mgr | replace "transportpce-svc" $transportpce_svc | replace "inas2-be" $inas_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_configMgr) | replace "snmpgw-app" $snmpgw  }}
         {{- end }}
         {{- if contains "dzs-transportpce" .Values.image.name }}
-            ,{{ .Values.lighty.serviceConfig | replace "enableNbinotification" (toString .Values.global.enableKafka_tpce) | replace "gnpy-svc-name" $gnpy_svc | replace "configmgr-svc-name" $configmgr_svc | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_tpce) | replace "nats-svc-name" $nats_svc }}
+            ,{{ .Values.lighty.serviceConfig | replace "enableNbinotification" (toString .Values.global.enableKafka_tpce) | replace "gnpy-svc-name" $gnpy_svc | replace "configmgr-svc-name" $configmgr_svc | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_tpce) | replace "nats-svc-name" $nats_svc | replace "snmpgw-app" $snmpgw }}
         {{- end }}
     }
 
