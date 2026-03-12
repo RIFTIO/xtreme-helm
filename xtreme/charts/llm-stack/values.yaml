@@ -2,6 +2,9 @@
 # When standalone, set createNamespace: true and namespace below
 createNamespace: false
 
+route:
+  enabled: false
+
 # Ollama configuration
 ollama:
   enabled: true
