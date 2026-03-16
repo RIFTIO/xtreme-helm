@@ -342,7 +342,7 @@ global:
     sdnc: true
     ftp: true
     sftp: true
-    zms: false
+    zms: true
     aeo: true
     kafka: true
     deviceSimulator: false
