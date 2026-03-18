@@ -1,6 +1,10 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
+This is release 13.4.1. It is an AEO release. Please pick a different branch or 
+tag if you want NFVO. 
+
+
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the ZHONE Inc container image repository currently hosted on dockerhub
 or you are inside the zhone lab.
@@ -17,8 +21,11 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
+## CHANGES SINCE 13.4.0
+* added a check that the script has proper access to the cluster 
+* some kafka related upgrade fixes 
 
-INSTALLATION 
+## INSTALLATION 
 
 unless you are in the zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
@@ -31,20 +38,21 @@ run:
 
 If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
-when it's done, it will query the status forever until it gets a successful response. This can take 10
-minutes or more if your internet link is slow
+If you are in a single node cluster (e.g. k3s), you will also probably need ports.yaml to prevent
+k8s from usurping the SSH daemon port, and alias.yaml so that ingress can redirect the
+user's browser successfully. 
 
-you can run kubectl get pods -n <namespace> -w to watch the startup progress. When all of these pods are up, you can do
+When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
+minutes or more if your internet link is slow. You can control-c out of the script 
+at this point if you want to check status other ways, and restart the script using the
+--check option to restart the status checks.  
+
+You can run kubectl get pods -n <namespace> -w to watch the startup progress. When all of these pods are up, you can do
 kubectl get pods -n aeo-<namespace> -w to watch it finish up 
 
 
-notes
+## notes
 
 The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
 in the primary namespace are up, the pods in the aeo- namespace can start. Many of these will have crashed at
 least once due to the timeouts during init. These will restart on their own, so just be patient. 
-
-branches in this repo
-
-main -- production 
-zhone -- as delivered by engineering 
