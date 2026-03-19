@@ -1,5 +1,6 @@
 # Copyright 2020-2021 RIFT Inc
 # Copyright 2021-2022 DZS Inc
+# Copyright 2025-2026 Zhone
 
 import asyncio
 import gi
@@ -351,6 +352,63 @@ def get_service_info(token, namespace):
     return r.content
 
 
+def get_zhone_ai_url(token):
+    """Discover open-webui LoadBalancer IP and set ZHONE_AI_ADDRESS env var.
+
+    This function queries the Kubernetes API for the open-webui service
+    and extracts the LoadBalancer external IP to construct the URL.
+    """
+    service_name = os.getenv("ZHONE_AI_SERVICE_NAME")
+    namespace = os.getenv("ZHONE_AI_NAMESPACE")
+
+    if not service_name:
+        logging.info("ZHONE_AI_SERVICE_NAME not set, skipping Zhone AI URL setup")
+        return
+
+    if not namespace:
+        logging.warning("ZHONE_AI_NAMESPACE not set, skipping Zhone AI URL setup")
+        return
+
+    # Query specific service
+    url = "https://kubernetes.default.svc/api/v1/namespaces/{}/services/{}".format(
+        namespace, service_name)
+    headers = {
+        "Authorization": "Bearer {}".format(token)
+    }
+    r = requests.get(url, headers=headers, verify=False)
+
+    if r.status_code != 200:
+        logging.warning("Failed to get Zhone AI service info: {}".format(r.status_code))
+        return
+
+    svc = json.loads(r.content)
+    spec = svc.get("spec", {})
+    status = svc.get("status", {})
+
+    service_type = spec.get("type")
+    if service_type != "LoadBalancer":
+        logging.warning("Zhone AI service is not LoadBalancer type: {}".format(service_type))
+        return
+
+    ingress = status.get("loadBalancer", {}).get("ingress", [])
+    if not ingress:
+        logging.warning("Zhone AI service has no LoadBalancer ingress yet")
+        return
+
+    external_ip = ingress[0].get("ip") or ingress[0].get("hostname")
+    if not external_ip:
+        logging.warning("Zhone AI service has no external IP or hostname")
+        return
+
+    # Get the service port (use first port)
+    ports = spec.get("ports", [])
+    port = ports[0].get("port", 80) if ports else 80
+
+    zhone_ai_url = "http://{}:{}".format(external_ip, port)
+    rwlib.setenv("ZHONE_AI_ADDRESS", zhone_ai_url)
+    logging.info("Set ZHONE_AI_ADDRESS to {}".format(zhone_ai_url))
+
+
 def main():
     """
     """
@@ -385,6 +443,9 @@ def main():
 
     s.create_config_files(namespace)
     logging.info("Service discovery config files are ready")
+
+    # Setup Zhone AI URL/ADDRESS if configured
+    get_zhone_ai_url(token)
 
 
 def _parse_rvr_path(rvr_path):

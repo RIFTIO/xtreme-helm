@@ -1,0 +1,13 @@
+apiVersion: v2
+name: llm-stack
+description: A Helm chart for deploying Ollama and Open WebUI with pre-baked LLM models
+type: application
+version: 1.0.0
+appVersion: "2.0"
+keywords:
+  - llm
+  - ollama
+  - open-webui
+  - ai
+maintainers:
+  - name: subin

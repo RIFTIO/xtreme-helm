@@ -1,0 +1,73 @@
+{{- if .Values.ollama.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: ollama
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.ollama.replicas }}
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      {{- if .Values.ollama.initContainer.enabled }}
+      # InitContainer: seeds the PVC from the baked image only once
+      initContainers:
+      - name: seed-models
+        image: {{ include "llm-stack.ollama.image" . }}
+        imagePullPolicy: {{ .Values.ollama.image.pullPolicy }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -e
+            if [ ! -d /models/manifests ] || [ -z "$(ls -A /models/manifests 2>/dev/null)" ]; then
+              echo "Seeding baked model into PVC..."
+              cp -a {{ .Values.ollama.initContainer.seedPath }}/. /models/
+              chown -R {{ .Values.ollama.securityContext.runAsUser }}:{{ .Values.ollama.securityContext.runAsGroup }} /models || true
+            else
+              echo "Models already present; skipping copy."
+            fi
+        volumeMounts:
+        - name: ollama-storage
+          mountPath: /models
+      {{- end }}
+
+      containers:
+      - name: ollama
+        image: {{ include "llm-stack.ollama.image" . }}
+        imagePullPolicy: {{ .Values.ollama.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.ollama.service.port }}
+        env:
+        - name: OLLAMA_MODELS
+          value: /models
+        resources:
+          requests:
+            cpu: {{ .Values.ollama.resources.requests.cpu | quote }}
+            memory: {{ .Values.ollama.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.ollama.resources.limits.cpu | quote }}
+            memory: {{ .Values.ollama.resources.limits.memory }}
+        securityContext:
+          runAsUser: {{ .Values.ollama.securityContext.runAsUser }}
+          runAsGroup: {{ .Values.ollama.securityContext.runAsGroup }}
+        volumeMounts:
+        - name: ollama-storage
+          mountPath: /models
+
+      # Ensures group permissions on PVC for non-root containers
+      securityContext:
+        fsGroup: {{ .Values.ollama.securityContext.fsGroup }}
+
+      volumes:
+      - name: ollama-storage
+        persistentVolumeClaim:
+          claimName: ollama-storage
+{{- end }}

@@ -1,11 +1,37 @@
+# Copyright 2026 Zhone Technology Inc
 # Copyright 2020 RIFT Inc
 #
-{{ $ca := genCA "RIFT" 365 }}
-{{ $cn := printf "%s.rift.lp.com" .Release.Namespace }}
+{{/*
+Generates TLS certificates for Launchpad:
+- Generates a self-signed cluster CA
+- Generates server cert signed by that CA
+- CA is also exposed via secret for clients (OpenWebUI)
+*/}}
+
+{{- $ns := .Values.global.namespace.name }}
+
+{{- $ca := genCA "RIFT" 3650 }}
+
+{{- $cn := "" }}
 {{- if .Values.global.ingress.externalAddress }}
-{{ $cn = .Values.global.ingress.externalAddress }}
+  {{- $cn = .Values.global.ingress.externalAddress }}
+{{- else }}
+  {{- $cn = printf "%s.rift.lp.com" .Release.Namespace }}
 {{- end }}
-{{ $server := genSignedCert $cn nil nil 365 $ca }}
+
+{{- $server := genSignedCert $cn nil nil 365 $ca }}
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rift-ca
+  namespace: {{ $ns }}
+type: Opaque
+data:
+  ca.crt: {{ b64enc $ca.Cert }}
+  ca.key: {{ b64enc $ca.Key }}
+
 ---
 apiVersion: v1
 kind: Secret

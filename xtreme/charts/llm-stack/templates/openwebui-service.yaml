@@ -1,0 +1,18 @@
+{{- if .Values.openWebui.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+  namespace: {{ .Values.global.namespace.name }}
+  labels:
+    app: open-webui
+    {{- include "llm-stack.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: open-webui
+  ports:
+  - protocol: TCP
+    port: {{ .Values.openWebui.service.port }}
+    targetPort: {{ .Values.openWebui.service.targetPort }}
+  type: {{ .Values.openWebui.service.type }}
+{{- end }}

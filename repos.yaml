@@ -55,6 +55,8 @@ grafana:
       repository: dzscloudadmin/rw.grafana
 
 launchpad:
+  image:
+    repository: dzscloudadmin/rw.cluster-logger
   aeo:
     initContainer:
       waitForDep:
@@ -81,9 +83,8 @@ launchpad:
 
   launchpad:
     image:
-      repository: dzscloudadmin/rw.aeo
-      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
-    # copied from 11.1
+      repository: dzscloudadmin/launchpad
+      pullPolicy: IfNotPresent
     primitiveExec:
       image:
         repository: dzscloudadmin/rw-primitive-exec
@@ -273,3 +274,11 @@ sftp:
 ftp:
   image:
      repository: fauria/vsftpd
+
+llm-stack:
+  ollama:
+    image:
+      repository: dzscloudadmin/ollama-with-ministral
+  openWebui:
+    image:
+      repository: dzscloudadmin/open-webui-xtreme

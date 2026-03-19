@@ -1,0 +1,49 @@
+global: 
+  namespace:
+    name: demo
+  install:
+    explore: false
+    inas: false
+    orchestrator: true
+    sdnc: false
+    ftp: false
+    sftp: false
+    zms: false
+    aeo: false
+    kafka: false
+    deviceSimulator: false
+    clusterLogger: false
+    # LLM stack (Ollama + Open WebUI) for Zhone AI
+    zhone-ai: true
+  ingress:
+    createClusterRole: true
+    service:
+      type: LoadBalancer
+    # FQDN or IP address using which launchpad can be externally accessed.
+    # This value is mandatory except if service type is "LoadBalancer" and
+    # for llm stack(opwenwebui) to work
+    externalAddress: llmlp.lab.dzsi.local
+
+launchpad:
+  launchpad:
+    appSelector: launchpad
+    image:
+      repository: rt.cloud.dzsi.local/docker/launchpad/dzs
+      tag: 13.5.0.1011035
+    upgradeFrom: 13.5.0.1011035
+
+# values for controlling how the AI is installed
+# these are only needed if global.install.zhone-ai is true
+llm-stack:
+  openWebui:
+    env:
+      oauth:
+        providerName: "Xtreme"
+        clientId: "openwebui"   # Note this value must match with the client ID field in the OIDC client in Xtreme
+        scopes: "openid"
+        # Client secret comes from existing secret
+        clientSecret:
+          create: true
+          name: openwebui-oidc-client
+          key: client-secret
+          value: "openwebui@123" # This value must match with the client secret field in the OIDC client in Xtreme

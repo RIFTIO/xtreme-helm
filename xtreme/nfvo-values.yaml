@@ -1,8 +1,9 @@
-# Copyright 2022 DZS Inc
+# Copyright 2022-2024 DZS Inc
+# Copyright 2025-2026 Zhone
 
 global:
   namespace:
-    name: xtreme
+    name: demo
   install:
     zms: false
     inas: false
@@ -11,13 +12,16 @@ global:
     aeo: false
     kafka: false
     clusterLogger: false
+    zhone-ai: true
 
   ingress:
     createClusterRole: true
     service:
       type: LoadBalancer
     # FQDN or IP address using which launchpad can be externally accessed.
-    # This value is mandatory except if service type is "LoadBalancer".
+    # This value is mandatory except if service type is "LoadBalancer" and
+    # for llm stack(opwenwebui) to work
+    #externalAddress: llmlp.lab.dzsi.local
     externalAddress: null
 
 launchpad:
@@ -28,7 +32,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/launchpad/dzs
       pullPolicy: Always     # This is only for images tagged based on branch
-      tag: "master"
+      tag: 13.5.0.1010960
   aeo:
     image:
       controller:

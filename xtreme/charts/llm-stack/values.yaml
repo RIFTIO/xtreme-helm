@@ -1,0 +1,133 @@
+# When used as subchart, namespace comes from global.namespace.name
+# When standalone, set createNamespace: true and namespace below
+createNamespace: false
+
+# Ollama configuration
+ollama:
+  enabled: true
+  image:
+    repository: rt.cloud.dzsi.local/docker/subin/ollama-with-ministral
+    tag: "2.0"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+
+  # Resource configuration
+  resources:
+    requests:
+      cpu: "8"
+      memory: "4Gi"
+    limits:
+      cpu: "16"
+      memory: "8Gi"
+
+  # Security context
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 11434
+
+  # Storage configuration
+  storage:
+    size: 30Gi
+    storageClassName: local-path
+    hostPath: /mnt/data
+    accessMode: ReadWriteOnce
+
+  # Init container settings
+  initContainer:
+    enabled: true
+    seedPath: /opt/baked-models
+
+# Open WebUI configuration
+openWebui:
+  enabled: true
+  image:
+    repository: rt.cloud.dzsi.local/docker/subin/open-webui-xtreme
+    tag: "1.6.43"
+    pullPolicy: IfNotPresent
+
+  replicas: 1
+
+  # Resource configuration
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+
+  # Environment variables
+  env:
+    ollamaBaseUrl: "http://ollama:11434"
+    defaultModel: "XTREME Service Primitive Generator"
+    DEFAULT_USER_ROLE: "user"
+    ENABLE_PERSISTENT_CONFIG: "False"
+    
+    # OIDC configs for SSO via Xtreme
+    oauth:
+      enabled: "true"
+      enableSignup: "true"
+      enableLoginForm: "true"
+
+      # URL for Xtreme launchpad service
+      # Must math with externalAddress defined 
+      # at launchpad values file
+      provider:
+        serviceName: llmlp.lab.dzsi.local
+        port: 443
+
+      providerName: "Xtreme"
+      clientId: "openwebui"
+      scopes: "openid"
+
+      # Public URL of OpenWebUI (Ingress/Route)
+      webui:
+        scheme: "http"
+        #host: owillmlp.lab.dzsi.local #External FQDN of OpenWebUI
+
+      webuiSecretKey: "hellopenwebui"
+
+      # Client secret comes from existing secret
+      clientSecret:
+        create: true
+        name: openwebui-oidc-client
+        key: client-secret
+        value: "openwebui@123"
+
+      # OpenWebUI will need the Xtreme CA cert to validate the OIDC provider
+      tls:
+        existingSecret:
+          enabled: true
+          name: rift-ca
+          mountPath: /etc/ssl/certs/xtreme
+          certFile: ca.crt
+
+  # Service configuration
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8080
+
+  # Storage configuration
+  storage:
+    size: 10Gi
+    storageClassName: local-path
+    hostPath: /mnt/data
+    accessMode: ReadWriteOnce
+
+  # Init container settings
+  initContainer:
+    enabled: true
+    seedPath: /app/backend/data-seed
+
+# PersistentVolume configuration
+persistentVolumes:
+  enabled: true
+  reclaimPolicy: Retain

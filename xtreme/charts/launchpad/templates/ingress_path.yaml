@@ -1,3 +1,4 @@
+# Copyright 2026 Zhone Technology Inc
 # Copyright 2022-2023 DZS Inc
 # ingress_paths.yaml
 # Pathtype support is only available from 1.18 version onwards
@@ -82,6 +83,36 @@
       - path: /userinfo
       {{- if $canUsePathType }}
         pathType: Prefix
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+      
+      - path: /.well-known/openid-configuration
+      {{- if $canUsePathType }}
+        pathType: Exact
+      {{- end }}
+        backend:
+        {{- if $ingressApiGA }}
+          service:
+            name: {{ include "launchpad.fullname" . }}
+            port:
+              number: 8009
+        {{- else }}
+          serviceName: {{ include "launchpad.fullname" . }}
+          servicePort: 8009
+        {{- end }}
+      
+      - path: /jwks
+      {{- if $canUsePathType }}
+        pathType: Exact
       {{- end }}
         backend:
         {{- if $ingressApiGA }}

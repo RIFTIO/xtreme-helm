@@ -439,6 +439,12 @@ spec:
         - name: RW_AEO_NAMESPACE
           value: {{ include "aeo.namespace" . }}
         {{- end }}
+        {{- if index .Values.global.install "zhone-ai" }}
+        - name: ZHONE_AI_SERVICE_NAME
+          value: "open-webui"
+        - name: ZHONE_AI_NAMESPACE
+          value: {{ .Values.global.namespace.name }}
+        {{- end }}
         {{- range $name, $value := .Values.launchpad.env }}
         - name: {{ $name }}
           value: {{ $value | quote }}

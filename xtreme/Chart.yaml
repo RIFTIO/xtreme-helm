@@ -1,6 +1,6 @@
 apiVersion: v2
 name: xtreme
-description: Consolidated Helm Chart for DZS Xtreme products
+description: Consolidated Helm Chart for Zhone Xtreme products
 type: application
 version: 13.6.0
 appVersion: 13.6.0
@@ -56,3 +56,6 @@ dependencies:
   - name: explore
     repository: file://.charts/explore
     condition: global.install.explore
+  - name: llm-stack
+    repository: file://./charts/llm-stack
+    condition: global.install.zhone-ai
