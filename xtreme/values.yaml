@@ -33,7 +33,7 @@ global:
     persistenceFtp:
       storageClass: null
  
-  sdncImgtag: 13.5.0.1010926
+  sdncImgtag: 13.6.0.1011156
 
   # If switched to "true", Kafka service will be enabled; If switched to "false", Kafka service will be disabled.
   enableKafka_netconf: true
@@ -342,7 +342,7 @@ global:
     sdnc: true
     ftp: true
     sftp: true
-    zms: true
+    zms: false
     aeo: true
     kafka: true
     deviceSimulator: false
@@ -407,11 +407,11 @@ redis:
 
 launchpad:
   launchpad:
-    appSelector: launchpad
+    appSelector: aeo
     image:
       pullPolicy: Always
-      repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-      tag: 13.5.0.1011035
+      repository: rt.cloud.dzsi.local/docker/rw.aeo
+      tag: 13.6.0.1011158
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
     # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
     # version: __image_version__
@@ -424,21 +424,21 @@ launchpad:
       runAsUser: 1001
       # The primary group for the user.
       runAsGroup: 1001
-    upgradeFrom: 13.5.0.1011035
+    upgradeFrom: 13.6.0.1011158
   aeo:
     image:
       controller:
         pullPolicy: Always
-        tag: 13.5.0.1011035
+        tag: 13.6.0.1011158
       serviceWorker:
         pullPolicy: Always
-        tag: 13.5.0.1011035
+        tag: 13.6.0.1011158
       resourceWorker:
         pullPolicy: Always
-        tag: 13.5.0.1011035
+        tag: 13.6.0.1011158
       tmfServer:
         pullPolicy: Always
-        tag: 13.5.0.1011035
+        tag: 13.6.0.1011158
   storage:
     accessMode: ReadWriteOnce
     capacity: 80Gi
