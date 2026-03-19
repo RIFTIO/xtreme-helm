@@ -1,6 +1,10 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
+This is release 13.4.1. It is an AEO release. Please pick a different branch or 
+tag if you want NFVO. 
+
+
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the Zhone Inc container image repository currently hosted on dockerhub
 or you are inside the Zhone lab.
@@ -18,11 +22,14 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
+## CHANGES SINCE 13.4.0
+* added a check that the script has proper access to the cluster 
+* some kafka related upgrade fixes 
 
 CHANGES 
 * 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
-INSTALLATION 
+## INSTALLATION 
 
 Unless you are in the Zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
@@ -44,8 +51,15 @@ run:
 
 If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
-When it's done, it will query the status forever until it gets a successful response. This can take 10
-minutes or more if your internet link is slow
+If you are in a single node cluster (e.g. k3s), you will also probably need ports.yaml to prevent
+k8s from usurping the SSH daemon port, and alias.yaml so that ingress can redirect the
+user's browser successfully. 
+
+When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
+minutes or more if your internet link is slow. You can control-c out of the script 
+at this point if you want to check status other ways, and restart the script using the
+--check option to restart the status checks.  
+
 
 You can run 
 
@@ -62,7 +76,7 @@ kubectl get pods -n aeo-<namespace> -w
 to watch it finish up 
 
 
-notes
+## notes
 
 * The pods in primary namespace are highly interdependent, so initial startup can be slow. Once all the pods
 in the primary namespace are up, the pods in the aeo- namespace can start. Many of these will have crashed at
@@ -75,7 +89,7 @@ official branches in this repo
 
 * main -- production 
 * zhone -- as delivered by engineering. Deprecated as of 13.4.1
-* release_13.5 -- all of the 13.5.x releases will be tagged on this branch
+* release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
 * release_13.4.1 -- latest AEO release
 
 official tags 

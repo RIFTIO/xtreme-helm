@@ -79,6 +79,12 @@ if [ $rc != 0 ]; then
     exit 1
 fi
 
+# status check
+nodes=$(kubectl get nodes  --no-headers  | wc -l)
+if [ $? -ne 0 -o $nodes -lt 1 ]; then
+  echo -e "\n\n\n**** Error accessing K8S cluster api port. Please check environment variable KUBECONFIG and try again\n" >&2
+  exit 1
+fi
 
 
 if $clean; then
