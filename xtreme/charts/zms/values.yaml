@@ -102,5 +102,6 @@ vsftp:
   pasvEnable: "NO"
   pasvMinNodePort: 20020
   pasvMaxNodePort: 20021
+  port: 22
 
 externalIPAddress: ""

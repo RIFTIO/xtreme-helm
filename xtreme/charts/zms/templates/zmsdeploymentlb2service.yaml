@@ -7,7 +7,7 @@ metadata:
   labels:
     app: zmsapp
   annotations:
-    metallb.universe.tf/allow-shared-ip: "zmsapp_shared_ip"
+    metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
 spec:
   {{- if .Values.service.zmsHostNetwork }}
   type: ClusterIP
@@ -41,7 +41,7 @@ spec:
     protocol: TCP
     name: netconf
   {{- if eq .Values.vsftp.sslEnable "YES" }}
-  - port: 22
+  - port: {{ .Values.vsftp.port }}
     targetPort: 22
     protocol: TCP
     name: sftp
@@ -67,7 +67,7 @@ metadata:
   labels:
     app: zmsapp
   annotations:
-    metallb.universe.tf/allow-shared-ip: "zmsapp_shared_ip"
+    metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
 spec:
   {{- if .Values.service.zmsHostNetwork }}
   type: ClusterIP
