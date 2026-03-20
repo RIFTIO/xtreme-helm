@@ -43,6 +43,13 @@ FQDN for Kafka bootstrap
 {{- end -}}
 
 {{/*
+Service name for external strimzi kafka
+*/}}
+{{- define "kafkaBootstrap.external" -}}
+{{ include "kafka.prefix" . }}-kafka-external-bootstrap
+{{- end -}}
+
+{{/*
 App name for Launchpad platform service. Overrides definition defined by subcharts.
 */}}
 {{- define "launchpad.fullname" -}}

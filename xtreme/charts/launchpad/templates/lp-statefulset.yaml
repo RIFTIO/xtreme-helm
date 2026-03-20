@@ -109,6 +109,8 @@ spec:
           value: {{ include "nats.fullname" . }}
         - name: RW_MONGODB_SVC_NAME
           value: {{ include "mongodb.fqdn" . }}
+        - name: RW_KAFKA_EXTERNAL_SVC_NAME
+          value: {{ include "kafkaBootstrap.external" . }}    
         - name: RW_HAPROXY_METRICS_SVC_NAME
           value: {{ include "haproxy-metrics.fullname" . }}
         - name: START_FLUXCD_ADAPTOR

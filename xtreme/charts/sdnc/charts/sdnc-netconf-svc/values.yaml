@@ -480,11 +480,11 @@ lighty:
                "targets": [
                  {
                    "classifier": "ROADM_TCA",
-                   "target": "dzs.sdnc.netconf.roadm_notis"
+                   "target": "zhone.sdnc.tca"
                  },
                  {
                    "classifier": "ONU_PRESENCE_STATE_CHANGE",
-                   "target": "dzs.sdnc.netconf.onu_presence_state_change"
+                   "target": "zhone.sdnc.onu-presence"
                  }
                ],
                "producerConfig": {

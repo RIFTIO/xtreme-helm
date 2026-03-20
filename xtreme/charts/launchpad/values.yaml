@@ -84,6 +84,10 @@ global:
         targetPort: 8014
         #nodePort: 30002
         #proxyPort: 5002
+      - name: kafka
+        port: 9094
+        protocol: TCP
+        targePort: 9094
 
 # HAProxy IC related values
 haproxy-ingress:
@@ -168,6 +172,8 @@ launchpad:
       port: 8006
     - name: pkgmgr
       port: 4568
+    - name: rwkafka
+      port: 9094  
   coreDir: null # Default goes to RIFT_VAR_ROOT
   upgradeFrom: 10.2.0.0.125090
   fluxcdAdaptor:

@@ -9,3 +9,4 @@ metadata:
 data:
   "8006": {{ .Values.global.namespace.name }}/{{ include "mongodb.fullname" . }}:8006
   "8014": {{ .Values.global.namespace.name }}/{{ include "redis-tunnel.fullname" . }}:8014
+  "9094": {{ .Values.global.namespace.name }}/{{ include "kafkaBootstrap.external" . }}:9094

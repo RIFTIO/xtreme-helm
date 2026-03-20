@@ -1,0 +1,15 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaUser
+metadata:
+    name:  {{ .Values.kafkaUser.name }} 
+    namespace: {{  .Values.global.namespace.name }}
+    labels:
+             strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+    authentication:
+             type: scram-sha-512
+             password:
+                valueFrom:
+                   secretKeyRef:
+                      name: kafka-user-admin-secret
+                      key: password

@@ -664,5 +664,12 @@
           serviceName: {{ include "launchpad.fullname" . }}
           servicePort: 8008
         {{- end }}
+      - path: /kafka
+        pathType: Prefix
+        backend:
+           service:
+              name: {{ include "launchpad.fullname" .}}
+              port:
+                number: 9094     
 
 {{- end }}

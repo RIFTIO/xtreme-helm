@@ -1,0 +1,60 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: {{ .Values.kafkaTopics.sdnc.alarm }}
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  topicName: zhone.sdnc.alarm      
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: {{ .Values.kafkaTopics.sdnc.pm }}
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  topicName: zhone.sdnc.pm    
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: {{ .Values.kafkaTopics.sdnc.tca }}
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  topicName: zhone.sdnc.tca      
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: {{ .Values.kafkaTopics.sdnc.onu }}
+  namespace: {{  .Values.global.namespace.name }}
+  labels:
+    strimzi.io/cluster: {{ include "kafka.prefix" . }}
+spec:
+  topicName: zhone.sdnc.onu-presence     
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
+

@@ -3662,7 +3662,7 @@ data:
                   "PM_REPORT"
                 ],
                 "targets": [
-                  { "classifier": "PM_REPORT", "target": "dzs.sdnc.pm_report" }
+                  { "classifier": "PM_REPORT", "target": "zhone.sdnc.pm" }
                 ],
                 "producerConfig": {
                   "bootstrap.servers": "{{- $kafka_socket -}}",
@@ -3673,7 +3673,7 @@ data:
                   "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
                 },
                 "producerTopics": [
-                  "dzs.sdnc.pm_report"
+                  "zhone.sdnc.pm"
                 ]
               }
             }

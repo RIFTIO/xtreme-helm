@@ -35,7 +35,10 @@ tmpDirSizeLimit: 1Mi
 #   - name: JAVA_OPTS
 #     value: "-Xms256m -Xmx256m"
 
-extraEnvs: []
+# Added by jmordkof
+extraEnvs:
+   - name: KAFKA_ADVERTISED_HOST
+     value: "{{ .Values.global.ingress.externalAddress }}"
 
 tolerations: []
 affinity: {}
@@ -170,7 +173,18 @@ livenessProbe:
 readinessProbe:
   initialDelaySeconds: 10
   periodSeconds: 30
-
+kafkaUser:
+  name: admin
+  pwd: admin123
+kafkaSuperUser:
+  name: superadmin
+  pwd: admin123 
+kafkaTopics:
+  sdnc:
+      alarm: zhone.sdnc.alarm     
+      pm: zhone.sdnc.pm
+      tca: zhone.sdnc.tca
+      onu: zhone.sdnc.onu-presence       
 createGlobalResources: true
 # Create clusterroles that extend existing clusterroles to interact with strimzi crds
 # Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles

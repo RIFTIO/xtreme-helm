@@ -647,7 +647,7 @@ data:
                 "type": "PUB",
                 "accepts": ["ALARM", "ALARM_SYNC_RES"],
                 "targets": [
-                  {"classifier": "ALARM", "target": "dzs.sdnc.ext.alarm"},
+                  {"classifier": "ALARM", "target": "zhone.sdnc.alarm"},
                   {"classifier": "ALARM_SYNC_RES", "target": "dzs.sdnc.ext.alarm.alarmsyncres"}
                 ],
                 "producerConfig": {
