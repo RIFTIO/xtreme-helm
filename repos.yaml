@@ -83,7 +83,7 @@ launchpad:
 
   launchpad:
     image:
-      repository: dzscloudadmin/launchpad
+      repository: dzscloudadmin/rw.aeo
       pullPolicy: IfNotPresent
     primitiveExec:
       image:
