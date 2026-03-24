@@ -143,7 +143,6 @@ KAFKA_HOME="$WORKDIR/kafka_2.13-${KAFKA_VERSION}"
 PASSWORD="changeit"
 
 KAFKA_USER_SECRET="admin"
-KAFKA_SUPERUSER_SECRET="admin123"
 CLIENTS_CA_SECRET="zhone-strimzi-clients-ca-cert"
 CLUSTER_CA_SECRET="zhone-strimzi-cluster-ca-cert"
 
@@ -284,6 +283,10 @@ fi
 ########################################
 
 info " Creating client.properties file"
+
+if [ -f client.properties ]; then
+   rm client.properties
+fi   
 
 if [ ! -f client.properties ]; then
 cat > client.properties <<EOF

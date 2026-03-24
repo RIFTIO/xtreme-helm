@@ -60,7 +60,23 @@ spec:
         {{ else }}
         {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
         {{- end }}
-
+      initContainers:
+        - name: wait-for-deps
+          image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.waitForDep.image.pullPolicy }}
+          env:
+            {{- if (eq .Values.global.install.kafka true) }}
+            - name: RW_KAFKA_EXT_SVC_NAME
+              value: {{ include "kafkaBootstrap.external" . }}
+            {{- end }}
+          command:
+            - /wait-for
+          args:
+            {{- if (eq .Values.global.install.kafka true) }}
+            - --host="$(RW_KAFKA_EXT_SVC_NAME):9094"
+            {{- end }}
+            - --timeout=180s
+            - --verbose
       containers:
         - name: haproxy-ingress
         {{- if $useLatestHaProxy }}

@@ -176,9 +176,6 @@ readinessProbe:
 kafkaUser:
   name: admin
   pwd: admin123
-kafkaSuperUser:
-  name: superadmin
-  pwd: admin123 
 kafkaTopics:
   sdnc:
       alarm: zhone.sdnc.alarm     

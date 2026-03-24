@@ -4,6 +4,13 @@
 
 replicaCount: 1
 
+initContainer:
+  waitForDep:
+    image:
+      repository: rt.cloud.dzsi.local/ghcr.io/patrickdappollonio/wait-for
+      pullPolicy: IfNotPresent
+      tag: "v1.0.0"
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
