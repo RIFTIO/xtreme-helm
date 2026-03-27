@@ -1116,7 +1116,7 @@ lighty:
 
 
   initData:
-    hasInitData: true
+    hasInitData: false
     content:
       '{
          "network-topology:network-topology": {
@@ -1200,6 +1200,13 @@ fluentd:
 
 sftp:
   port: 22
+zms:
+  internal:
+    id: zms
+    host: zmsapp-tcp
+    port: 830
+    user: test
+    password: test123
 
 nodePort:
   # If switched to "true", NodePort service will be created; If switched to "false", ClusterIp service will be created
