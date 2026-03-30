@@ -1,0 +1,92 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: image-prepuller
+spec:
+  selector:
+    matchLabels:
+      name: image-prepuller
+  template:
+    metadata:
+      labels:
+        name: image-prepuller
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: prepuller
+        image: alpine:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Install crictl
+          CRICTL_VERSION={{ .Values.crictlVersion | default "v1.28.0" }}
+          wget https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+          tar -xzf crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+          mv crictl /usr/local/bin/
+          chmod +x /usr/local/bin/crictl
+          rm crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+
+          # Configure crictl endpoints
+          mkdir -p /etc
+          cat > /etc/crictl.yaml <<EOF
+          runtime-endpoint: unix:///run/k3s/containerd/containerd.sock
+          image-endpoint: unix:///run/k3s/containerd/containerd.sock
+          EOF
+
+          # Pull images with tags from values files
+          # SDNC images (using global.sdncImgtag)
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-pm-collector:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-netconf-svc:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-transportpce:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-alarm-svc:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-file-mgr:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-task-mgr:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-inventory-mgr:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-config-mgr:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/sdnc_connector:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-gnpy:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/dzs-snmpgw:{{ .Values.global.sdncImgtag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/influxdb:{{ .Values.global.sdncImgtag }}
+
+          # Launchpad/AEO images (using launchpad.aeo.image tags)
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw.aeo:{{ .Values.launchpad.aeo.image.controller.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw.aeo-script-exec:{{ .Values.launchpad.aeo.image.scriptExec.tag | default .Values.launchpad.aeo.image.controller.tag }}
+
+          # Infrastructure images with specific tags from their charts
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull busybox:{{ .Values.global.busybox.image.tag | default "latest" }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull ghcr.io/patrickdappollonio/wait-for:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull docker.io/dzscloudadmin/mongodb:{{ .Values.mongodb.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw-replicator:{{ .Values.mongodb.replicator.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull docker.io/dzscloudadmin/mongodb-exporter:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull quay.io/prometheus/prometheus:{{ .Values.prometheus.prometheus.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/busybox:dzs
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull weaveworks/watch:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull quay.io/prometheus/pushgateway:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw.grafana:{{ .Values.grafana.grafana.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw-primitive-exec:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull redis/redis-stack-server:{{ .Values.redis.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw-redtunnel:{{ .Values.redis.redTunnel.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull oliver006/redis_exporter:{{ .Values.redis.exporter.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/haproxy-ingress:{{ .Values.launchpad.haproxy-ingress.image.tag_latest }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull registry.k8s.io/defaultbackend:{{ .Values.launchpad.haproxy-ingress.defaultbackend.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull quay.io/prometheus/haproxy-exporter:{{ .Values.launchpad.haproxy-ingress.exporter.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw.cluster-logger:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull prom/alertmanager:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull nats:{{ .Values.nats.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/nats-exporter:{{ .Values.nats.exporter.image.tag }}
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull dzscloudadmin/rw.fluentd:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull atmoz/sftp:latest
+          crictl -r unix:///run/k3s/containerd/containerd.sock pull fauria/vsftpd:latest
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: containerd-sock
+          mountPath: /run/k3s/containerd
+      volumes:
+      - name: containerd-sock
+        hostPath:
+          path: /run/k3s/containerd
+      restartPolicy: Always

@@ -1,0 +1,60 @@
+# Default values for imagepuller chart
+# This chart can be used standalone to pre-pull images before xtreme installation
+
+# Reference to xtreme chart values (passed via -f flags)
+global: {}
+
+# Chart-specific values
+crictlVersion: "v1.28.0"
+
+# Default image tags (can be overridden by xtreme values files)
+mongodb:
+  image:
+    tag: "5.0.24-debian-11-r20"
+  replicator:
+    image:
+      tag: "2.7"
+
+prometheus:
+  prometheus:
+    image:
+      tag: "v2.40.7"
+
+grafana:
+  grafana:
+    image:
+      tag: "1.8"
+
+nats:
+  image:
+    tag: "2.1.8"
+  exporter:
+    image:
+      tag: "0.6.2-debian-10-r152"
+
+redis:
+  image:
+    tag: "7.2.0-v6"
+  redTunnel:
+    image:
+      tag: "1.4"
+  exporter:
+    image:
+      tag: "v1.12.0"
+
+launchpad:
+  haproxy-ingress:
+    image:
+      tag_latest: "v0.13.12-rift"
+    defaultbackend:
+      image:
+        tag: "1.4"
+    exporter:
+      image:
+        tag: "v0.11.0"
+  aeo:
+    image:
+      controller:
+        tag: "13.4.0.1010742"
+      scriptExec:
+        tag: "13.4.0.1010742"

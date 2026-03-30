@@ -12,6 +12,7 @@ install=true
 clean=false
 dryrun=false
 check=true
+imagepuller=false
 action=install
 
 
@@ -28,11 +29,12 @@ cat >&2 <<EOF
 --dry-run         do not install, just do a dry-run
 --clean           clean up
 --check       just check if service is up
+--imagepuller     run imagepuller first to pre-cache all images
 
 NOTE: that the default is to do init + install + check but if you specify a step, only that step is run
 
 typical usage sequences
-    --init, then --dry-run, then --install, then maybe --check, then --clean
+    --init, then --imagepuller, then --dry-run, then --install, then maybe --check, then --clean
 OR
     none of the above :)
 EOF
@@ -52,6 +54,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --dry-run) dryrun=true; init=false; install=false; check=false;;
         --clean) clean=true;;
         --check) install=false; init=false;;
+        --imagepuller) imagepuller=true;;
         *) help;;
     esac
     shift
@@ -70,6 +73,7 @@ cat >&2 <<EOF
     install is $install dry-run is $dryrun
     check is $check
     init is $init
+    imagepuller is $imagepuller
     clean is $clean
     chart is $chart
     values are $values
@@ -90,6 +94,7 @@ fi
 
 if $clean; then
   helm uninstall ${release}
+  helm uninstall imagepuller-${release} 2>/dev/null || true  # Clean up imagepuller if it exists
   for ns in ${NS} aeo-${NS}; do
     kubectl delete pvc -n ${ns} --all
     kubectl delete secret -n ${ns} --all
@@ -138,14 +143,22 @@ done
 flags="$flags --set global.namespace.name=$NS --set global.namespace.create=false"
 
 if $dryrun; then
-    helm $action ${release} ${chart} $flags --dry-run
+    helm install ${release} ${chart} $flags --set global.namespace.name=$NS --dry-run
+    exit 0
+fi
+
+if $imagepuller; then
+    echo "Running imagepuller to pre-cache all images..."
+    helm install imagepuller-${release} ./imagepuller-chart $flags --set global.namespace.name=$NS --wait
+    echo "Imagepuller completed. Images are now cached on all nodes."
+    echo "You can now run the main installation with: ./install_xtreme --install"
     exit 0
 fi
 
 if $install; then
    
   echo $action ....
-  helm $action ${release} ${chart} $flags || exit 1
+  helm $action ${release} ${chart} $flags --set global.namespace.name=$NS || exit 1
 fi
 
 if $check; then
