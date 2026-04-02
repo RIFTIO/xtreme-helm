@@ -51,7 +51,13 @@ node('ub24') {
 
             // publish to helm-release if and only if a tag of format v\d.\d.\d exists
 
-            tag = sh(returnStdout: true, script: "git describe --tags").trim()
+            def tag=""
+            try {
+                sh "git pull --tags"
+                tag = sh(returnStdout: true, script: "git describe --tags").trim()
+            } catch(e) {
+                tag = "NO TAGS FOUND"
+            }
             if (tag ==~ /v\d+\.\d+\.\d+/ ) {
                 xtreme_chart_url = "helm-release/xtreme-${release}.tgz"
                 if (sh(returnStatus: true, script: "jf rt s ${xtreme_chart_url} | jq -re 'if ( map(.path) | length ) == 0 then empty else [] end'")) {
