@@ -50,10 +50,8 @@ spec:
          configuration:
            brokers:
              - broker: 0
-               advertisedHost: {{ .Values.global.ingress.externalAddress }}
+               advertisedHost: {{ .Values.global.ingress.externalAddress | default "127.0.0.1" }}
                advertisedPort: 9094
-         # configuration:
-         #    useServiceDnsDomain: true
          authentication:
              type: scram-sha-512
     livenessProbe:

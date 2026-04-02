@@ -134,7 +134,8 @@ function createCertificates(){
 ########################################
 DEFAULT_CLUSTER_NAME="zhone-strimzi"
 DEFAULT_BOOTSTRAP_SVC="zhone-strimzi-kafka-external-bootstrap"
-DEFAULT_INGRESS_SVC="skolluru-haproxy-ingress"
+DEFAULT_INGRESS_SVC="default-haproxy-ingress"
+DEFAULT_HELM_RELEASE="xtreme"
 #DEFAULT_BROKER_SVC="zhone-strimzi-kafka-broker-1"
 KAFKA_VERSION="4.1.1"
 KAFKA_PORT="9094"
@@ -213,11 +214,12 @@ fi
 ########################################
 echo "                                "
 read -p "Enter Kafka namespace: " NAMESPACE
-
+read -p "Enter Helm Release Name [$DEFAULT_HELM_RELEASE]: " HELM_RELEASE
+HELM_RELEASE=${HELM_RELEASE:-$DEFAULT_HELM_RELEASE}
 read -p "Kafka cluster name [$DEFAULT_CLUSTER_NAME]: " CLUSTER_NAME
 CLUSTER_NAME=${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}
 
-DEFAULT_INGRESS_SVC=${NAMESPACE}-"haproxy-ingress"
+DEFAULT_INGRESS_SVC=${HELM_RELEASE}-"haproxy-ingress"
 
 read -p "Ingress service [$DEFAULT_INGRESS_SVC]: " INGRESS_SVC
 INGRESS_SVC=${INGRESS_SVC:-$DEFAULT_INGRESS_SVC}
@@ -246,7 +248,25 @@ info "INGRESS_HOST  as: ${INGRESS_HOST:-<empty>}"
 if [ -z "$INGRESS_HOST" ]; then
   info "❌ No external LoadBalancer address found for service $INGRESS_SVC"
   info "➡️  Ensure Ingress external listener is of type LoadBalancer"
-  exit 1
+
+  ALT_INGRESS_SVC=${NAMESPACE}-"haproxy-ingress"
+  TEMP_INGRESS_HOST=$(kubectl get svc "$ALT_INGRESS_SVC" -n "$NAMESPACE" \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+  if [ -z "$TEMP_INGRESS_HOST" ]; then
+	  TEMP_INGRESS_HOST=$(kubectl get svc "$ALT_INGRESS_SVC" -n "$NAMESPACE" \
+    -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+  fi
+
+  if [ -z "$TEMP_INGRESS_HOST" ]; then
+	  info "❌ No external LoadBalancer address found for service $TEMP_INGRESS_SVC"
+          info "➡️  Ensure Ingress external listener is of type LoadBalancer"
+	  exit 1
+  fi
+
+  INGRESS_HOST=TEMP_INGRESS_HOST
+  INGRESS_SVC=ALT_INGRESS_SVC
+    
 fi
 
 BOOTSTRAP_SERVER="${INGRESS_HOST}:${KAFKA_PORT}"
