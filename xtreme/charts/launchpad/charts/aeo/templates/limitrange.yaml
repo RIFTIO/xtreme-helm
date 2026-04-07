@@ -1,0 +1,16 @@
+{{- if .Values.global.ensureResourceQuota }}
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: aeo-resources
+  namespace: {{ include "aeo.namespace" . }}
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu: "100m"
+      memory: "4Gi"
+    default:
+      cpu: "500m"
+      memory: "8Gi"
+{{- end }}
