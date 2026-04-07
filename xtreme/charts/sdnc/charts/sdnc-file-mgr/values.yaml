@@ -64,6 +64,8 @@ sdnc:
 
 sftp:
   port: 22
+ftp:
+  port: 21
 
 fluentd:
   image:

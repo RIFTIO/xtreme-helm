@@ -47,6 +47,7 @@ securityContext:
 service:
   type: LoadBalancer
   port: 21
+  port20: 20
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious

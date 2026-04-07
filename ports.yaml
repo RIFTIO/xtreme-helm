@@ -23,6 +23,8 @@ sftp:
       metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
 ftp:
   service:
+    port: 2121
+    port20: 2120
     annotations:
       metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
 sdnc:
@@ -39,6 +41,8 @@ sdnc:
     createClusterRole: true
     sftp:
       port: 2222
+    ftp:
+      port: 2121
   sdnc-snmpgw:
     service:
       annotations:
@@ -46,3 +50,6 @@ sdnc:
 zms:
   vsftp:
     port: 2224
+  ftp:
+    port: 21
+    port20: 20

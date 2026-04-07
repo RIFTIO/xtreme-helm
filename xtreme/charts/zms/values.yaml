@@ -103,5 +103,8 @@ vsftp:
   pasvMinNodePort: 20020
   pasvMaxNodePort: 20021
   port: 22
+ftp:
+  port: 21
+  port20: 20
 
 externalIPAddress: ""

@@ -87,7 +87,7 @@ data:
                    "user-id":"ftpuser"
                 },
                 "remoteAddress":"ftp-external-ip",
-                "remotePort":21,
+                "remotePort":{{ default 21 .Values.ftp.port }},
                 "repo-id":"dzslocal",
                 "repo-type":"ftp"
              },

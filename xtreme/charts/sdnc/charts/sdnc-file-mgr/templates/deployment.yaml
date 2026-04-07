@@ -52,7 +52,7 @@ spec:
           args:
             - --host="$(RW_NATS_SVC_NAME):4222"
             - --host="$(RW_MONGODB_SVC_NAME):8006"
-            - --host="$(RW_FTP_SVC_NAME):21"
+            - --host="$(RW_FTP_SVC_NAME):{{ .Values.ftp.port }}"
             - --host="$(RW_SFTP_SVC_NAME):{{ .Values.sftp.port }}"
             - --timeout=120s
             - --verbose

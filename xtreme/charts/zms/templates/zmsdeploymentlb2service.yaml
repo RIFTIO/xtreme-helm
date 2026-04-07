@@ -28,11 +28,11 @@ spec:
     targetPort: 9990
     protocol: TCP
     name: jboss
-  - port: 20
+  - port: {{ .Values.ftp.port20 }}
     targetPort: 20
     protocol: TCP
     name: ftpdata
-  - port: 21
+  - port: {{ .Values.ftp.port }}
     targetPort: 21
     protocol: TCP
     name: ftpcontrol

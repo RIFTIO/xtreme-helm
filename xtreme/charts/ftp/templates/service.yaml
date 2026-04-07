@@ -15,9 +15,9 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+      targetPort: 21
       name: ftp
-    - port: 20
+    - port: {{ .Values.service.port20 }}
       targetPort: 20
       name: dataport
     - port: 21100
