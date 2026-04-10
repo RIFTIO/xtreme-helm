@@ -23,6 +23,9 @@ spec:
       default.replication.factor: 1
       min.insync.replicas: 1
       group.initial.rebalance.delay.ms: 250
+      log.retention.ms: 86400000
+      log.segment.bytes: 134217728
+      log.retention.bytes: 1073741824
       # sasl.enabled.mechanisms: SCRAM-SHA-512
       #sasl.mechanism.inter.broker.protocol: SCRAM-SHA-512
     logging:

@@ -35,11 +35,6 @@ tmpDirSizeLimit: 1Mi
 #   - name: JAVA_OPTS
 #     value: "-Xms256m -Xmx256m"
 
-# Added by jmordkof
-extraEnvs:
-   - name: KAFKA_ADVERTISED_HOST
-     value: "{{ .Values.global.ingress.externalAddress }}"
-
 tolerations: []
 affinity: {}
 annotations: {}
@@ -162,11 +157,18 @@ mavenBuilder:
     tag: ""
 resources:
   limits:
-    memory: 384Mi
+    memory: 1Gi
     cpu: 1000m
   requests:
-    memory: 384Mi
+    memory: 512Mi
     cpu: 200m
+env:
+  - name: STRIMZI_JAVA_OPTS
+    value: "-Xms256m -Xmx512m"
+  - name: STRIMZI_FULL_RECONCILIATION_INTERVAL_MS
+    value: "120000"
+  - name: STRIMZI_LOG_LEVEL
+    value: "INFO"
 livenessProbe:
   initialDelaySeconds: 10
   periodSeconds: 30

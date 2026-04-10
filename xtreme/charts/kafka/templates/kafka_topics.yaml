@@ -10,8 +10,8 @@ spec:
   partitions: 1
   replicas: 1
   config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
+    retention.ms: 86400000 
+    segment.bytes: 134217728
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
@@ -25,8 +25,8 @@ spec:
   partitions: 1
   replicas: 1
   config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
+    retention.ms: 86400000
+    segment.bytes: 134217728
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
@@ -40,8 +40,8 @@ spec:
   partitions: 1
   replicas: 1
   config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
+    retention.ms: 86400000
+    segment.bytes: 134217728
 ---
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaTopic
@@ -55,6 +55,5 @@ spec:
   partitions: 1
   replicas: 1
   config:
-    retention.ms: 7200000
-    segment.bytes: 1073741824
-
+    retention.ms: 86400000
+    segment.bytes: 134217728
