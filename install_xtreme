@@ -1,31 +1,58 @@
 #!/bin/bash 
 
+set -euo pipefail
+
+# Xtreme Helm Deployment Script
+# This script handles the installation, upgrade, and management of the Xtreme Helm chart
+# Version: 1.0.0
+
+# Logging functions
+log_info() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] INFO: $*" >&2
+}
+
+log_error() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >&2
+}
+
+log_warn() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARN: $*" >&2
+}
+
+log_info "Starting Xtreme Helm Deployment Script v1.0.0"
+
+# Default configuration
 NS="demo"
 default_values="values-aeo.yaml storage.yaml repos.yaml"
 chart="xtreme"
 release="xtreme"
+values=""
+flags=""
 init=true
 install=true
 clean=false
 dryrun=false
 check=true
+limitresource=false
 action=install
-limitresource=true
 
 help() {
 cat >&2 <<EOF 
-    USAGE: 
+USAGE: 
 --chart path      helm chart. default is ./xtreme
 --values path     values file. May be used more than once. default is $default_values
 --ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
 --release name    helm release name. default is xtreme
---init            ONLY create the docker secrets. Only needs to be done once
+--init            ONLY initialize infrastructure (namespace, CRDs). Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
 --clean           clean up
 --check       just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
+
+Environment Variables:
+  DOCKERHUB_TOKEN  Required for install. Docker Hub authentication token for pulling images.
 
 NOTE: that the default is to do init + install + check but if you specify a step, only that step is run
 
@@ -37,7 +64,6 @@ EOF
 exit 1
 }
 
-
 while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
     case $1 in
         --chart) chart=$2; shift;;
@@ -48,7 +74,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --install) init=false; check=false;;
         --upgrade) action=upgrade; init=false;;
         --dry-run) dryrun=true; init=false; install=false; check=false;;
-        --clean) clean=true;;
+        --clean) clean=true; init=false; install=false; check=false;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         *) help;;
@@ -63,78 +89,99 @@ if [ -z "$values" ]; then
     values="${default_values}"
 fi
 
-cat >&2 <<EOF
-    namespace is $NS
-    release is $release
-    install is $install dry-run is $dryrun
-    check is $check
-    init is $init
-    clean is $clean
-    chart is $chart
-    values are $values
-    limitresource is $limitresource
-EOF
+log_info "Configuration:"
+log_info "  namespace: $NS"
+log_info "  release: $release"
+log_info "  install: $install"
+log_info "  dry-run: $dryrun"
+log_info "  check: $check"
+log_info "  init: $init"
+log_info "  clean: $clean"
+log_info "  limitresource: $limitresource"
+log_info "  chart: $chart"
+log_info "  values: $values"
 
 rc=0
 for file in $chart $values; do
     if [ ! -e $file ]; then
-        echo $file not found >&2
+        log_error "Required file not found: $file"
         rc=1
     fi
 done
 if [ $rc != 0 ]; then
+    log_error "Exiting due to missing files"
     exit 1
 fi
 
-# status check
+# Verify Kubernetes cluster connectivity
+log_info "Checking Kubernetes cluster connectivity..."
 nodes=$(kubectl get nodes  --no-headers  | wc -l)
 if [ $? -ne 0 -o $nodes -lt 1 ]; then
-  echo -e "\n\n\n**** Error accessing K8S cluster api port. Please check environment variable KUBECONFIG and try again\n" >&2
+  log_error "Failed to access Kubernetes cluster. Please check KUBECONFIG environment variable."
   exit 1
 fi
-
-
-if $clean; then
-  helm uninstall ${release}
-  for ns in ${NS}; do
-    kubectl delete pvc -n ${ns} --all
-    kubectl delete secret -n ${ns} --all
-  done
-  exit
-fi
-
-
+log_info "Kubernetes cluster accessible with $nodes node(s)"
 
 if $init; then
-  if [ -f dockerhub-token ]; then
-       token=$(cat dockerhub-token)
-  else
-       echo please put dockerhub token in file dockerhub-token >&2
-       echo contact Zhone sales if you don\'t have one yet >&2
-       exit 1
+  # Validate required environment variables
+  if [ -z "${DOCKERHUB_TOKEN:-}" ]; then
+    # Check if dockerhub_token file is available
+    if [ -f "dockerhub_token" ]; then
+      DOCKERHUB_TOKEN=$(cat dockerhub_token)
+      log_info "DOCKERHUB_TOKEN read from dockerhub_token file"
+    else
+      log_error "DOCKERHUB_TOKEN environment variable must be set or dockerhub_token file must be available"
+      exit 1
+    fi
   fi
-  for ns in ${NS}; do
-    kubectl create ns $ns || true
-    # Xtreme chanrts needs the below label and annotation
-    # TO_DO: Take the release_name and release-name as user args
-    kubectl label namespace $ns app.kubernetes.io/managed-by=Helm
-    kubectl annotate namespace $ns meta.helm.sh/release-name=xtreme meta.helm.sh/release-namespace=default
-    
-    kubectl create -n $ns secret docker-registry dzs-secret --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
-    kubectl create -n $ns secret docker-registry harbor --docker-server=docker.io --docker-username=dzscloudadmin --docker-password=${token} --docker-email='noreply@zhone.com'
+  
+  log_info "Starting initialization..."
+  for ns in ${NS} aeo-${NS}; do
+    # Check if namespace exists
+    if kubectl get ns $ns >/dev/null 2>&1; then
+      log_info "Namespace $ns already exists"
+      
+      # Check and add labels if missing
+      current_label=$(kubectl get ns $ns -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+      if [ "$current_label" != "Helm" ]; then
+        log_info "Adding missing label to namespace: $ns"
+        kubectl label namespace $ns app.kubernetes.io/managed-by=Helm --overwrite
+      else
+        log_info "Namespace $ns already has required label"
+      fi
+      
+      # Check and add annotations if missing
+      current_release_name=$(kubectl get ns $ns -o jsonpath='{.metadata.annotations.meta\.helm\.sh/release-name}' 2>/dev/null || echo "")
+      current_release_ns=$(kubectl get ns $ns -o jsonpath='{.metadata.annotations.meta\.helm\.sh/release-namespace}' 2>/dev/null || echo "")
+      if [ "$current_release_name" != "xtreme" ] || [ "$current_release_ns" != "default" ]; then
+        log_info "Adding/updating annotations on namespace: $ns"
+        kubectl annotate namespace $ns meta.helm.sh/release-name=xtreme meta.helm.sh/release-namespace=default --overwrite
+      else
+        log_info "Namespace $ns already has required annotations"
+      fi
+    else
+      log_info "Creating namespace: $ns"
+      kubectl create ns $ns
+      log_info "Labeling and annotating namespace: $ns"
+      kubectl label namespace $ns app.kubernetes.io/managed-by=Helm
+      kubectl annotate namespace $ns meta.helm.sh/release-name=xtreme meta.helm.sh/release-namespace=default
+    fi
   done
 
+    # Check if chart directory exists, if not extract from archive
+    # This is applicable only if charts are downloaded separately as tar.gz.
     if [ ! -d xtreme ]; then
-       echo expanding $chart >&2
+       log_info "Expanding chart archive: $chart"
        tar xzf ${chart}
     fi
 
-  echo creating CRDs... >&2
+  log_info "Creating CRDs..."
   for f in xtreme/crds/*
   do 
-    echo $f >&2
+    log_info "Applying CRD: $f"
     kubectl apply -f $f
   done
+  log_info "Initialization completed"
 fi
 
 for file in $values; do
@@ -145,20 +192,35 @@ if $limitresource; then
     flags="$flags --set global.ensureResourceQuota=true"
 fi
 
+flags="$flags --set global.namespace.name=$NS"
+
 if $dryrun; then
-    helm install ${release} ${chart} $flags --set global.namespace.name=$NS --dry-run
+    log_info "Performing dry-run of Helm install..."
+    log_info "Running: helm install ${release} ${chart} $flags --dry-run"
+    helm install ${release} ${chart} $flags --dry-run
+    log_info "Dry-run completed successfully"
     exit 0
 fi
 
 if $install; then
-   
-  echo $action ....
-  helm $action ${release} ${chart} $flags --set global.namespace.name=$NS || exit 1
+  log_info "Performing $action of Helm release..."
+  
+  # Check if release already exists
+  if helm list -q --all-namespaces 2>/dev/null | grep -q "^${release}$"; then
+    if [ "$action" = "install" ]; then
+      log_info "Release ${release} already exists, switching to upgrade"
+      action="upgrade"
+    fi
+  fi
+  
+  log_info "Running: helm $action ${release} ${chart} $flags"
+  helm $action ${release} ${chart} $flags
+  log_info "Helm $action completed successfully"
 fi
 
 if $check; then
-
-  echo waiting for xtreme ingress service to obtain IP >&2
+  log_info "Checking service availability..."
+  log_info "Waiting for Xtreme ingress service to obtain IP/hostname"
   HN=""
   fqdn=false
   while [ -z "$HN" ]; do
@@ -171,27 +233,50 @@ if $check; then
         fqdn=true
       fi
   done
-    echo HOSTNAME/IP is $HN >&2
+    log_info "Service hostname/IP: $HN"
 
-    echo waiting for DNS >&2
     if $fqdn; then
+        log_info "Waiting for DNS resolution"
         while ! host $HN; do
             sleep 1
         done
-        echo HOSTNAME is $HN and is resolving >&2
+        log_info "Hostname $HN is resolving"
     fi
 
-    echo waiting for service >&2
+    log_info "Waiting for service to respond"
     while ! curl -kv https://$HN >/dev/null 2>&1; do
         echo -n "." >&2
         sleep 1
     done
 
-    echo waiting for launchpad >&2
+    log_info "Waiting for launchpad to be ready"
     while curl -kv https://$HN 2>&1 | grep 'HTTP/2 503'; do
         sleep 10
     done
 
-    echo "SUCCESS: Hostname is $HN so try https://$HN You may need to click past security warnings unless you've enabled a verifiable cert."
+    log_info "SUCCESS: Service is ready at https://$HN"
+fi
 
+if $clean; then
+  log_info "Starting comprehensive cleanup process..."
+  log_info "Uninstalling Helm release: $release"
+  helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
+  
+  log_info "Deleting CRDs..."
+  for f in xtreme/crds/*
+  do 
+    if [ -f "$f" ]; then
+      crd_name=$(basename "$f" .yaml)
+      log_info "Deleting CRD: $crd_name"
+      kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
+    fi
+  done
+  
+  for ns in ${NS} aeo-${NS}; do
+    log_info "Deleting namespace: $ns (this will remove all remaining resources)"
+    kubectl delete ns $ns --ignore-not-found=true || log_warn "Failed to delete namespace: $ns"
+  done
+  
+  log_info "Comprehensive cleanup completed successfully"
+  exit 0
 fi

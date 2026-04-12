@@ -246,7 +246,9 @@ sdnc:
         repository: dzscloudadmin/rw.fluentd
   sdnc-connector:
     image:
-      repository: dzscloudadmin/sdnc_connector  
+      repository: dzscloudadmin/sdnc_connector
+    imagePullSecrets:
+      - name: dzs-secret
   sdnc-gnpy:
     image:
       repository: dzscloudadmin/dzs-gnpy
@@ -274,6 +276,18 @@ sftp:
 ftp:
   image:
      repository: fauria/vsftpd
+
+inas2-be:
+  image:
+    repository: dzscloudadmin/inas2-be
+  imagePullSecrets:
+    - name: dzs-secret
+
+inas2-fe:
+  image:
+    repository: dzscloudadmin/inas2-fe
+  imagePullSecrets:
+    - name: dzs-secret
 
 llm-stack:
   ollama:
