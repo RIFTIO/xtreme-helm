@@ -125,12 +125,12 @@ log_info "Kubernetes cluster accessible with $nodes node(s)"
 if $init; then
   # Validate required environment variables
   if [ -z "${DOCKERHUB_TOKEN:-}" ]; then
-    # Check if dockerhub_token file is available
-    if [ -f "dockerhub_token" ]; then
-      DOCKERHUB_TOKEN=$(cat dockerhub_token)
-      log_info "DOCKERHUB_TOKEN read from dockerhub_token file"
+    # Check if dockerhub-token file is available
+    if [ -f "dockerhub-token" ]; then
+      DOCKERHUB_TOKEN=$(cat dockerhub-token)
+      log_info "DOCKERHUB_TOKEN read from dockerhub-token file"
     else
-      log_error "DOCKERHUB_TOKEN environment variable must be set or dockerhub_token file must be available"
+      log_error "DOCKERHUB_TOKEN environment variable must be set or dockerhub-token file must be available"
       exit 1
     fi
   fi
