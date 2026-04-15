@@ -10,6 +10,9 @@ global:
   busybox:
     image:
       repository: busybox
+  kubectl:
+    image:
+      repository: bitnami/kubectl
 
 initContainer:
   waitForDep:
@@ -119,6 +122,10 @@ launchpad:
       image:
         repository: quay.io/prometheus/haproxy-exporter
         pullPolicy: IfNotPresent
+    initContainer:
+      waitForDep:
+        image:
+          repository: ghcr.io/patrickdappollonio/wait-for
   cluster_logger:
     image:
       repository: dzscloudadmin/rw.cluster-logger

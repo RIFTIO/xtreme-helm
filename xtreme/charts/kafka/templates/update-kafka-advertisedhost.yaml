@@ -14,7 +14,8 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount }}
       containers:
         - name: wait-and-update
-          image: rt.cloud.dzsi.local/docker-hub/bitnami/kubectl:latest
+          image: {{ .Values.global.kubectl.image.repository }}:{{ .Values.global.kubectl.image.tag }}
+          imagePullPolicy: {{ .Values.global.kubectl.image.pullPolicy | quote }}
           command:
             - /bin/sh
             - -c

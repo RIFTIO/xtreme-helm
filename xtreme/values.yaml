@@ -12,11 +12,16 @@ redisfullnameOverride: ""
 natsfullnameOverride: ""
 
 global:
+  kubectl:
+    image:
+      repository: rt.cloud.dzsi.local/docker-hub/bitnami/kubectl
+      tag: latest
+      pullPolicy: ifNotPresent
   busybox:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/busybox
       tag: latest
-      imagePullPolicy: ifNotPresent
+      pullPolicy: ifNotPresent
 
   pvcmetadata:
     storageClass: null
