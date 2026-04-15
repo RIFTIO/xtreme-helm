@@ -16,12 +16,12 @@ global:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/bitnami/kubectl
       tag: latest
-      pullPolicy: ifNotPresent
+      pullPolicy: IfNotPresent
   busybox:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/busybox
       tag: latest
-      pullPolicy: ifNotPresent
+      pullPolicy: IfNotPresent
 
   pvcmetadata:
     storageClass: null
