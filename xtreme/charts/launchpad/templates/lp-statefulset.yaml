@@ -209,7 +209,7 @@ spec:
         {{- end }}
 
         {{- if and .Values.global.ensureResourceQuota (not (has "appLaunchpad" .Values.global.excludeAppsInResourceQuota)) }}
-        {{- if eq .Values.launchpad.launchpad.appSelector "aeo" }}
+        {{- if eq .Values.launchpad.appSelector "aeo" }}
         {{- include "common.aeo" . }}
         {{- else }}
         {{- include "common.big" . }}
