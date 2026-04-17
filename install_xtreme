@@ -196,8 +196,8 @@ flags="$flags --set global.namespace.name=$NS"
 
 if $dryrun; then
     log_info "Performing dry-run of Helm install..."
-    log_info "Running: helm install ${release} ${chart} $flags --dry-run"
-    helm install ${release} ${chart} $flags --dry-run
+    log_info "Running: helm ${action} ${release} ${chart} $flags --dry-run"
+    helm ${action} ${release} ${chart} $flags --dry-run
     log_info "Dry-run completed successfully"
     exit 0
 fi

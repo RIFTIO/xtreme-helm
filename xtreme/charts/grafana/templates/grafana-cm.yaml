@@ -1,4 +1,6 @@
 # Copyright 2020 RIFT Inc
+{{- $cmName := "dashboard-provision" -}}
+{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -15,20 +17,27 @@ data:
       options:
         path: '/config/dashboards'       # where dashboards are
         foldersFromFilesStructure: true
+{{- end }}
 ---
+{{- $cmName := "datasource-provision" -}}
+{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: datasource-provision
   namespace: {{ .Values.global.namespace.name }}
 data: ~
+{{- end }}
 ---
+{{- $cmName := "grafana-config" -}}
+{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-config
   namespace: {{ .Values.global.namespace.name }}
 data: ~
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap
