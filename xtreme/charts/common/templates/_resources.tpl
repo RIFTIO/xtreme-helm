@@ -72,6 +72,17 @@
             memory: {{ (((.Values.resources).requests).memory) | default "2000Mi" }}
 {{- end }}
 
+{{- define "common.aeo" }}
+        resources:
+          limits:
+            memory: {{ (((.Values.resources).limits).memory) | default "24000Mi" }}
+            ephemeral-storage: "5000Mi"
+          requests:
+            cpu: {{ (((.Values.resources).requests).cpu) | default "50m" }}
+            memory: {{ (((.Values.resources).requests).memory) | default "4000Mi" }}
+            ephemeral-storage: "5000Mi"
+{{- end }}
+
 {{- define "common.big" }}
         resources:
           limits:
