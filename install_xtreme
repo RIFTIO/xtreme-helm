@@ -23,7 +23,7 @@ log_info "Starting Xtreme Helm Deployment Script v1.0.0"
 
 # Default configuration
 NS="demo"
-default_values="values-aeo.yaml storage.yaml repos.yaml"
+env="prod"
 chart="xtreme"
 release="xtreme"
 values=""
@@ -37,22 +37,24 @@ limitresource=false
 action=install
 
 help() {
-cat >&2 <<EOF 
-USAGE: 
+cat >&2 <<EOF
+USAGE:
 --chart path      helm chart. default is ./xtreme
---values path     values file. May be used more than once. default is $default_values
+--values path     values file. May be used more than once. default is environment-dependent (see below)
 --ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
 --release name    helm release name. default is xtreme
+--dev             dev environment: DOCKERHUB_TOKEN optional, values default to values-aeo.yaml
+--prod            prod environment (default): DOCKERHUB_TOKEN required, values default to values-aeo.yaml storage.yaml repos.yaml
 --init            ONLY initialize infrastructure (namespace, CRDs). Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
 --clean           clean up
---check       just check if service is up
+--check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 
 Environment Variables:
-  DOCKERHUB_TOKEN  Required for install. Docker Hub authentication token for pulling images.
+  DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
 
 NOTE: that the default is to do init + install + check but if you specify a step, only that step is run
 
@@ -70,6 +72,8 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --values) values="$values $2"; shift;;
         --ns) NS=$2; shift;;
         --release) release=$2; shift;;
+        --dev) env="dev";;
+        --prod) env="prod";;
         --init) install=false; check=false;;
         --install) init=false; check=false;;
         --upgrade) action=upgrade; init=false;;
@@ -85,11 +89,18 @@ if [ $# -gt 0 ]; then
     help
 fi
 
+if [ "$env" = "prod" ]; then
+    default_values="values-aeo.yaml storage.yaml repos.yaml"
+else
+    default_values="values-aeo.yaml"
+fi
+
 if [ -z "$values" ]; then
     values="${default_values}"
 fi
 
 log_info "Configuration:"
+log_info "  environment: $env"
 log_info "  namespace: $NS"
 log_info "  release: $release"
 log_info "  install: $install"
@@ -122,18 +133,23 @@ if [ $? -ne 0 -o $nodes -lt 1 ]; then
 fi
 log_info "Kubernetes cluster accessible with $nodes node(s)"
 
-if $init; then
-  # Validate required environment variables
+# Validate DOCKERHUB_TOKEN: required in prod, optional in dev
+if $install || $dryrun || $clean; then
   if [ -z "${DOCKERHUB_TOKEN:-}" ]; then
-    # Check if dockerhub-token file is available
     if [ -f "dockerhub-token" ]; then
       DOCKERHUB_TOKEN=$(cat dockerhub-token)
       log_info "DOCKERHUB_TOKEN read from dockerhub-token file"
-    else
-      log_error "DOCKERHUB_TOKEN environment variable must be set or dockerhub-token file must be available"
+    elif [ "$env" = "prod" ]; then
+      log_error "DOCKERHUB_TOKEN environment variable must be set or dockerhub-token file must be available for prod deployment"
       exit 1
+    else
+      log_warn "DOCKERHUB_TOKEN not set — proceeding without Docker Hub authentication (dev environment)"
+      DOCKERHUB_TOKEN=""
     fi
   fi
+fi
+
+if $init; then
   
   log_info "Starting initialization..."
   for ns in ${NS} aeo-${NS}; do
@@ -193,6 +209,9 @@ if $limitresource; then
 fi
 
 flags="$flags --set global.namespace.name=$NS"
+if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+    flags="$flags --set global.dockerhubToken=$DOCKERHUB_TOKEN"
+fi
 
 if $dryrun; then
     log_info "Performing dry-run of Helm install..."

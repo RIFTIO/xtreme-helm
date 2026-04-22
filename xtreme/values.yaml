@@ -173,6 +173,7 @@ global:
   # If defined at per chart level, then that overrides the global value.
   imagePullSecrets: []
   #- name: gitlab-secret
+  dockerhubToken: ""
   # If not empty assigns a prefix for aeo services
   aeoNamespacePrefix: "aeo"
   # If not empty assigns a prefix for sdnc services
