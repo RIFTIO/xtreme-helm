@@ -1,2 +1,4 @@
 dockerhub-token
 .idea
+*tgz
+.image.list
