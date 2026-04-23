@@ -5,6 +5,10 @@ set -euo pipefail
 # Xtreme Helm Deployment Script
 # This script handles the installation, upgrade, and management of the Xtreme Helm chart
 # Version: 1.0.0
+# Author: Zhone Technologies
+# Description: Automated deployment script for Xtreme platform using Helm
+# Requirements: kubectl, helm, bash
+# Usage: See help() function or run with --help
 
 # Logging functions
 log_info() {
@@ -13,13 +17,67 @@ log_info() {
 
 log_error() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: $*" >&2
+    exit 1
 }
 
 log_warn() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] WARN: $*" >&2
 }
 
+# Function to check Helm version
+check_helm_version() {
+    local version
+    if ! version=$(helm version --short 2>/dev/null | cut -d'+' -f1 | sed 's/^v//'); then
+        log_error "Helm is not installed or not accessible"
+        exit 1
+    fi
+    
+    if [ -z "$version" ]; then
+        log_error "Unable to determine Helm version"
+        exit 1
+    fi
+    
+    log_info "Helm version: $version"
+    
+    local major=$(echo "$version" | cut -d. -f1)
+    local minor=$(echo "$version" | cut -d. -f2)
+    
+    if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 20 ]); then
+        log_warn "Helm version $version is below 3.20. Please upgrade to Helm 3.20 or later for best compatibility."
+    fi
+}
+
+# Function to check Kubernetes type
+check_k8s_type() {
+    local server_version
+    if ! server_version=$(kubectl version -o json 2>/dev/null | grep '"gitVersion"' | tail -1 | sed 's/.*"\(v[^"]*\)".*/\1/'); then
+        log_error "Unable to determine Kubernetes server version"
+        exit 1
+    fi
+    
+    if [ -z "$server_version" ]; then
+        log_error "Unable to retrieve Kubernetes server version"
+        exit 1
+    fi
+    
+    log_info "Kubernetes server version: $server_version"
+    
+    if echo "$server_version" | grep -q "+k3s"; then
+        log_info "Detected Kubernetes type: K3s"
+        is_k3s=true
+    else
+        log_info "Detected Kubernetes type: Standard Kubernetes"
+        is_k3s=false
+    fi
+}
+
 log_info "Starting Xtreme Helm Deployment Script v1.0.0"
+
+# Check Helm version
+check_helm_version
+
+# Check Kubernetes type
+check_k8s_type
 
 # Default configuration
 NS="demo"
@@ -93,6 +151,10 @@ if [ "$env" = "prod" ]; then
     default_values="values-aeo.yaml storage.yaml repos.yaml"
 else
     default_values="values-aeo.yaml"
+fi
+
+if $is_k3s; then
+    default_values="$default_values alias.yaml ports.yaml"
 fi
 
 if [ -z "$values" ]; then
