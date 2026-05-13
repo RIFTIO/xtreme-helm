@@ -413,7 +413,8 @@ lighty:
                  "DZS_CFG_MGMT",
                  "ROADM_MAINT",
                  "ROADM_TCA",
-                 "DZS_CONFIGURATION"
+                 "DZS_CONFIGURATION",
+                 "INTERFACE_STATUS"
                ],
                "targets": [
                  {
@@ -451,6 +452,10 @@ lighty:
                  {
                    "classifier": "DZS_CONFIGURATION",
                    "target": "dzs.sdnc.netconf.bbf_opers"
+                 },
+                 {
+                   "classifier": "INTERFACE_STATUS",
+                   "target": "zhone.sdnc.if_status"
                  }
                ],
                "name": "SDNC.NetconfSvc",

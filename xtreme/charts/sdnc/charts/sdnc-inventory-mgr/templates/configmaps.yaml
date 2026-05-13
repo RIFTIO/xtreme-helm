@@ -211,11 +211,12 @@ data:
               "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
               "config": {
                 "type": "ALL",
-                "accepts": ["CONFIG_CHANGE", "INV_SYNC_RES", "MAINTENANCE"],
+                "accepts": ["CONFIG_CHANGE", "INV_SYNC_RES", "MAINTENANCE", "INTERFACE_STATUS_CHANGED"],
                 "targets": [
                     { "classifier": "CONFIG_CHANGE", "target": "dzs.sdnc.config_change" },
                     { "classifier": "INV_SYNC_RES", "target": "dzs.sdnc.inv_sync" },
-                    { "classifier": "MAINTENANCE", "target": "zhone.sdnc.inventory" }
+                    { "classifier": "MAINTENANCE", "target": "zhone.sdnc.inventory" },
+                    { "classifier": "INTERFACE_STATUS_CHANGED", "target": "zhone.sdnc.if_status_changed" }
                 ],
                 "name": "SDNC.InventoryMgr",
                 "useEnvVarToGetNatsSvcName": true,
@@ -256,6 +257,28 @@ data:
               }
             },
             {
+              "serviceIdentifier": "NATS_IF_STATUS",
+              "enabled": true,
+              "serverType": "NATS",
+              "configClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientConfig",
+              "clientClass": "com.dzsi.sdnc.common.messaging.nats.NatsClientService",
+              "config": {
+                "type": "SUB",
+                "name": "SDNC.InventoryMgr",
+                "useEnvVarToGetNatsSvcName": true,
+                "envNatsSvcName": "RW_NATS_SVC_NAME",
+                "natsPort": 4222,
+                "servers": "nats://nats:4222",
+                "subject": "zhone.sdnc.if_status",
+                "queueGroup": "inventorymgr",
+                "defaultPubSubject": "dzs.sdnc.inv_pub.default",
+                "connectionTimeoutSeconds": 10,
+                "maxReconnects": -1,
+                "reconnectWaitSeconds": 2,
+                "reconnectBufferSize": -1
+              }
+            },
+            {
               "serviceIdentifier": "KAFKA",
               "enabled": "{{- $enableKafka -}}",
               "serverType": "KAFKA",
@@ -264,10 +287,11 @@ data:
               "config": {
                 "type": "PUB",
                 "accepts": [
-                  "INV_SYNC_RES"
+                  "INV_SYNC_RES", "INTERFACE_STATUS_CHANGED"
                 ],
                 "targets": [
-                  { "classifier": "INV_SYNC_RES", "target": "dzs.sdnc.ext.inv_sync" }
+                  { "classifier": "INV_SYNC_RES", "target": "dzs.sdnc.ext.inv_sync" },
+                  { "classifier": "INTERFACE_STATUS_CHANGED", "target": "zhone.sdnc.if_status_changed" }
                 ],
                 "producerConfig": {
                   "bootstrap.servers": "{{- $kafka_socket -}}",
