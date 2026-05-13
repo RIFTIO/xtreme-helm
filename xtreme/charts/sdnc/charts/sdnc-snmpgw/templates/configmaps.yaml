@@ -2,6 +2,7 @@
 
 {{- $nats_svc := include "nats.fqdn" . }}
 {{- $mongo_db := include "mongodb.fqdn" . }}
+{{- $redis_svc := include "redis.fqdn" . }}
 
 apiVersion: v1
 
@@ -63,6 +64,9 @@ data:
     spring.jackson.serialization.FAIL_ON_EMPTY_BEANS=false
     management.security.enabled=false
     management.endpoints.web.exposure.include = *
+    #Redis
+    redis.host = {{ include "redis.fqdn" . }}
+    redis.port = 8012
 
   serviceconfig.json: |
     {
