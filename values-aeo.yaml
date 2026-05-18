@@ -7,21 +7,21 @@ launchpad:
   launchpad:
     appSelector: aeo
     image:
-      tag: 13.6.0.1011390
-    upgradeFrom: 13.6.0.1011390
+      tag: 13.6.0.1011442
+    upgradeFrom: 13.6.0.1011442
   aeo:
     image:
       controller:
-        tag: 13.6.0.1011390
+        tag: 13.6.0.1011442
         pullPolicy: IfNotPresent
       serviceWorker:
-        tag: 13.6.0.1011390
+        tag: 13.6.0.1011442
         pullPolicy: IfNotPresent
       resourceWorker:
-        tag: 13.6.0.1011390
+        tag: 13.6.0.1011442
         pullPolicy: IfNotPresent
       tmfServer:
-        tag: 13.6.0.1011390
+        tag: 13.6.0.1011442
         pullPolicy: IfNotPresent
       scriptExec:
         pullPolicy: IfNotPresent
