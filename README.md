@@ -1,9 +1,8 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
-This is release 13.4.1. It is an AEO release. Please pick a different branch or 
+This is release 13.6.0. It is an AEO release. Please pick a different branch or 
 tag if you want NFVO. 
-
 
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the Zhone Inc container image repository currently hosted on dockerhub
@@ -22,7 +21,13 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
-## CHANGES SINCE 13.4.0
+## Changes since 13.6.0
+* there are two new options '--dev' and '--prod'. --dev is for working in the Zhone lab. --prod is for everyone else. 
+* when installing into k3s, the additional yaml values files are automatically included 
+* secrets are now created by helm, not via kubectl 
+* New option to set resource constraints
+
+## Changes Since 13.4.0
 * added a check that the script has proper access to the cluster 
 * some kafka related upgrade fixes 
 
@@ -46,14 +51,12 @@ check your storage class (kubectl get storageclases) and update storage.yaml
 run:
 
 ```bash
-./install-xtreme 
+./install-xtreme
 ```
 
-If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
+If you are in the Zhone lab, use '--prod'
 
-If you are in a single node cluster (e.g. k3s), you will also probably need ports.yaml to prevent
-k8s from usurping the SSH daemon port, and alias.yaml so that ingress can redirect the
-user's browser successfully. 
+The installer will detect when the target is k3s, but you will have to customize alias.yaml first.
 
 When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow. You can control-c out of the script 
@@ -87,12 +90,12 @@ least once due to the timeouts during init. These will restart on their own, so 
 
 official branches in this repo
 
-* main -- production 
-* zhone -- as delivered by engineering. Deprecated as of 13.4.1
+* main -- production --- currently 13.6.0 
 * release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
-* release_13.4.1 -- latest AEO release
+* release_13.6
 
 official tags 
+* v13.6.0 -- latest AEO release
 * v13.5.0 -- latest NFVO release
 * v13.4.0 -- deprecated. Please use branch release_13.4.1 for AEO  
 * v13.3.2 -- deprecated. Please use v13.5.0 
