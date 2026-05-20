@@ -99,5 +99,8 @@ least once due to the timeouts during init. These will restart on their own, so 
 * v13.3.2 -- deprecated. Please use v13.5.0 
 
 ### Development Branches -- bitbucket only. Do not push to github 
-* release_26.06 --  the next AEO release. 
+* release_26.06 --  the next AEO release.
 
+Zhone Engineers -- the HEAD of main was hard reset as part of releasing 13.6.0 because main had some in-progress work.
+So you may need to hard reset your workspaces. The in-progress work is now part of branch release_26.06 and will 
+be included in the next release.   
