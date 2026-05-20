@@ -21,17 +21,15 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
-## Changes since 13.6.0
+## Changes in 13.6.0
 * there are two new options '--dev' and '--prod'. --dev is for working in the Zhone lab. --prod is for everyone else. 
 * when installing into k3s, the additional yaml values files are automatically included 
 * secrets are now created by helm, not via kubectl 
 * New option to set resource constraints
 
-## Changes Since 13.4.0
+## Changes in 13.5.0
 * added a check that the script has proper access to the cluster 
 * some kafka related upgrade fixes 
-
-CHANGES 
 * 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
 ## INSTALLATION 
