@@ -87,15 +87,17 @@ least once due to the timeouts during init. These will restart on their own, so 
 
 * Be consistent when using the --ns option and use it for every command, including --clean 
 
-
-official branches in this repo
-
-* main -- production --- currently 13.6.0 
+### official branches in this repo
+* main -- production AEO --- currently 13.6.0 
 * release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
-* release_13.6
+* release_13.6 -- exists for creating updates to 13.6, e,g, 13.6.1 
 
-official tags 
+### official tags -- This align with the versions that existed when the product was officially released
 * v13.6.0 -- latest AEO release
 * v13.5.0 -- latest NFVO release
 * v13.4.0 -- deprecated. Please use branch release_13.4.1 for AEO  
 * v13.3.2 -- deprecated. Please use v13.5.0 
+
+### Development Branches -- bitbucket only. Do not push to github 
+* release_26.06 --  the next AEO release. 
+
