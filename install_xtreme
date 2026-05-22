@@ -93,6 +93,7 @@ dryrun=false
 check=true
 limitresource=false
 action=install
+pullpolicy=false
 
 help() {
 cat >&2 <<EOF
@@ -110,6 +111,7 @@ USAGE:
 --clean           clean up
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
+--pullpolicy      set pull policy
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -139,6 +141,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --clean) clean=true; init=false; install=false; check=false;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
+        --pullpolicy) pullpolicy=true;;
         *) help;;
     esac
     shift
@@ -159,6 +162,10 @@ fi
 
 if [ -z "$values" ]; then
     values="${default_values}"
+fi
+
+if $pullpolicy; then
+  values="$values pull-policy.yaml"
 fi
 
 log_info "Configuration:"
