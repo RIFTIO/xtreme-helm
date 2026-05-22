@@ -94,6 +94,7 @@ check=true
 limitresource=false
 action=install
 pullpolicy=false
+storage=false
 
 help() {
 cat >&2 <<EOF
@@ -112,6 +113,7 @@ USAGE:
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
+--storage         set storage class
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -142,6 +144,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
+        --storage) storage=true;;
         *) help;;
     esac
     shift
@@ -166,6 +169,10 @@ fi
 
 if $pullpolicy; then
   values="$values pull-policy.yaml"
+fi
+
+if $storage; then
+  values="$values storage.yaml"
 fi
 
 log_info "Configuration:"
