@@ -116,7 +116,7 @@ launchpad:
     defaultbackend:
       image:
         repository: registry.k8s.io/defaultbackend
-        tag: "1.5"
+        tag: "1.4"
         pullPolicy: IfNotPresent
     exporter:
       image:

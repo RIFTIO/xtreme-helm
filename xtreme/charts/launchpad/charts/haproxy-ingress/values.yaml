@@ -43,7 +43,7 @@ exporter:
 defaultbackend:
   image:
     repository: rt.cloud.dzsi.local/registry.k8s.io/defaultbackend
-    tag: "1.5"
+    tag: "1.4"
     pullPolicy: IfNotPresent
   runAsUser: 1024
 
