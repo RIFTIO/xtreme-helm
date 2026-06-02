@@ -65,6 +65,8 @@ spec:
           value: {{ .Values.grafana.provisioning }}
         - name: GF_PATHS_CONFIG
           value: /config/grafana.ini
+        - name: GF_SERVER_HTTP_PORT
+          value: {{ .Values.grafana.httpPort | quote }}
         ports:
         - containerPort: {{ .Values.grafana.service.port }}
           name: grafana-port

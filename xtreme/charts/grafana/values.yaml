@@ -38,7 +38,8 @@ grafana:
   provisioning: "/config/provisioning"
   coreDir: null
   externalAddress: null
-  runAsUser: 472
+  runAsUser: 1024
+  httpPort: 8300
 
 # Hostname or IP address through which launchpad can be externally accessed
 # This value is mandatory except if service type is "LoadBalancer"
