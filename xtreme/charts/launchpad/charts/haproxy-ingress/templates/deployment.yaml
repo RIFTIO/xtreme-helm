@@ -13,7 +13,6 @@
 {{- define "tcp-services-configmap" }}
 {{- printf "--tcp-services-configmap=%s/haproxy-tcp-configmap" .Values.global.namespace.name }}
 {{- end }}
-{{- $useLatestHaProxy := true }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -79,11 +78,7 @@ spec:
             - --verbose
       containers:
         - name: haproxy-ingress
-        {{- if $useLatestHaProxy }}
-          image: {{ .Values.image.repository_latest -}} : {{- .Values.image.tag_latest }}
-        {{- else }}
           image: {{ .Values.image.repository -}} : {{- .Values.image.tag }}
-        {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - {{ template "default-backend-service" . }}
@@ -93,9 +88,7 @@ spec:
             - "--watch-namespace=$(POD_NAMESPACE)"
             - "--force-namespace-isolation=true"
             - "--disable-node-list=true"
-          {{- if $useLatestHaProxy }}
             - "--watch-ingress-without-class=true"
-          {{- end }}
 
           {{- if and .Values.global.ensureResourceQuota (not (has "appHaproxy" .Values.global.excludeAppsInResourceQuota)) }}
           {{- include "common.small.ephemeral" . | nindent 2}}
