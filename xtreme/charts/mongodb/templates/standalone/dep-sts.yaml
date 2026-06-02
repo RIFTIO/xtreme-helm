@@ -234,7 +234,7 @@ spec:
             {{- if .Values.global.ipv6Mode }}
             exec:
               command:
-                - mongo
+                - mongosh
                 - --host
                 - ::1
                 - --port
@@ -245,7 +245,7 @@ spec:
             {{- else }}
             exec:
               command:
-                - mongo
+                - mongosh
                 - --port
                 - "8006"
                 - --eval

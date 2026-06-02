@@ -38,8 +38,6 @@ data:
       authorization: disabled
     storage:
       dbPath: "/data"
-      journal:
-        enabled: true
       wiredTiger:
         engineConfig:
           cacheSizeGB: 3
