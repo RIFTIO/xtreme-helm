@@ -25,7 +25,7 @@ securityContext: {}
 alertmgr:
   image:
     repository: rt.cloud.dzsi.local/docker-hub/prom/alertmanager
-    tag: "v0.21.0-rc.0"
+    tag: "v0.32.1-rc.0"
     pullPolicy: IfNotPresent
   resources: {}
   nodeSelector: {}
