@@ -12,7 +12,7 @@ global:
       repository: busybox
   kubectl:
     image:
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
 
 initContainer:
   waitForDep:
@@ -47,7 +47,7 @@ prometheus:
         repository: dzscloudadmin/busybox:dzs
     configWatch:
       image:
-        repository: jimmidyson/configmap-reload
+        repository: ghcr.io/jimmidyson/configmap-reload
     pushGateway:
       image:
         repository: quay.io/prometheus/pushgateway
@@ -146,7 +146,7 @@ nats:
     repository: nats
   exporter:
     image:
-      repository: dzscloudadmin/nats-exporter
+      repository: bitnamilegacy/nats-exporter
 
 redis:
   image:

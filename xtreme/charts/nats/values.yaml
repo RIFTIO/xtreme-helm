@@ -16,8 +16,8 @@ image:
 
 exporter:
   image:
-    repository: rt.cloud.dzsi.local/docker-hub/bitnami/nats-exporter
-    tag: "0.20.1-debian-12-r0"
+    repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/nats-exporter
+    tag: "0.17.3-debian-12-r8"
     pullPolicy: IfNotPresent
 
 imagePullSecrets: []
