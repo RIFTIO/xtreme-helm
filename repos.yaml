@@ -23,7 +23,7 @@ initContainer:
 mongodb:
   image:
     registry: docker.io
-    repository: dzscloudadmin/mongodb
+    repository: bitnamilegacy/mongodb
   busybox:
     image:
       repository: busybox

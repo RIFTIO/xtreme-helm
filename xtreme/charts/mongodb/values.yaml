@@ -23,13 +23,13 @@ image:
   ##
   registry: rt.cloud.dzsi.local
   ## Bitnami MongoDB image name
-  ##
-  repository: docker/mongodb
+  ## Note: bitnami moved versioned debian images to bitnamilegacy/mongodb
+  repository: docker-hub/bitnamilegacy/mongodb
   ## Bitnami MongoDB image tag
-  ## ref: https://hub.docker.com/r/bitnami/mongodb/tags/
+  ## ref: https://hub.docker.com/r/bitnamilegacy/mongodb/tags/
   ##
   # tag: "4.4.15-debian-10-r8"
-  tag: "8.0.4-debian-12-r2"
+  tag: "8.0.13-debian-12-r0"
   ## Specify a imagePullPolicy
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
   ##
