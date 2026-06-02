@@ -60,10 +60,11 @@ spec:
       - name: grafana
         image: {{ .Values.grafana.image.repository -}} : {{- .Values.grafana.image.tag }}
         imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}
-        command: ["./bin/grafana-server", "--config", "/config/grafana.ini"]
         env:
         - name: GF_PATHS_PROVISIONING
           value: {{ .Values.grafana.provisioning }}
+        - name: GF_PATHS_CONFIG
+          value: /config/grafana.ini
         ports:
         - containerPort: {{ .Values.grafana.service.port }}
           name: grafana-port

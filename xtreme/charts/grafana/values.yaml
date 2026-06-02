@@ -24,8 +24,8 @@ securityContext: {}
 
 grafana:
   image:
-    repository: rt.cloud.dzsi.local/docker/rw.grafana
-    tag: "1.8"
+    repository: rt.cloud.dzsi.local/docker-hub/grafana/grafana
+    tag: "12.4.0"
     pullPolicy: IfNotPresent
   resources: {}
   nodeSelector: {}
@@ -38,7 +38,7 @@ grafana:
   provisioning: "/config/provisioning"
   coreDir: null
   externalAddress: null
-  runAsUser: 1024
+  runAsUser: 472
 
 # Hostname or IP address through which launchpad can be externally accessed
 # This value is mandatory except if service type is "LoadBalancer"

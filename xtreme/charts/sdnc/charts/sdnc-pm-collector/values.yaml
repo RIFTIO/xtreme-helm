@@ -65,7 +65,7 @@ fluentd:
   image:
     repository: rt.cloud.dzsi.local/docker/rw.fluentd
     pullPolicy: IfNotPresent
-    tag: 0.1
+    tag: "0.2"
 
 ingress:
   enabled: false

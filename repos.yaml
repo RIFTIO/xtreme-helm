@@ -55,7 +55,7 @@ prometheus:
 grafana:
   grafana:
     image:
-      repository: dzscloudadmin/rw.grafana
+      repository: grafana/grafana
 
 launchpad:
   image:
@@ -107,7 +107,7 @@ launchpad:
 
   grafana:
     image:
-      repository: dzscloudadmin/rw.grafana
+      repository: grafana/grafana
 
   haproxy-ingress:
     image:
