@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: rt.cloud.dzsi.local/docker-hub/fauria/vsftpd
+  repository: rt.cloud.dzsi.local/docker/rw.vsftpd
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "1.0"
 
 imagePullSecrets: []
 nameOverride: ""

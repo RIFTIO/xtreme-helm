@@ -8,7 +8,7 @@ image:
   repository: rt.cloud.dzsi.local/docker-hub/atmoz/sftp
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
+  tag: "debian"
 
 imagePullSecrets: []
 nameOverride: ""

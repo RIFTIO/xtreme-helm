@@ -15,12 +15,12 @@ global:
   kubectl:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/bitnami/kubectl
-      tag: latest
+      tag: "1.36.1"
       pullPolicy: IfNotPresent
   busybox:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/busybox
-      tag: latest
+      tag: "1.38.0"
       pullPolicy: IfNotPresent
 
   pvcmetadata:

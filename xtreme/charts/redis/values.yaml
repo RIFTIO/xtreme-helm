@@ -8,7 +8,7 @@ image:
   repository: rt.cloud.dzsi.local/docker/redis-stack-server
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "7.2.0-v6"
+  tag: "7.2.0-v20"
 redTunnel:
   image:
     repository: rt.cloud.dzsi.local/docker/rw-redtunnel
@@ -17,7 +17,7 @@ redTunnel:
 exporter:
   image:
     repository: rt.cloud.dzsi.local/docker-hub/oliver006/redis_exporter
-    tag: "v1.12.0"
+    tag: "v1.84.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""

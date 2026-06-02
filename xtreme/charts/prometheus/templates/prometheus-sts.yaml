@@ -157,7 +157,9 @@ spec:
       - name: config-watch
         image: {{ .Values.prometheus.configWatch.image.repository -}} : {{- .Values.prometheus.configWatch.image.tag }}
         imagePullPolicy: {{ .Values.prometheus.configWatch.image.pullPolicy }}
-        args: ["-v", "-t", "-p=/etc/prometheus", "curl", "-X", "POST", "--fail", "-o", "-", "-sS", "http://localhost:9090/-/reload"]
+        args:
+          - --volume-dir=/etc/prometheus
+          - --webhook-url=http://localhost:9090/-/reload
         volumeMounts:
         - name: config
           mountPath: /etc/prometheus
