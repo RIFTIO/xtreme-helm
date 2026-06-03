@@ -261,7 +261,7 @@ sdnc:
       repository: dzscloudadmin/dzs-gnpy
   sdnc-influxdb:
     image:
-      repository: dzscloudadmin/influxdb
+      repository: influxdb
   sdnc-snmpgw:
     image:
       repository: dzscloudadmin/dzs-snmpgw
