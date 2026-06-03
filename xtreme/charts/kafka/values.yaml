@@ -11,7 +11,7 @@ watchAnyNamespace: false
 
 defaultImageRegistry: rt.cloud.dzsi.local/quay.io
 defaultImageRepository: strimzi
-defaultImageTag: 0.48.0
+defaultImageTag: 0.50.1
 
 image:
   registry: ""
