@@ -95,6 +95,7 @@ limitresource=false
 action=install
 pullpolicy=false
 storage=false
+zms=false
 
 help() {
 cat >&2 <<EOF
@@ -114,6 +115,7 @@ USAGE:
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
 --storage         set storage class
+--zms             install zms also
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -145,6 +147,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
         --storage) storage=true;;
+        --zms) zms=true;;
         *) help;;
     esac
     shift
@@ -173,6 +176,10 @@ fi
 
 if $storage; then
   values="$values storage.yaml"
+fi
+
+if $zms; then
+  flags="$flags --set global.install.zms=true"
 fi
 
 log_info "Configuration:"
