@@ -72,7 +72,7 @@ spec:
                   echo "$FIXED_SNMPGW_EXTERNAL_ADDRESS" > /shared-config/external-ip-address
                   exit 0
               fi
-              set -euo pipefail
+              set -eu
               export GODEBUG="tls13=0"
               NAMESPACE=$(cat /etc/podinfo/namespace)
               POD_NAME=$(cat /etc/podinfo/name)
