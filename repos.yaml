@@ -23,7 +23,7 @@ initContainer:
 mongodb:
   image:
     registry: docker.io
-    repository: bitnamilegacy/mongodb
+    repository: mongo
   busybox:
     image:
       repository: busybox
@@ -33,7 +33,7 @@ mongodb:
   metrics:
     image:
       registry: docker.io
-      repository: bitnamilegacy/mongodb-exporter
+      repository: mongo-exporter
 
 prometheus:
   replicator:
