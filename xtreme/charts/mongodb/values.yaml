@@ -792,7 +792,7 @@ metrics:
   ##
   image:
     registry: rt.cloud.dzsi.local
-    repository: docker-hub/mongo-exporter
+    repository: docker-hub/bitnamilegacy/mongodb-exporter
     tag: "0.47.0-debian-12-r1"
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.

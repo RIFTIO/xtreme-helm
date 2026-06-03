@@ -33,7 +33,7 @@ mongodb:
   metrics:
     image:
       registry: docker.io
-      repository: mongo-exporter
+      repository: bitnamilegacy/mongodb-exporter
 
 prometheus:
   replicator:
