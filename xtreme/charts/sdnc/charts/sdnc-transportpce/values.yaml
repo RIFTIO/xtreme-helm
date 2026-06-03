@@ -78,11 +78,15 @@ lighty:
           "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
           "config": {
             "type": "PUB",
-            "accepts": [ "POWERBALANCING" ],
+            "accepts": [ "POWERBALANCING", "TRANSPORT_SERVICE_PROVISION" ],
             "targets": [
               {
                 "classifier": "POWERBALANCING",
                 "target": "dzs.sdnc.powerBalancing"
+              },
+              {
+                "classifier": "TRANSPORT_SERVICE_PROVISION",
+                "target": "zhone.sdnc.transport.service"
               }
             ],
             "producerConfig": {
