@@ -241,7 +241,9 @@ check_kafka_crd_versions() {
     log_info "All Strimzi Kafka CRDs are at v1beta2 only — OK"
 }
 
-check_kafka_crd_versions
+if ! $dryrun && ! $clean && ( $init || $install ); then
+    check_kafka_crd_versions
+fi
 
 # Validate DOCKERHUB_TOKEN: required in prod, optional in dev
 if $install || $dryrun || $clean; then
