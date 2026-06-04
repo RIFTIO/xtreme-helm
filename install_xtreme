@@ -250,7 +250,7 @@ check_kafka_crd_versions() {
     fi
 }
 
-if ! $dryrun && ! $clean && ( $init || $install ) && false; then
+if ! $dryrun && ! $clean && ( $init || $install ); then
     check_kafka_crd_versions
 fi
 
