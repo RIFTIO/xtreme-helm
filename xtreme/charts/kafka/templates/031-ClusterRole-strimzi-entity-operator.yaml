@@ -42,6 +42,7 @@ rules:
   - kafkatopics/status
     # The Entity Operator contains the User Operator which needs to access and manage KafkaUser resources
   - kafkausers/status
+  - kafkausers/finalizers
   verbs:
   - get
   - patch
