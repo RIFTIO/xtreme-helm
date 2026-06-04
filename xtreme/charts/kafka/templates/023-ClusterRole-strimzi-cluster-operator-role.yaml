@@ -43,9 +43,10 @@ rules:
 - apiGroups:
   - "kafka.strimzi.io"
   resources:
-  # The Cluster Operator needs kafkausers/finalizers so it can create the entity operator Role
-  # that grants this permission (Kubernetes escalation prevention requires the grantor to hold the permission)
+  # The Cluster Operator needs these finalizer permissions so it can create the entity operator Role
+  # that grants them (Kubernetes escalation prevention requires the grantor to hold the permission)
   - kafkausers/finalizers
+  - kafkatopics/finalizers
   verbs:
   - get
   - patch
