@@ -96,6 +96,7 @@ action=install
 pullpolicy=false
 storage=false
 zms=false
+ignore_old_crds=false
 
 help() {
 cat >&2 <<EOF
@@ -116,6 +117,7 @@ USAGE:
 --pullpolicy      set pull policy
 --storage         set storage class
 --zms             install zms also
+--ignore-old-crds continue even if deprecated Strimzi CRD versions are found (use with caution)
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -148,6 +150,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --pullpolicy) pullpolicy=true;;
         --storage) storage=true;;
         --zms) zms=true;;
+        --ignore-old-crds) ignore_old_crds=true;;
         *) help;;
     esac
     shift
@@ -228,17 +231,23 @@ check_kafka_crd_versions() {
             -o jsonpath='{range .spec.versions[*]}{.name}{"\n"}{end}' 2>/dev/null \
             | grep -E "^v1beta1$|^v1alpha1$|^v1beta3$" || true)
         if [ -n "$old_versions" ]; then
-            log_error "CRD $crd_name still has deprecated versions: $(echo $old_versions | tr '\n' ' ')"
+            log_warn "CRD $crd_name still has deprecated versions: $(echo $old_versions | tr '\n' ' ')"
             found=1
         fi
     done
     if [ "$found" -ne 0 ]; then
-        log_error "One or more Strimzi CRDs have pre-v1beta2 versions still installed."
-        log_error "Remove them before deploying:"
-        log_error "  kubectl patch crd <name> --type=json -p='[{\"op\":\"remove\",\"path\":\"/spec/versions/N\"}]'"
-        exit 1
+        log_warn "One or more Strimzi CRDs have pre-v1beta2 versions still installed."
+        log_warn "Remove them before deploying:"
+        log_warn "  kubectl patch crd <name> --type=json -p='[{\"op\":\"remove\",\"path\":\"/spec/versions/N\"}]'"
+        if $ignore_old_crds; then
+            log_warn "Continuing anyway because --ignore-old-crds was specified."
+        else
+            log_error "Aborting. Re-run with --ignore-old-crds to deploy anyway (not recommended)."
+            exit 1
+        fi
+    else
+        log_info "All Strimzi Kafka CRDs are at v1beta2 only — OK"
     fi
-    log_info "All Strimzi Kafka CRDs are at v1beta2 only — OK"
 }
 
 if ! $dryrun && ! $clean && ( $init || $install ) && false; then
