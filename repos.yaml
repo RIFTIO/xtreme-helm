@@ -278,7 +278,7 @@ kafka:
 
 sftp:
   image:
-    repository: atmoz/sftp
+    repository: dzscloudadmin/rw.sftp
 
 ftp:
   image:

@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: rt.cloud.dzsi.local/docker-hub/atmoz/sftp
+  repository: rt.cloud.dzsi.local/docker/rw.sftp
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "debian"
+  tag: "1.0"
 
 imagePullSecrets: []
 nameOverride: ""
