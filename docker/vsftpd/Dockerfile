@@ -2,12 +2,11 @@
 # vsftpd on AlmaLinux 9 — replaces fauria/vsftpd (CentOS 7 EOL June 2024)
 FROM almalinux:9
 
-RUN dnf install -y vsftpd openssh-server \
+RUN dnf install -y vsftpd \
  && dnf clean all \
  && rm -rf /var/cache/dnf
 
 COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
-COPY sshd_config.d/rsa-compat.conf /etc/ssh/sshd_config.d/rsa-compat.conf
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
