@@ -75,6 +75,15 @@ spec:
           env:
             - name: RW_NATS_SVC_NAME
               value: {{ include "nats.fqdn" . }}
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.influxdb.adminUser.existingSecret }}
+                  name: {{ .Values.influxdb.adminUser.existingSecret -}}
+                  {{ else }}
+                  name: {{ include "sdnc-influxdb.fullname" . }}-auth
+                  {{- end }}
+                  key: admin-token
             - name: JAVA_OPTS
               value: {{ .Values.java.opts }}
           ports:

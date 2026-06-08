@@ -61,6 +61,10 @@ sdnc:
         mountPath: /data/log/pmcollector
         storageClassName: null
 
+influxdb:
+  adminUser:
+    user: "admin"
+
 fluentd:
   image:
     repository: rt.cloud.dzsi.local/docker/rw.fluentd
