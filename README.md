@@ -1,7 +1,7 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
-This is release 13.4.1. It is an AEO release. Please pick a different branch or 
+This is release 13.6.1. It is an AEO release. Please pick a different branch or 
 tag if you want NFVO. 
 
 
@@ -22,12 +22,10 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
-## CHANGES SINCE 13.4.0
-* added a check that the script has proper access to the cluster 
-* some kafka related upgrade fixes 
+## CHANGES
+* All third-party container images have been upgraded to fix CVEs
+* There is a new check that kafka CRDs are up to date 
 
-CHANGES 
-* 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
 ## INSTALLATION 
 
