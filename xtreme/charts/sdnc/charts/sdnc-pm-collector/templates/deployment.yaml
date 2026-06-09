@@ -81,7 +81,7 @@ spec:
                   {{- if .Values.influxdb.adminUser.existingSecret }}
                   name: {{ .Values.influxdb.adminUser.existingSecret -}}
                   {{ else }}
-                  name: {{ include "sdnc-influxdb.fullname" . }}-auth
+                  name: {{ .Values.global.inflxdb.secretName }}
                   {{- end }}
                   key: admin-token
             - name: JAVA_OPTS

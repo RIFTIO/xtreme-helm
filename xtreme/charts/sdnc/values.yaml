@@ -4,6 +4,7 @@
 global:
   inflxdb:
     password: "dzs123!!"
+    secretName: "influxdb-auth"
 
 install:
   fileManager: true

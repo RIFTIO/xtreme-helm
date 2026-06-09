@@ -67,7 +67,7 @@ spec:
                   {{- if .Values.adminUser.existingSecret }}
                   name: {{ .Values.adminUser.existingSecret -}}
                   {{ else }}
-                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  name: {{ .Values.global.inflxdb.secretName }}
                   {{- end }}
                   key: admin-password
             - name: DOCKER_INFLUXDB_INIT_ORG
@@ -84,7 +84,7 @@ spec:
                   {{- if .Values.adminUser.existingSecret }}
                   name: {{ .Values.adminUser.existingSecret -}}
                   {{ else }}
-                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  name: {{ .Values.global.inflxdb.secretName }}
                   {{- end }}
                   key: admin-token
             {{- with .Values.env }}

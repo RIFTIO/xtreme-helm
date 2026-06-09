@@ -62,10 +62,10 @@ spec:
           - name: INFLUXDB_TOKEN
             valueFrom:
               secretKeyRef:
-                { { - if .Values.influxdb.adminUser.existingSecret } }
-                name: { { .Values.influxdb.adminUser.existingSecret - } }
-                { { else } }
-                name: { { include "sdnc-influxdb.fullname" . } }-auth
+                {{- if .Values.influxdb.adminUser.existingSecret }}
+                name: {{ .Values.influxdb.adminUser.existingSecret -}}
+                {{ else }}
+                name: {{ .Values.global.inflxdb.secretName }}
                 {{- end }}
                 key: admin-token
           - name: JAVA_OPTS
