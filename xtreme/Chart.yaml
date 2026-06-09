@@ -2,8 +2,8 @@ apiVersion: v2
 name: xtreme
 description: Consolidated Helm Chart for Zhone Xtreme products
 type: application
-version: 13.5.0
-appVersion: 13.5.0
+version: 23.07
+appVersion: 13.7.0
 dependencies:
   - name: common
     repository: file://./charts/common
