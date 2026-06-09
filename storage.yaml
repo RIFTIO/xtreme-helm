@@ -1,38 +1,38 @@
 # this shows how to reset the storage for all pods
 # it is also possible to set the storage classes for each SDNC pod separately 
-# for some reason null does not work for the pvcmetadata.storageClass
+# for some reason local-path does not work for the pvcmetadata.storageClass
 global:
   pvcmetadata:
     storageClass: local-path
 
     pceNetconfConfigmgr:
-      storageClass: null
+      storageClass: local-path
 
     logPceNetconfConfigmgr:
-      storageClass: null
+      storageClass: local-path
 
     persistence:
-      storageClass: null
+      storageClass: local-path
 
     persistenceFtp:
-      storageClass: null
+      storageClass: local-path
 
 mongodb:
   mongoStorage:
-    storageClassName: null
+    storageClassName: local-path
 
 prometheus:
   prometheusStorage:
-    storageClassName: null
+    storageClassName: local-path
 
 redis:
   redisStorage:
-    storageClassName: null
+    storageClassName: local-path
 
 launchpad:
   storage:
-    storageClassName: null
+    storageClassName: local-path
 
 grafana:
   grafanaStorage:
-    storageClassName: null
+    storageClassName: local-path
