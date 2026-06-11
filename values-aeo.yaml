@@ -1,5 +1,7 @@
-global: 
+global:
   sdncImgtag: 13.6.1.1011459
+  install:
+    aeoTmfServer: false
   namespace:
     name: demo
     create: false

@@ -1,4 +1,6 @@
+{{- if .Values.global.install.aeoTmfServer }}
 # Copyright 2022 DZS Inc
+# Copyright 2026 Zhone Technologies, Inc.
 #
 apiVersion: v1
 kind: Service
@@ -16,3 +18,4 @@ spec:
       name: tmf-server
   selector:
     app: rw.aeo.tmf
+{{- end }}
