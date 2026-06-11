@@ -281,15 +281,15 @@ spec:
             - |
               {{- if .Values.auth.enabled }}
               {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin --collector.diagnosticdata --compatible-mode
               {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin --collector.diagnosticdata --compatible-mode
               {{- end }}
               {{- else }}
               {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin --collector.diagnosticdata --compatible-mode
               {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin --collector.diagnosticdata --compatible-mode
               {{- end }}
               {{- end }}
           env:

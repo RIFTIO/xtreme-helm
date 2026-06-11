@@ -63,6 +63,8 @@ spec:
         env:
         - name: GF_PATHS_PROVISIONING
           value: {{ .Values.grafana.provisioning }}
+        - name: GF_PATHS_DATA
+          value: /data
         - name: GF_PATHS_CONFIG
           value: /config/grafana.ini
         - name: GF_SERVER_HTTP_PORT
