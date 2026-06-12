@@ -59,6 +59,7 @@ lighty:
     "olmtimer2": "30000",
     "gnpyServer": "http://gnpy-svc-name:8008",
     "configMgrServer" : "http://configmgr-svc-name:8888",
+    "inventoryMgrServer": "http://inventory-mgr-dzs-rnc:8899",
     "messagingClientConfig": {
       	"entries": [
         {
