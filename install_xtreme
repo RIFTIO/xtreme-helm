@@ -97,6 +97,7 @@ pullpolicy=false
 storage=false
 zms=false
 ignore_old_crds=false
+delete_mongo_data=false
 
 help() {
 cat >&2 <<EOF
@@ -117,7 +118,8 @@ USAGE:
 --pullpolicy      set pull policy
 --storage         set storage class
 --zms             install zms also
---ignore-old-crds continue even if deprecated Strimzi CRD versions are found (use with caution)
+--ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
+--delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -151,6 +153,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --storage) storage=true;;
         --zms) zms=true;;
         --ignore-old-crds) ignore_old_crds=true;;
+        --delete-mongo-data) delete_mongo_data=true;;
         *) help;;
     esac
     shift
@@ -392,6 +395,9 @@ handle_mongodb_upgrade() {
     fi
 
     if $needs_wipe; then
+        if ! $delete_mongo_data; then
+            log_error "MongoDB data is incompatible with the new version and must be erased before upgrading. Re-run with --delete-mongo-data to proceed."
+        fi
         log_warn "MongoDB data is incompatible with the new version and will be erased"
         log_info "Deleting MongoDB StatefulSet $sts in namespace $ns"
         kubectl delete sts "$sts" -n "$ns" --ignore-not-found=true
