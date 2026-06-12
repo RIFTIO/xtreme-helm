@@ -346,9 +346,66 @@ if $dryrun; then
     exit 0
 fi
 
+# Before a helm upgrade, check whether MongoDB's featureCompatibilityVersion is
+# too old for the new image (MongoDB 8.0 requires FCV >= 7.0).  If it is, we
+# wipe the StatefulSet and PVC so the upgrade starts with a clean database.
+# The STS must be deleted first — deleting only the pod causes the STS to
+# immediately recreate it and reattach to the (now-deleted) PVC.
+handle_mongodb_upgrade() {
+    local ns=$1
+    local sts="rw-mongodb"
+    local pvc="data-rw-mongodb-0"
+
+    if ! kubectl get sts "$sts" -n "$ns" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log_info "Checking MongoDB feature compatibility version in namespace $ns..."
+
+    local needs_wipe=false
+
+    # Try querying the live instance first (works when MongoDB is currently running).
+    local fcv
+    fcv=$(kubectl exec -n "$ns" "${sts}-0" -c mongodb -- \
+        mongosh --port 8006 --quiet --eval \
+        "db.adminCommand({getParameter:1,featureCompatibilityVersion:1}).featureCompatibilityVersion.version" \
+        2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' | tail -1 || true)
+
+    if [ -n "$fcv" ]; then
+        local major
+        major=$(echo "$fcv" | cut -d. -f1)
+        if [ "$major" -lt 7 ]; then
+            log_warn "MongoDB FCV is $fcv — incompatible with MongoDB 8.0 (requires >= 7.0)"
+            needs_wipe=true
+        else
+            log_info "MongoDB FCV $fcv is compatible — no migration needed"
+        fi
+    else
+        # Fall back to log inspection when MongoDB is already in a crashloop.
+        if kubectl logs "${sts}-0" -n "$ns" -c mongodb 2>/dev/null \
+                | grep -q "Invalid feature compatibility version"; then
+            log_warn "MongoDB is crash-looping due to incompatible feature compatibility version"
+            needs_wipe=true
+        else
+            log_info "Could not determine MongoDB FCV — skipping migration check"
+        fi
+    fi
+
+    if $needs_wipe; then
+        log_warn "MongoDB data is incompatible with the new version and will be erased"
+        log_info "Deleting MongoDB StatefulSet $sts in namespace $ns"
+        kubectl delete sts "$sts" -n "$ns" --ignore-not-found=true
+        log_info "Deleting MongoDB PVC $pvc in namespace $ns"
+        kubectl delete pvc "$pvc" -n "$ns" --ignore-not-found=true
+        log_info "Waiting for PVC deletion to complete..."
+        kubectl wait --for=delete pvc/"$pvc" -n "$ns" --timeout=60s 2>/dev/null || true
+        log_info "MongoDB cleared — fresh database will be initialized by the upgrade"
+    fi
+}
+
 if $install; then
   log_info "Performing $action of Helm release..."
-  
+
   # Check if release already exists
   if helm list -q --all-namespaces 2>/dev/null | grep -q "^${release}$"; then
     if [ "$action" = "install" ]; then
@@ -356,7 +413,11 @@ if $install; then
       action="upgrade"
     fi
   fi
-  
+
+  if [ "$action" = "upgrade" ]; then
+      handle_mongodb_upgrade "$NS"
+  fi
+
   log_info "Running: helm $action ${release} ${chart} $flags"
   helm $action ${release} ${chart} $flags
   log_info "Helm $action completed successfully"
