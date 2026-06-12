@@ -421,6 +421,21 @@ if $install; then
   fi
 
   if [ "$action" = "upgrade" ]; then
+      # Find whichever values file carries upgradeFrom and verify it matches
+      # the version currently running in the cluster before proceeding.
+      upgrade_from_file=""
+      for vf in $values; do
+          if grep -q 'upgradeFrom:' "$vf" 2>/dev/null; then
+              upgrade_from_file="$vf"
+              break
+          fi
+      done
+      if [ -n "$upgrade_from_file" ]; then
+          "${SCRIPT_DIR}/check_upgrade_from" --ns "$NS" --values "$upgrade_from_file"
+      else
+          log_warn "No upgradeFrom found in values files — skipping version check"
+      fi
+
       handle_mongodb_upgrade "$NS"
   fi
 
