@@ -1,5 +1,7 @@
+{{- if .Values.global.install.aeoTmfServer }}
 #
 # Copyright 2022 DZS Inc
+# Copyright 2026 Zhone Technologies, Inc.
 #
 apiVersion: apps/v1
 kind: Deployment
@@ -116,3 +118,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

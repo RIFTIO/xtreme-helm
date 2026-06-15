@@ -12,12 +12,12 @@ image:
   repository: rt.cloud.dzsi.local/docker-hub/nats
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2.1.8"
+  tag: "2.14.1"
 
 exporter:
   image:
-    repository: rt.cloud.dzsi.local/docker-hub/bitnami/nats-exporter
-    tag: "0.6.2-debian-10-r152"
+    repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/nats-exporter
+    tag: "0.17.3-debian-12-r8"
     pullPolicy: IfNotPresent
 
 imagePullSecrets: []

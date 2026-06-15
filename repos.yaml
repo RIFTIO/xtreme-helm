@@ -12,7 +12,7 @@ global:
       repository: busybox
   kubectl:
     image:
-      repository: bitnami/kubectl
+      repository: bitnamilegacy/kubectl
 
 initContainer:
   waitForDep:
@@ -23,7 +23,7 @@ initContainer:
 mongodb:
   image:
     registry: docker.io
-    repository: dzscloudadmin/mongodb
+    repository: mongo
   busybox:
     image:
       repository: busybox
@@ -33,7 +33,7 @@ mongodb:
   metrics:
     image:
       registry: docker.io
-      repository: dzscloudadmin/mongodb-exporter
+      repository: bitnamilegacy/mongodb-exporter
 
 prometheus:
   replicator:
@@ -47,7 +47,7 @@ prometheus:
         repository: dzscloudadmin/busybox:dzs
     configWatch:
       image:
-        repository: weaveworks/watch
+        repository: ghcr.io/jimmidyson/configmap-reload
     pushGateway:
       image:
         repository: quay.io/prometheus/pushgateway
@@ -55,7 +55,7 @@ prometheus:
 grafana:
   grafana:
     image:
-      repository: dzscloudadmin/rw.grafana
+      repository: grafana/grafana
 
 launchpad:
   image:
@@ -107,7 +107,7 @@ launchpad:
 
   grafana:
     image:
-      repository: dzscloudadmin/rw.grafana
+      repository: grafana/grafana
 
   haproxy-ingress:
     image:
@@ -116,7 +116,7 @@ launchpad:
     defaultbackend:
       image:
         repository: registry.k8s.io/defaultbackend
-        tag: 1.4
+        tag: "1.4"
         pullPolicy: IfNotPresent
     exporter:
       image:
@@ -146,7 +146,7 @@ nats:
     repository: nats
   exporter:
     image:
-      repository: dzscloudadmin/nats-exporter
+      repository: bitnamilegacy/nats-exporter
 
 redis:
   image:
@@ -261,7 +261,7 @@ sdnc:
       repository: dzscloudadmin/dzs-gnpy
   sdnc-influxdb:
     image:
-      repository: dzscloudadmin/influxdb
+      repository: influxdb
   sdnc-snmpgw:
     image:
       repository: dzscloudadmin/dzs-snmpgw
@@ -278,11 +278,11 @@ kafka:
 
 sftp:
   image:
-    repository: atmoz/sftp
+    repository: dzscloudadmin/rw.sftp
 
 ftp:
   image:
-     repository: fauria/vsftpd
+     repository: dzscloudadmin/rw.vsftpd
 
 inas2-be:
   image:

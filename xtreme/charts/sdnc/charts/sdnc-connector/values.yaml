@@ -41,6 +41,10 @@ service:
   type: ClusterIP
   port: 30635
 
+influxdb:
+  adminUser:
+    user: "admin"
+
 ingress:
   enabled: false
   annotations: {}

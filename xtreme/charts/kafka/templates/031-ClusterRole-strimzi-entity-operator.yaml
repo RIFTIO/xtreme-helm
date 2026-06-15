@@ -40,8 +40,10 @@ rules:
   resources:
     # The Entity Operator contains the Topic Operator which needs to access and manage KafkaTopic resources
   - kafkatopics/status
+  - kafkatopics/finalizers
     # The Entity Operator contains the User Operator which needs to access and manage KafkaUser resources
   - kafkausers/status
+  - kafkausers/finalizers
   verbs:
   - get
   - patch

@@ -11,7 +11,7 @@ data:
       {{- if .Values.global.ensureEmptyDirCreation }}
       path: "/dev/stdout"
       {{- else }}
-      path: "/opt/bitnami/mongodb/logs/mongodb.log"
+      path: "/dev/stdout"
       {{- end }}
       logAppend: true
       logRotate: reopen
@@ -22,7 +22,7 @@ data:
       {{- if .Values.global.ensureEmptyDirCreation }}
       pidFilePath: "/opt2/mongodb.pid"
       {{- else }}
-      pidFilePath: "/opt/bitnami/mongodb/tmp/mongodb.pid"
+      pidFilePath: "/tmp/mongodb.pid"
       {{- end }}
     {{- if .Values.mongodbCustomNetworking.bindToAllAddresses }}
     net:
@@ -38,8 +38,6 @@ data:
       authorization: disabled
     storage:
       dbPath: "/data"
-      journal:
-        enabled: true
       wiredTiger:
         engineConfig:
           cacheSizeGB: 3
@@ -61,7 +59,7 @@ data:
   init-db.sh: |
     #! /bin/bash
     echo "Starting mongod";
-    setsid /opt/bitnami/mongodb/bin/mongod --config=/config/rw-mongo.conf &
+    setsid /usr/bin/mongod --config=/config/rw-mongo.conf &
     echo "Started mongod"
     # Add user to events database if user doesn't exist
     mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet
@@ -88,7 +86,7 @@ data:
   init-db.sh: |
     #! /bin/bash
     echo "Starting mongod";
-    setsid /opt/bitnami/mongodb/bin/mongod --config=/config/rw-mongo.conf &
+    setsid /usr/bin/mongod --config=/config/rw-mongo.conf &
     echo "Started mongod"
     # Add user to events database if user doesn't exist
     mongosh --eval 'db.runCommand("ping").ok' localhost:8006 --quiet

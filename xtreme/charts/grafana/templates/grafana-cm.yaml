@@ -8,15 +8,16 @@ metadata:
   namespace: {{ .Values.global.namespace.name }}
 data:
   all.yml: |
-    # Copyright 2020 RIFT Inc
-    - name: 'RIFT'       # name of this dashboard configuration (not dashboard itself)
-      org_id: 1          # id of the org to hold the dashboard
-      folder: ''         # name of the folder to put the dashboard (http://docs.grafana.org/v5.0/reference/dashboard_folders/)
-      folderUid: ''
-      type: 'file'       # type of dashboard description (json files)
-      options:
-        path: '/config/dashboards'       # where dashboards are
-        foldersFromFilesStructure: true
+    apiVersion: 1
+    providers:
+      - name: 'RIFT'
+        orgId: 1
+        folder: ''
+        folderUid: ''
+        type: file
+        options:
+          path: /config/dashboards
+          foldersFromFilesStructure: true
 {{- end }}
 ---
 {{- $cmName := "datasource-provision" -}}

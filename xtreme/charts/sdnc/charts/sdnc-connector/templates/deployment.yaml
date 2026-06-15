@@ -59,6 +59,15 @@ spec:
             value: {{ include "influxdb.fqdn" . }}
           - name: transportpce
             value: {{ include "rnc-transportpce.fqdn" . }}
+          - name: INFLUXDB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                {{- if .Values.influxdb.adminUser.existingSecret }}
+                name: {{ .Values.influxdb.adminUser.existingSecret -}}
+                {{ else }}
+                name: {{ .Values.global.inflxdb.secretName }}
+                {{- end }}
+                key: admin-token
           - name: JAVA_OPTS
             value: "-Xmx2g"
           ports:

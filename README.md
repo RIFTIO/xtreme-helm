@@ -1,8 +1,9 @@
 # xtreme-helm
 Helm chart for installing Xtreme NFVO or AEO
 
-This is release 13.6.0. It is an AEO release. Please pick a different branch or 
+This is release 13.6.1. It is an AEO release. Please pick a different branch or 
 tag if you want NFVO. 
+
 
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the Zhone Inc container image repository currently hosted on dockerhub
@@ -21,16 +22,10 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
-## Changes in 13.6.0
-* there are two new options '--dev' and '--prod'. --dev is for working in the Zhone lab. --prod is for everyone else. 
-* when installing into k3s, the additional yaml values files are automatically included 
-* secrets are now created by helm, not via kubectl 
-* New option to set resource constraints
+## CHANGES
+* All third-party container images have been upgraded to fix CVEs
+* There is a new check that kafka CRDs are up to date 
 
-## Changes in 13.5.0
-* added a check that the script has proper access to the cluster 
-* some kafka related upgrade fixes 
-* 13.5.0 (NFVO) -- there are new values for controlling the installation of the AI subchart. See values-nfvo.yaml.
 
 ## INSTALLATION 
 
@@ -49,12 +44,14 @@ check your storage class (kubectl get storageclases) and update storage.yaml
 run:
 
 ```bash
-./install-xtreme
+./install-xtreme 
 ```
 
-If you are in the Zhone lab, use '--prod'
+If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
 
-The installer will detect when the target is k3s, but you will have to customize alias.yaml first.
+If you are in a single node cluster (e.g. k3s), you will also probably need ports.yaml to prevent
+k8s from usurping the SSH daemon port, and alias.yaml so that ingress can redirect the
+user's browser successfully. 
 
 When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow. You can control-c out of the script 
@@ -85,20 +82,15 @@ least once due to the timeouts during init. These will restart on their own, so 
 
 * Be consistent when using the --ns option and use it for every command, including --clean 
 
-### official branches in this repo
-* main -- production AEO --- currently 13.6.0 
-* release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
-* release_13.6 -- exists for creating updates to 13.6, e,g, 13.6.1 
 
-### official tags -- This align with the versions that existed when the product was officially released
-* v13.6.0 -- latest AEO release
+official branches in this repo
+
+* main -- production 
+* zhone -- as delivered by engineering. Deprecated as of 13.4.1
+* release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
+* release_13.4.1 -- latest AEO release
+
+official tags 
 * v13.5.0 -- latest NFVO release
 * v13.4.0 -- deprecated. Please use branch release_13.4.1 for AEO  
 * v13.3.2 -- deprecated. Please use v13.5.0 
-
-### Development Branches -- bitbucket only. Do not push to github 
-* release_26.06 --  the next AEO release.
-
-Zhone Engineers -- the HEAD of main was hard reset as part of releasing 13.6.0 because main had some in-progress work.
-So you may need to hard reset your workspaces. The in-progress work is now part of branch release_26.06 and will 
-be included in the next release.   

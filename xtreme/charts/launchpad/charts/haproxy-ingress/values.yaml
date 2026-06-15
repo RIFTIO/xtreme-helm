@@ -26,24 +26,20 @@ serviceAccount:
 
 image:
   repository: rt.cloud.dzsi.local/quay.io/jcmoraisjr/haproxy-ingress
-  tag: "v0.10.1"
-  repository_latest: rt.cloud.dzsi.local/docker/haproxy-ingress
-  # v0.13.6 has some bug. See https://github.com/jcmoraisjr/haproxy-ingress/issues/906
-  # tag_latest: v0.13.6-rift
-  tag_latest: v0.13.12-rift
+  tag: "v0.16.1"
   pullPolicy: IfNotPresent
 
 exporter:
   image:
     repository: rt.cloud.dzsi.local/quay.io/prometheus/haproxy-exporter
-    tag: "v0.11.0"
+    tag: "v0.15.0"
     pullPolicy: IfNotPresent
   runAsUser: 65534
 
 defaultbackend:
   image:
     repository: rt.cloud.dzsi.local/registry.k8s.io/defaultbackend
-    tag: 1.4
+    tag: "1.4"
     pullPolicy: IfNotPresent
   runAsUser: 1024
 

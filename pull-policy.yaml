@@ -1,0 +1,398 @@
+# Values override file: sets pullPolicy: Never everywhere it appears.
+# Usage: helm install <release> ./xtreme -f Never-values.yaml
+#        helm upgrade  <release> ./xtreme -f Never-values.yaml
+
+# ── Top-level chart (values.yaml) ──────────────────────────────────────────
+
+global:
+  kubectl:
+    image:
+      pullPolicy: Never
+  busybox:
+    image:
+      pullPolicy: Never
+
+# ── nats sub-chart ─────────────────────────────────────────────────────────
+
+nats:
+  image:
+    pullPolicy: Never
+  exporter:
+    image:
+      pullPolicy: Never
+
+# ── zms sub-chart ──────────────────────────────────────────────────────────
+
+zms:
+  initContainer:
+    waitForDep:
+      image:
+        pullPolicy: Never
+  image:
+    pullPolicy: Never
+  mariadb:
+    pullPolicy: Never
+
+# ── redis sub-chart ────────────────────────────────────────────────────────
+
+redis:
+  image:
+    pullPolicy: Never
+  redTunnel:
+    image:
+      pullPolicy: Never
+  exporter:
+    image:
+      pullPolicy: Never
+
+# ── mongodb sub-chart ──────────────────────────────────────────────────────
+
+mongodb:
+  replicator:
+    image:
+      pullPolicy: Never
+  image:
+    pullPolicy: Never
+  externalAccess:
+    autoDiscovery:
+      image:
+        pullPolicy: Never
+  volumePermissions:
+    image:
+      pullPolicy: Never
+  metrics:
+    image:
+      pullPolicy: Never
+
+# ── prometheus sub-chart ───────────────────────────────────────────────────
+
+prometheus:
+  replicator:
+    image:
+      pullPolicy: Never
+  prometheus:
+    image:
+      pullPolicy: Never
+    configWatch:
+      image:
+        pullPolicy: Never
+    pushGateway:
+      image:
+        pullPolicy: Never
+
+# ── grafana sub-chart ──────────────────────────────────────────────────────
+
+grafana:
+  grafana:
+    image:
+      pullPolicy: Never
+
+# ── sftp sub-chart ─────────────────────────────────────────────────────────
+
+sftp:
+  image:
+    pullPolicy: Never
+
+# ── ftp sub-chart ──────────────────────────────────────────────────────────
+
+ftp:
+  image:
+    pullPolicy: Never
+
+# ── postgres sub-chart ─────────────────────────────────────────────────────
+
+postgres:
+  image:
+    pullPolicy: Never
+
+# ── inas2-fe sub-chart ─────────────────────────────────────────────────────
+
+inas2-fe:
+  image:
+    pullPolicy: Never
+
+# ── inas2-be sub-chart ─────────────────────────────────────────────────────
+
+inas2-be:
+  initContainer:
+    waitForDep:
+      image:
+        pullPolicy: Never
+  image:
+    pullPolicy: Never
+
+# ── llm-stack sub-chart ────────────────────────────────────────────────────
+
+llm-stack:
+  ollama:
+    image:
+      pullPolicy: Never
+  openWebui:
+    image:
+      pullPolicy: Never
+
+# ── explore sub-chart (and its sub-charts) ─────────────────────────────────
+
+explore:
+  logAnalytics:
+    image:
+      pullPolicy: Never
+  kafkaExplore:
+    image:
+      pullPolicy: Never
+  redisExplore:
+    image:
+      pullPolicy: Never
+
+  # explore/charts/clickhouse
+  clickhouse:
+    chiDb:
+      image:
+        pullPolicy: Never
+    operator:
+      image:
+        pullPolicy: Never
+    metrics:
+      image:
+        pullPolicy: Never
+
+  # explore/charts/explore-application
+  explore-application:
+    image:
+      pullPolicy: Never
+
+  # explore/charts/airflow
+  airflow:
+    dags:
+      image:
+        pullPolicy: Never
+    web:
+      image:
+        pullPolicy: Never
+    scheduler:
+      image:
+        pullPolicy: Never
+    worker:
+      image:
+        pullPolicy: Never
+    git:
+      image:
+        pullPolicy: Never
+    metrics:
+      image:
+        pullPolicy: Never
+    # explore/charts/airflow/charts/redis
+    redis:
+      image:
+        pullPolicy: Never
+      sentinel:
+        image:
+          pullPolicy: Never
+      metrics:
+        image:
+          pullPolicy: Never
+      volumePermissions:
+        image:
+          pullPolicy: Never
+      sysctl:
+        image:
+          pullPolicy: Never
+
+# ── launchpad sub-chart (and its sub-charts) ───────────────────────────────
+
+launchpad:
+  # launchpad/values.yaml
+  image:
+    pullPolicy: Never
+  initContainer:
+    waitForDep:
+      image:
+        pullPolicy: Never
+  launchpad:
+    image:
+      pullPolicy: Never
+    primitiveExec:
+      image:
+        pullPolicy: Never
+
+  # launchpad/charts/aeo/values.yaml
+  aeo:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      controller:
+        pullPolicy: Never
+      serviceWorker:
+        pullPolicy: Never
+      resourceWorker:
+        pullPolicy: Never
+      tmfServer:
+        pullPolicy: Never
+      scriptExec:
+        pullPolicy: Never
+
+  # launchpad/charts/haproxy-ingress/values.yaml
+  haproxy-ingress:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    exporter:
+      image:
+        pullPolicy: Never
+    defaultbackend:
+      image:
+        pullPolicy: Never
+
+  # launchpad/charts/loki/values.yaml
+  loki:
+    image:
+      pullPolicy: Never
+
+  # launchpad/charts/alertmgr/values.yaml
+  alertmgr:
+    alertmgr:
+      image:
+        pullPolicy: Never
+
+  # launchpad/charts/cluster_logger/values.yaml
+  cluster_logger:
+    image:
+      pullPolicy: Never
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+
+# ── sdnc sub-chart (and its sub-charts) ────────────────────────────────────
+
+sdnc:
+  # sdnc-netconf-svc: image.pullPolicy also set in top-level values.yaml
+  sdnc-netconf-svc:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-config-mgr:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-alarm-svc:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-inventory-mgr:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-file-mgr:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-task-mgr:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-snmpgw:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-pm-collector:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-transportpce:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+    fluentd:
+      image:
+        pullPolicy: Never
+
+  sdnc-gnpy:
+    initContainer:
+      waitForDep:
+        image:
+          pullPolicy: Never
+    image:
+      pullPolicy: Never
+
+  sdnc-influxdb:
+    image:
+      pullPolicy: Never
+
+  envoy:
+    image:
+      pullPolicy: Never
+
+  sdnc-connector:
+    image:
+      pullPolicy: Never
+
+  # sdnc/charts/simulator/charts/netconf-device
+  simulator:
+    netconf-device:
+      image:
+        pullPolicy: Never

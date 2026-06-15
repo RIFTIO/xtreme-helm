@@ -59,28 +59,32 @@ spec:
             - name: DOCKER_INFLUXDB_INIT_MODE
               value: setup
             ### Required ###
-            - name: INFLUXDB_ADMIN_USER
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
               value: {{ .Values.adminUser.user }}
-            - name: INFLUXDB_ADMIN_USER_PASSWORD
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   {{- if .Values.adminUser.existingSecret }}
                   name: {{ .Values.adminUser.existingSecret -}}
                   {{ else }}
-                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  name: {{ .Values.global.inflxdb.secretName }}
                   {{- end }}
                   key: admin-password
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: {{ .Values.adminUser.organization }}
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: {{ .Values.adminUser.bucket }}
             ################
             # The duration the system's initial bucket should retain data. If not set, the initial bucket will retain data forever.
             - name: DOCKER_INFLUXDB_INIT_RETENTION
               value: {{ .Values.adminUser.retention_policy }}
-            - name: INFLUXDB_ADMIN_USER_TOKEN
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
               valueFrom:
                 secretKeyRef:
                   {{- if .Values.adminUser.existingSecret }}
                   name: {{ .Values.adminUser.existingSecret -}}
                   {{ else }}
-                  name: {{ template "sdnc-influxdb.fullname" . }}-auth
+                  name: {{ .Values.global.inflxdb.secretName }}
                   {{- end }}
                   key: admin-token
             {{- with .Values.env }}

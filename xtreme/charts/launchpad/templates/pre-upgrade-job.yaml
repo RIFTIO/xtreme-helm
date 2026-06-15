@@ -47,7 +47,7 @@ spec:
       containers:
       - name: {{ .Release.Name }}-pre-upgrade-hook
         image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
 
         {{- if and .Values.global.ensureSecurityContext (not (has "appUpgradeJob" .Values.global.excludeAppsInSecurityContext)) }}
         securityContext:

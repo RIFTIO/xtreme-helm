@@ -1,4 +1,4 @@
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: {{ include "kafka.prefix" . }}
@@ -8,7 +8,6 @@ metadata:
 spec:
   kafka:
     version: 4.1.0
-    replicas: 1
     metadataVersion: "4.1"
     #    authorization:
     #  type: simple
@@ -63,14 +62,6 @@ spec:
     readinessProbe:
        initialDelaySeconds: 15
        timeoutSeconds: 5
-    storage:
-      type: jbod
-      volumes:
-        - id: 0
-          type: persistent-claim
-          size: 5Gi
-          kraftMetadata: shared
-          deleteClaim: false
   entityOperator:
     topicOperator: {}
     userOperator: {}

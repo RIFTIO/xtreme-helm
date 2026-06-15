@@ -160,43 +160,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: BITNAMI_DEBUG
-              value: {{ ternary "true" "false" .Values.image.debug | quote }}
-            {{- if .Values.auth.username }}
-            - name: MONGODB_USERNAME
-              value: {{ .Values.auth.username | quote }}
-            {{- end }}
-            {{- if .Values.auth.database }}
-            - name: MONGODB_DATABASE
-              value: {{ .Values.auth.database | quote }}
-            {{- end }}
             {{- if .Values.auth.enabled }}
-            {{- if and .Values.auth.username .Values.auth.database }}
-            - name: MONGODB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "mongodb.secretName" . }}
-                  key: mongodb-password
-            {{- end }}
-            - name: MONGODB_ROOT_PASSWORD
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: "root"
+            - name: MONGO_INITDB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "mongodb.secretName" . }}
                   key: mongodb-root-password
-            {{- end }}
-            - name: ALLOW_EMPTY_PASSWORD
-              value: {{ ternary "no" "yes" .Values.auth.enabled | quote }}
-            - name: MONGODB_SYSTEM_LOG_VERBOSITY
-              value: {{ .Values.systemLogVerbosity | quote }}
-            - name: MONGODB_DISABLE_SYSTEM_LOG
-              value: {{ ternary "yes" "no" .Values.disableSystemLog | quote }}
-            - name: MONGODB_ENABLE_IPV6
-              value: {{ ternary "yes" "no" .Values.enableIPv6 | quote }}
-            - name: MONGODB_ENABLE_DIRECTORY_PER_DB
-              value: {{ ternary "yes" "no" .Values.directoryPerDB | quote }}
-            {{- if .Values.extraFlags }}
-            - name: MONGODB_EXTRA_FLAGS
-              value: {{ .Values.extraFlags | join " " | quote }}
             {{- end }}
             {{- if .Values.extraEnvVars }}
             {{- include "common.tplvalues.render" (dict "value" .Values.extraEnvVars "context" $) | nindent 12 }}
@@ -234,7 +205,7 @@ spec:
             {{- if .Values.global.ipv6Mode }}
             exec:
               command:
-                - mongo
+                - mongosh
                 - --host
                 - ::1
                 - --port
@@ -245,7 +216,7 @@ spec:
             {{- else }}
             exec:
               command:
-                - mongo
+                - mongosh
                 - --port
                 - "8006"
                 - --eval
@@ -310,15 +281,15 @@ spec:
             - |
               {{- if .Values.auth.enabled }}
               {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin --collector.diagnosticdata --compatible-mode
               {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin --collector.diagnosticdata --compatible-mode
               {{- end }}
               {{- else }}
               {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin --collector.diagnosticdata --compatible-mode
               {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
+              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin --collector.diagnosticdata --compatible-mode
               {{- end }}
               {{- end }}
           env:

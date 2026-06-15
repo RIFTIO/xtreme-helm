@@ -34,7 +34,7 @@ enableVolumePermissions: false
 prometheus:
   image:
     repository: rt.cloud.dzsi.local/quay.io/prometheus/prometheus
-    tag: "v2.40.7"
+    tag: "v3.5.3"
     pullPolicy: IfNotPresent
   resources: {}
   nodeSelector: {}
@@ -49,14 +49,14 @@ prometheus:
 
   configWatch:
     image:
-      repository: rt.cloud.dzsi.local/docker-hub/weaveworks/watch
-      tag: "master-5b2a6e5"
+      repository: rt.cloud.dzsi.local/ghcr.io/jimmidyson/configmap-reload
+      tag: "v0.14.0"
       pullPolicy: IfNotPresent
 
   pushGateway:
     image:
       repository: rt.cloud.dzsi.local/quay.io/prometheus/pushgateway
-      tag: "v1.4.3"
+      tag: "v1.11.3"
       pullPolicy: IfNotPresent
     port: 9091 # This affects only the cluster port
   runAsUser: 1024

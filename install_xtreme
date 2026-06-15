@@ -93,6 +93,11 @@ dryrun=false
 check=true
 limitresource=false
 action=install
+pullpolicy=false
+storage=false
+zms=false
+ignore_old_crds=false
+delete_mongo_data=false
 
 help() {
 cat >&2 <<EOF
@@ -110,6 +115,11 @@ USAGE:
 --clean           clean up
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
+--pullpolicy      set pull policy
+--storage         set storage class
+--zms             install zms also
+--ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
+--delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -139,13 +149,22 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --clean) clean=true; init=false; install=false; check=false;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
+        --pullpolicy) pullpolicy=true;;
+        --storage) storage=true;;
+        --zms) zms=true;;
+        --ignore-old-crds) ignore_old_crds=true;;
+        --delete-mongo-data) delete_mongo_data=true;;
         *) help;;
     esac
     shift
 done
-if [ $# -gt 0 ]; then 
+if [ $# -gt 0 ]; then
     help
 fi
+
+# Delete orphaned secrets before deployment
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${SCRIPT_DIR}/delete_orphaned_secrets.sh" "$NS"
 
 if [ "$env" = "prod" ]; then
     default_values="values-aeo.yaml storage.yaml repos.yaml"
@@ -159,6 +178,18 @@ fi
 
 if [ -z "$values" ]; then
     values="${default_values}"
+fi
+
+if $pullpolicy; then
+  values="$values pull-policy.yaml"
+fi
+
+if $storage; then
+  values="$values storage.yaml"
+fi
+
+if $zms; then
+  flags="$flags --set global.install.zms=true"
 fi
 
 log_info "Configuration:"
@@ -194,6 +225,41 @@ if [ $? -ne 0 -o $nodes -lt 1 ]; then
   exit 1
 fi
 log_info "Kubernetes cluster accessible with $nodes node(s)"
+
+# Check that no Strimzi Kafka CRDs still carry pre-v1beta2 versions.
+# Strimzi 0.50.1+ only supports v1beta2. Deploying with v1beta1/v1alpha1
+# versions still served causes RBAC escalation failures and broken upgrades.
+check_kafka_crd_versions() {
+    log_info "Checking Strimzi Kafka CRD versions..."
+    local found=0
+    for crd in $(kubectl get crd -o name 2>/dev/null | grep "kafka.strimzi.io"); do
+        crd_name="${crd#customresourcedefinition.apiextensions.k8s.io/}"
+        old_versions=$(kubectl get crd "$crd_name" \
+            -o jsonpath='{range .spec.versions[*]}{.name}{"\n"}{end}' 2>/dev/null \
+            | grep -E "^v1beta1$|^v1alpha1$|^v1beta3$" || true)
+        if [ -n "$old_versions" ]; then
+            log_warn "CRD $crd_name still has deprecated versions: $(echo $old_versions | tr '\n' ' ')"
+            found=1
+        fi
+    done
+    if [ "$found" -ne 0 ]; then
+        log_warn "One or more Strimzi CRDs have pre-v1beta2 versions still installed."
+        log_warn "Remove them before deploying:"
+        log_warn "  kubectl patch crd <name> --type=json -p='[{\"op\":\"remove\",\"path\":\"/spec/versions/N\"}]'"
+        if $ignore_old_crds; then
+            log_warn "Continuing anyway because --ignore-old-crds was specified."
+        else
+            log_error "Aborting. Re-run with --ignore-old-crds to deploy anyway (not recommended)."
+            exit 1
+        fi
+    else
+        log_info "All Strimzi Kafka CRDs are at v1beta2 only — OK"
+    fi
+}
+
+if ! $dryrun && ! $clean && ( $init || $install ); then
+    check_kafka_crd_versions
+fi
 
 # Validate DOCKERHUB_TOKEN: required in prod, optional in dev
 if $install || $dryrun || $clean; then
@@ -283,9 +349,69 @@ if $dryrun; then
     exit 0
 fi
 
+# Before a helm upgrade, check whether MongoDB's featureCompatibilityVersion is
+# too old for the new image (MongoDB 8.0 requires FCV >= 7.0).  If it is, we
+# wipe the StatefulSet and PVC so the upgrade starts with a clean database.
+# The STS must be deleted first — deleting only the pod causes the STS to
+# immediately recreate it and reattach to the (now-deleted) PVC.
+handle_mongodb_upgrade() {
+    local ns=$1
+    local sts="rw-mongodb"
+    local pvc="data-rw-mongodb-0"
+
+    if ! kubectl get sts "$sts" -n "$ns" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    log_info "Checking MongoDB feature compatibility version in namespace $ns..."
+
+    local needs_wipe=false
+
+    # Try querying the live instance first (works when MongoDB is currently running).
+    local fcv
+    fcv=$(kubectl exec -n "$ns" "${sts}-0" -c mongodb -- \
+        mongosh --port 8006 --quiet --eval \
+        "db.adminCommand({getParameter:1,featureCompatibilityVersion:1}).featureCompatibilityVersion.version" \
+        2>/dev/null | grep -E '^[0-9]+\.[0-9]+$' | tail -1 || true)
+
+    if [ -n "$fcv" ]; then
+        local major
+        major=$(echo "$fcv" | cut -d. -f1)
+        if [ "$major" -lt 7 ]; then
+            log_warn "MongoDB FCV is $fcv — incompatible with MongoDB 8.0 (requires >= 7.0)"
+            needs_wipe=true
+        else
+            log_info "MongoDB FCV $fcv is compatible — no migration needed"
+        fi
+    else
+        # Fall back to log inspection when MongoDB is already in a crashloop.
+        if kubectl logs "${sts}-0" -n "$ns" -c mongodb 2>/dev/null \
+                | grep -q "Invalid feature compatibility version"; then
+            log_warn "MongoDB is crash-looping due to incompatible feature compatibility version"
+            needs_wipe=true
+        else
+            log_info "Could not determine MongoDB FCV — skipping migration check"
+        fi
+    fi
+
+    if $needs_wipe; then
+        if ! $delete_mongo_data; then
+            log_error "MongoDB data is incompatible with the new version and must be erased before upgrading. Re-run with --delete-mongo-data to proceed."
+        fi
+        log_warn "MongoDB data is incompatible with the new version and will be erased"
+        log_info "Deleting MongoDB StatefulSet $sts in namespace $ns"
+        kubectl delete sts "$sts" -n "$ns" --ignore-not-found=true
+        log_info "Deleting MongoDB PVC $pvc in namespace $ns"
+        kubectl delete pvc "$pvc" -n "$ns" --ignore-not-found=true
+        log_info "Waiting for PVC deletion to complete..."
+        kubectl wait --for=delete pvc/"$pvc" -n "$ns" --timeout=60s 2>/dev/null || true
+        log_info "MongoDB cleared — fresh database will be initialized by the upgrade"
+    fi
+}
+
 if $install; then
   log_info "Performing $action of Helm release..."
-  
+
   # Check if release already exists
   if helm list -q --all-namespaces 2>/dev/null | grep -q "^${release}$"; then
     if [ "$action" = "install" ]; then
@@ -293,7 +419,26 @@ if $install; then
       action="upgrade"
     fi
   fi
-  
+
+  if [ "$action" = "upgrade" ]; then
+      # Find whichever values file carries upgradeFrom and verify it matches
+      # the version currently running in the cluster before proceeding.
+      upgrade_from_file=""
+      for vf in $values; do
+          if grep -q 'upgradeFrom:' "$vf" 2>/dev/null; then
+              upgrade_from_file="$vf"
+              break
+          fi
+      done
+      if [ -n "$upgrade_from_file" ]; then
+          "${SCRIPT_DIR}/check_upgrade_from" --ns "$NS" --values "$upgrade_from_file"
+      else
+          log_warn "No upgradeFrom found in values files — skipping version check"
+      fi
+
+      handle_mongodb_upgrade "$NS"
+  fi
+
   log_info "Running: helm $action ${release} ${chart} $flags"
   helm $action ${release} ${chart} $flags
   log_info "Helm $action completed successfully"

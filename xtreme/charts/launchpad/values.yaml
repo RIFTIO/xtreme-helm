@@ -127,7 +127,7 @@ launchpad:
   primitiveExec:
     image:
       repository: rt.cloud.dzsi.local/docker/rw-primitive-exec
-      tag: "0.25"
+      tag: "0.26"
       pullPolicy: IfNotPresent
 
   # Duration of the trial license installed on launchpad during

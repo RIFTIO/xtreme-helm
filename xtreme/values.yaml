@@ -14,13 +14,13 @@ natsfullnameOverride: ""
 global:
   kubectl:
     image:
-      repository: rt.cloud.dzsi.local/docker-hub/bitnami/kubectl
-      tag: latest
+      repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/kubectl
+      tag: "1.32.4-debian-12-r0"
       pullPolicy: IfNotPresent
   busybox:
     image:
       repository: rt.cloud.dzsi.local/docker-hub/busybox
-      tag: latest
+      tag: "1.38.0"
       pullPolicy: IfNotPresent
 
   pvcmetadata:
@@ -361,6 +361,7 @@ global:
     clusterLogger: true
     # LLM stack (Ollama + Open WebUI) for Zhone AI
     zhone-ai: false
+    aeoTmfServer: true
 
   # Authentication for events DB in mongo
   eventsDB:

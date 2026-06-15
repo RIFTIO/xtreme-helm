@@ -5,8 +5,8 @@
 replicaCount: 1
 
 image:
-  repository: rt.cloud.dzsi.local/docker/influxdb
-  tag: 2.6.1
+  repository: rt.cloud.dzsi.local/docker-hub/influxdb
+  tag: "2.9.1"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -33,15 +33,15 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext:
-  fsGroup: 1001
+  fsGroup: 1000
 
-securityContext: 
+securityContext:
   # capabilities:
   #   drop:
   #   - ALL
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
-  runAsUser: 1001
+  runAsUser: 1000
 
 
 ingress:
