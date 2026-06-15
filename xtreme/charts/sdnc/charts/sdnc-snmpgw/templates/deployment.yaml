@@ -54,7 +54,7 @@ spec:
             - --timeout=120s
             - --verbose
         - name: wait-lb
-          image: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/kubectl:1.32.4-debian-12-r0
+          image: {{ .Values.global.kubectl.image.repository}}:{{ .Values.global.kubectl.image.tag }}
           volumeMounts:
             - name: podinfo
               mountPath: /etc/podinfo
