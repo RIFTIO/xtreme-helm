@@ -1,5 +1,5 @@
 global: 
-  sdncImgtag: 13.6.1.1011486
+  sdncImgtag: 13.6.1.1011497
   install:
     aeoTmfServer: false
   namespace:
@@ -9,21 +9,21 @@ launchpad:
   launchpad:
     appSelector: aeo
     image:
-      tag: 13.6.1.1011492
-    upgradeFrom: 13.6.1.1011492
+      tag: 13.6.1.1011499
+    upgradeFrom: 13.6.1.1011499
   aeo:
     image:
       controller:
-        tag: 13.6.1.1011492
+        tag: 13.6.1.1011499
         pullPolicy: IfNotPresent
       serviceWorker:
-        tag: 13.6.1.1011492
+        tag: 13.6.1.1011499
         pullPolicy: IfNotPresent
       resourceWorker:
-        tag: 13.6.1.1011492
+        tag: 13.6.1.1011499
         pullPolicy: IfNotPresent
       tmfServer:
-        tag: 13.6.1.1011492
+        tag: 13.6.1.1011499
         pullPolicy: IfNotPresent
       scriptExec:
         pullPolicy: IfNotPresent
