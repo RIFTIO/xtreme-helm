@@ -12,8 +12,9 @@ or you are inside the Zhone lab.
 files in this dir
 * README.md this file
 * alias.yaml -- values to force xtreme to use a FQDN instead of an IP address. When running on a single node
-                system behind singleIP address (as is done with k3s) then you may need this file. The values in 
-                this file need to bo coordinated with your company's DNS system.
+                system behind single IP address (as is done with k3s) then you may need this file. The values in 
+                this file need to bo coordinated with your company's DNS system. You can run the tool 
+               ```check-dns.sh``` to confirm that this file is correct 
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
 * values-aeo.yaml -- values to get the latest AEO build
@@ -22,9 +23,14 @@ files in this dir
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 
-## CHANGES
-* All third-party container images have been upgraded to fix CVEs
-* There is a new check that kafka CRDs are up to date 
+## CHANGES in 13.6.1
+* Many third-party container images have been upgraded to fix CVEs
+* There is a new check that kafka CRDs are up to date
+* There is a new check that the upgradeFrom value is correct
+* There is a new tool check-dns.sh which confirms that alias.yaml is correct 
+* Orphaned secrets are now automatically deleted
+* There is no longer a need to create a dummy token file when using option --dev
+* If the script detects that the target cluster is running k3s, alias.yaml and ports.yaml are automatically included. 
 
 
 ## INSTALLATION 
@@ -32,26 +38,12 @@ files in this dir
 Unless you are in the Zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
 this token in a file called dockerhub-token.
-If you are running inside the Zhone lab and using the Zhone registry (by not using repos.yaml), then you can create a dummy dockerhub-token file as
-the contents will not matter, e.g. 
-
-```bash
-echo foo >dockerhub-token
-```
 
 check your storage class (kubectl get storageclases) and update storage.yaml
 
-run:
+run: ```bash ./install-xtreme```
 
-```bash
-./install-xtreme 
-```
-
-If you are in the Zhone lab, add --values "values-aeo.yaml storage.yaml" (i.e. drop repos.yaml)
-
-If you are in a single node cluster (e.g. k3s), you will also probably need ports.yaml to prevent
-k8s from usurping the SSH daemon port, and alias.yaml so that ingress can redirect the
-user's browser successfully. 
+If you are in the Zhone lab, use option  ```--dev```
 
 When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow. You can control-c out of the script 

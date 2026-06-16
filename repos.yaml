@@ -111,8 +111,8 @@ launchpad:
 
   haproxy-ingress:
     image:
-      repository: dzscloudadmin/haproxy-ingress
-      repository_latest: dzscloudadmin/haproxy-ingress
+      repository: jcmoraisjr/haproxy-ingress
+      repository_latest: jcmoraisjr/haproxy-ingress
     defaultbackend:
       image:
         repository: registry.k8s.io/defaultbackend
