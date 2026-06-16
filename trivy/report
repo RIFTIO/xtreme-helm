@@ -1,0 +1,13 @@
+
+
+
+
+for file in *json; do
+
+    name=$(jq '.ArtifactName' $file)
+    ct=$(cat $file | jq '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities | length' 2>/dev/null | awk '{SUM += $1} END {print SUM}')
+    if [ -z "$ct" ]; then
+        ct=0
+    fi
+    printf "%20s %8s %s\n" $file $ct $name
+done
