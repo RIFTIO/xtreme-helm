@@ -1,15 +1,15 @@
 # xtreme-helm
-Helm chart for installing Xtreme NFVO or AEO
+Zhone Technologies, Inc helm chart for installing Xtreme NFVO or AEO
 
-This is release 13.6.1. It is an AEO release. Please pick a different branch or 
-tag if you want NFVO. 
+This is release 26.07 (13.7.0). It is an AEO release. Please pick a different branch or 
+tag if you want NFVO. See below.
 
 
 PLEASE NOTE that this helm chart is useless unless you have a token for accessing 
 the Zhone Inc container image repository currently hosted on dockerhub
 or you are inside the Zhone lab.
 
-files in this dir
+## files in this dir
 * README.md this file
 * alias.yaml -- values to force xtreme to use a FQDN instead of an IP address. When running on a single node
                 system behind single IP address (as is done with k3s) then you may need this file. The values in 
@@ -17,13 +17,23 @@ files in this dir
                ```check-dns.sh``` to confirm that this file is correct 
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
-* values-aeo.yaml -- values to get the latest AEO build
-* values-nfvo.yaml -- values to get the latest NFVO build
 * ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
+* JenkinsFile -- part of the Zhone CI pipeline
+* check-dns.sh -- a tool to verify that the FQDN configured in alias.yaml is correct 
+* check_upgrade_from -- used by install_xtreme 
+* delete_orphaned_secrets.sh -- used by install_xtreme
+* docker (dir) -- source for some support containers 
+* trivy (dir) -- tools for verifying CVEs
 
-## CHANGES in 13.6.1
+note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
+
+## Changes in 13.7.0
+* there is a new option --image-puller
+
+
+## Changes in 13.6.1
 * Many third-party container images have been upgraded to fix CVEs
 * There is a new check that kafka CRDs are up to date
 * There is a new check that the upgradeFrom value is correct
@@ -41,9 +51,9 @@ this token in a file called dockerhub-token.
 
 check your storage class (kubectl get storageclases) and update storage.yaml
 
-run: ```bash ./install-xtreme```
+run: ```./install-xtreme```
 
-If you are in the Zhone lab, use option  ```--dev```
+If you are in the Zhone lab, use option  ```--dev``` to prevent pulling images over the internet
 
 When it's done, install_xtreme will query the status forever until it gets a successful response. This can take 10
 minutes or more if your internet link is slow. You can control-c out of the script 
@@ -77,12 +87,15 @@ least once due to the timeouts during init. These will restart on their own, so 
 
 official branches in this repo
 
-* main -- production 
-* zhone -- as delivered by engineering. Deprecated as of 13.4.1
-* release_13.5 -- NFVO -- all of the 13.5.x releases will be tagged on this branch
-* release_13.4.1 -- latest AEO release
+* main -- production
+* release_26.07 -- July 2026 AEO release. This is a work in progress 
+* release_13.6 -- AEO release
+* release_13.5 -- NFVO release 
+* release_13.4.1 -- AEO release
 
 official tags 
-* v13.5.0 -- latest NFVO release
-* v13.4.0 -- deprecated. Please use branch release_13.4.1 for AEO  
+* v13.6.1 -- latest AEO GA release 
+* v13.6.0 -- GA release -- deprcated, please use v13.6.1
+* v13.5.0 -- latest NFVO GA release
+* v13.4.0 -- deprecated. Please use v13.6.1  
 * v13.3.2 -- deprecated. Please use v13.5.0 
