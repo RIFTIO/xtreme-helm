@@ -98,6 +98,7 @@ storage=false
 zms=false
 ignore_old_crds=false
 delete_mongo_data=false
+imagepuller=false
 
 help() {
 cat >&2 <<EOF
@@ -106,8 +107,8 @@ USAGE:
 --values path     values file. May be used more than once. default is environment-dependent (see below)
 --ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
 --release name    helm release name. default is xtreme
---dev             dev environment: DOCKERHUB_TOKEN optional, values default to values-aeo.yaml
---prod            prod environment (default): DOCKERHUB_TOKEN required, values default to values-aeo.yaml storage.yaml repos.yaml
+--dev             dev environment: DOCKERHUB_TOKEN optional, values default to xtreme/aeo-values.yaml
+--prod            prod environment (default): DOCKERHUB_TOKEN required, values default to xtreme/aeo-values.yaml storage.yaml repos.yaml
 --init            ONLY initialize infrastructure (namespace, CRDs). Only needs to be done once
 --install         ONLY install
 --upgrade         upgrade instead of install
@@ -118,6 +119,7 @@ USAGE:
 --pullpolicy      set pull policy
 --storage         set storage class
 --zms             install zms also
+--imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 
@@ -127,7 +129,7 @@ Environment Variables:
 NOTE: that the default is to do init + install + check but if you specify a step, only that step is run
 
 typical usage sequences
-    --init, then --dry-run, then --install, then maybe --check, then --clean
+    --init, then --imagepuller, then --dry-run, then --install, then maybe --check, then --clean
 OR
     none of the above :)
 EOF
@@ -152,6 +154,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --pullpolicy) pullpolicy=true;;
         --storage) storage=true;;
         --zms) zms=true;;
+        --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         *) help;;
@@ -167,9 +170,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "${SCRIPT_DIR}/delete_orphaned_secrets.sh" "$NS"
 
 if [ "$env" = "prod" ]; then
-    default_values="values-aeo.yaml storage.yaml repos.yaml"
+    default_values="xtreme/aeo-values.yaml storage.yaml repos.yaml"
 else
-    default_values="values-aeo.yaml"
+    default_values="xtreme/aeo-values.yaml"
 fi
 
 if $is_k3s; then
@@ -201,6 +204,7 @@ log_info "  dry-run: $dryrun"
 log_info "  check: $check"
 log_info "  init: $init"
 log_info "  clean: $clean"
+log_info "  imagepuller: $imagepuller"
 log_info "  limitresource: $limitresource"
 log_info "  chart: $chart"
 log_info "  values: $values"
@@ -349,6 +353,13 @@ if $dryrun; then
     exit 0
 fi
 
+if $imagepuller; then
+    log_info "Running imagepuller to pre-cache all images on every node..."
+    helm install imagepuller-${release} ./imagepuller-chart $flags --wait
+    log_info "Imagepuller completed. Images are now cached on all nodes."
+    exit 0
+fi
+
 # Before a helm upgrade, check whether MongoDB's featureCompatibilityVersion is
 # too old for the new image (MongoDB 8.0 requires FCV >= 7.0).  If it is, we
 # wipe the StatefulSet and PVC so the upgrade starts with a clean database.
@@ -487,6 +498,7 @@ if $clean; then
   log_info "Starting comprehensive cleanup process..."
   log_info "Uninstalling Helm release: $release"
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
+  helm uninstall imagepuller-${release} 2>/dev/null || true
   
   log_info "Deleting CRDs..."
   for f in xtreme/crds/*
