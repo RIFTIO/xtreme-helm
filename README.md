@@ -13,15 +13,14 @@ or you are inside the Zhone lab.
 * README.md this file
 * alias.yaml -- values to force xtreme to use a FQDN instead of an IP address. When running on a single node
                 system behind single IP address (as is done with k3s) then you may need this file. The values in 
-                this file need to bo coordinated with your company's DNS system. You can run the tool 
-               ```check-dns.sh``` to confirm that this file is correct 
+                this file need to bo coordinated with your company's DNS system.
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
 * ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 * JenkinsFile -- part of the Zhone CI pipeline
-* check-dns.sh -- a tool to verify that the FQDN configured in alias.yaml is correct 
+* check-dns.sh -- used by install_xtreme  
 * check_upgrade_from -- used by install_xtreme 
 * delete_orphaned_secrets.sh -- used by install_xtreme
 * docker (dir) -- source for some support containers 
@@ -31,6 +30,8 @@ note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
 
 ## Changes in 13.7.0
 * there is a new option --image-puller
+* --storage is now the default. --no-storage is the inverse 
+* 
 
 
 ## Changes in 13.6.1
