@@ -20,8 +20,8 @@ data:
           foldersFromFilesStructure: true
 {{- end }}
 ---
-{{- $cmName := "datasource-provision" -}}
-{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
+{{- $cm2Name := "datasource-provision" -}}
+{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cm2Name) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -30,8 +30,8 @@ metadata:
 data: ~
 {{- end }}
 ---
-{{- $cmName := "grafana-config" -}}
-{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
+{{- $cm3Name := "grafana-config" -}}
+{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cm3Name) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
