@@ -97,6 +97,7 @@ pullpolicy=false
 storage=true
 zms=false
 ignore_old_crds=false
+ignore_dns_error=false
 delete_mongo_data=false
 imagepuller=false
 
@@ -121,6 +122,7 @@ USAGE:
 --zms             install zms also
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
+--ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 
 Environment Variables:
@@ -157,6 +159,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --zms) zms=true;;
         --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
+        --ignore-dns-error) ignore_dns_error=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         *) help;;
     esac
@@ -209,6 +212,19 @@ log_info "  imagepuller: $imagepuller"
 log_info "  limitresource: $limitresource"
 log_info "  chart: $chart"
 log_info "  values: $values"
+
+if ! $clean && echo "$values" | grep -qw "alias.yaml"; then
+    log_info "alias.yaml is in use — running check-dns.sh..."
+    if ! "${SCRIPT_DIR}/check-dns.sh"; then
+        if $ignore_dns_error; then
+            log_warn "check-dns.sh reported errors — continuing because --ignore-dns-error was specified."
+        else
+            log_error "check-dns.sh failed. Fix DNS entries in alias.yaml or re-run with --ignore-dns-error."
+        fi
+    else
+        log_info "check-dns.sh passed."
+    fi
+fi
 
 rc=0
 for file in $chart $values; do
