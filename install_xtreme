@@ -94,7 +94,7 @@ check=true
 limitresource=false
 action=install
 pullpolicy=false
-storage=false
+storage=true
 zms=false
 ignore_old_crds=false
 delete_mongo_data=false
@@ -107,7 +107,7 @@ USAGE:
 --values path     values file. May be used more than once. default is environment-dependent (see below)
 --ns namespace    override the namespace. Be consistent and use the same namespace for all commands including --clean
 --release name    helm release name. default is xtreme
---dev             dev environment: DOCKERHUB_TOKEN optional, values default to xtreme/aeo-values.yaml
+--dev             dev environment: DOCKERHUB_TOKEN optional, values default to xtreme/aeo-values.yaml storage.yaml
 --prod            prod environment (default): DOCKERHUB_TOKEN required, values default to xtreme/aeo-values.yaml storage.yaml repos.yaml
 --init            ONLY initialize infrastructure (namespace, CRDs). Only needs to be done once
 --install         ONLY install
@@ -117,7 +117,7 @@ USAGE:
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
---storage         set storage class
+--no-storage      do not include storage.yaml (included by default)
 --zms             install zms also
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
@@ -152,7 +152,8 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
-        --storage) storage=true;;
+        --no-storage) storage=false;;
+        --storage) ;;
         --zms) zms=true;;
         --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
@@ -170,7 +171,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 "${SCRIPT_DIR}/delete_orphaned_secrets.sh" "$NS"
 
 if [ "$env" = "prod" ]; then
-    default_values="xtreme/aeo-values.yaml storage.yaml repos.yaml"
+    default_values="xtreme/aeo-values.yaml repos.yaml"
 else
     default_values="xtreme/aeo-values.yaml"
 fi
