@@ -15,11 +15,11 @@ shift 2
 
 # Render the chart and extract unique non-null storageClassNames
 storage_classes=$(helm template "$release" "$chart" "$@" 2>/dev/null \
-    | grep 'storageClassName:' \
-    | awk '{print $2}' \
+    | awk '/storageClassName/ {print $2}' \
     | grep -v '^null$' \
     | grep -v '^""$' \
     | grep -v "^''$" \
+    | tr -d '"'"'" \
     | sort -u)
 
 if [ -z "$storage_classes" ]; then
@@ -40,7 +40,7 @@ while IFS= read -r sc; do
 done <<< "$storage_classes"
 
 if [ "$failed" -ne 0 ]; then
-    echo "One or more storageClasses not found in cluster. Use --ignore-storage-classes to continue anyway." >&2
+    echo "One or more storageClasses not found in cluster." >&2
     exit 1
 fi
 
