@@ -1,5 +1,5 @@
 # Copyright 2024 DZS Inc
-# Copyright 2025 Zhone Inc
+# Copyright 2025-2026 Zhone Inc
 
 # values file to force the xtreme helm chart to get all container images 
 # from public repositories
@@ -166,11 +166,6 @@ sdnc:
     waitForDep:
       image:
         repository: ghcr.io/patrickdappollonio/wait-for
-  sdnc-alarm-svc:
-    initContainer:
-      waitForDep:
-        image:
-          repository: ghcr.io/patrickdappollonio/wait-for
   sdnc-pm-collector:
     image:
       repository: dzscloudadmin/dzs-pm-collector
