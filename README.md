@@ -1,6 +1,21 @@
 # xtreme-helm
 Zhone Technologies, Inc helm chart for installing Xtreme NFVO or AEO
 
+
+# TL;DR
+in the Zhone lab 
+
+    ./install_xtreme --dev
+
+In the real world
+
+    echo dckr_pat_xxxdfjklkjklfjk >dockerhub-token
+    ./install_xtreme 
+
+
+
+# Introduction
+
 This is release 26.07 (13.7.0). It is an AEO release. Please pick a different branch or 
 tag if you want NFVO. See below.
 
