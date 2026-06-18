@@ -98,6 +98,7 @@ storage=true
 zms=false
 ignore_old_crds=false
 ignore_dns_error=false
+ignore_storage_classes=false
 delete_mongo_data=false
 imagepuller=false
 
@@ -123,6 +124,7 @@ USAGE:
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
+--ignore-storage-classes  continue even if storageClasses referenced in the chart are missing from the cluster
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 
 Environment Variables:
@@ -160,6 +162,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
         --ignore-dns-error) ignore_dns_error=true;;
+        --ignore-storage-classes) ignore_storage_classes=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         *) help;;
     esac
@@ -438,6 +441,15 @@ handle_mongodb_upgrade() {
 }
 
 if $install; then
+  log_info "Checking storageClasses..."
+  if ! "${SCRIPT_DIR}/bin/check-storage-classes.sh" "${release}" "${chart}" ${flags}; then
+      if $ignore_storage_classes; then
+          log_warn "storageClass check failed — continuing because --ignore-storage-classes was specified."
+      else
+          log_error "storageClass check failed. Ensure all required storageClasses exist or re-run with --ignore-storage-classes."
+      fi
+  fi
+
   log_info "Performing $action of Helm release..."
 
   # Check if release already exists
