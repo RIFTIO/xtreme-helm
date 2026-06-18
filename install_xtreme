@@ -171,7 +171,7 @@ fi
 
 # Delete orphaned secrets before deployment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"${SCRIPT_DIR}/delete_orphaned_secrets.sh" "$NS"
+"${SCRIPT_DIR}/bin/delete_orphaned_secrets.sh" "$NS"
 
 if [ "$env" = "prod" ]; then
     default_values="xtreme/aeo-values.yaml repos.yaml"
@@ -215,7 +215,7 @@ log_info "  values: $values"
 
 if ! $clean && echo "$values" | grep -qw "alias.yaml"; then
     log_info "alias.yaml is in use — running check-dns.sh..."
-    if ! "${SCRIPT_DIR}/check-dns.sh"; then
+    if ! "${SCRIPT_DIR}/bin/check-dns.sh"; then
         if $ignore_dns_error; then
             log_warn "check-dns.sh reported errors — continuing because --ignore-dns-error was specified."
         else
@@ -459,7 +459,7 @@ if $install; then
           fi
       done
       if [ -n "$upgrade_from_file" ]; then
-          "${SCRIPT_DIR}/check_upgrade_from" --ns "$NS" --values "$upgrade_from_file"
+          "${SCRIPT_DIR}/bin/check_upgrade_from.sh" --ns "$NS" --values "$upgrade_from_file"
       else
           log_warn "No upgradeFrom found in values files — skipping version check"
       fi
