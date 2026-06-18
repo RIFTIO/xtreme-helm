@@ -9,7 +9,7 @@ in the Zhone lab
 
 In the real world
 
-    echo dckr_pat_xxxdfjklkjklfjk >dockerhub-token
+    echo dckr_pat_xxxdfjklkjklfjk >dockerhub-token  # use the token you got from Zhone
     ./install_xtreme 
 
 
@@ -66,6 +66,8 @@ images from the Zhone docker-hub repository. Place
 this token in a file called dockerhub-token.
 
 check your storage class (kubectl get storageclases) and update storage.yaml
+
+If you are installing into a single node cluster that only has 1 public IP address, update alias.yaml
 
 run: ```./install-xtreme```
 

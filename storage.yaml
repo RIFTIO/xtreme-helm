@@ -36,3 +36,9 @@ launchpad:
 grafana:
   grafanaStorage:
     storageClassName: local-path
+
+sdnc:
+  sdnc-influxdb:
+    influxStorage:
+      storageClassName: local-path
+
