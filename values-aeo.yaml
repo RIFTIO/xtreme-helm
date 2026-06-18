@@ -27,4 +27,6 @@ launchpad:
         pullPolicy: IfNotPresent
       scriptExec:
         pullPolicy: IfNotPresent
+mongodb:
+  enableVolumePermissions: true
 
