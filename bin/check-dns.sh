@@ -46,7 +46,7 @@ check_dns() {
 
   if ! resolved=$(host -t A "$hostname" 2>/dev/null); then
     echo "FAIL (DNS lookup failed — name not found)"
-    ((FAIL++))
+    FAIL=$((FAIL+1))
     return
   fi
 
@@ -55,13 +55,13 @@ check_dns() {
 
   if [[ -z "$resolved_ip" ]]; then
     echo "FAIL (no A record returned)"
-    ((FAIL++))
+    FAIL=$((FAIL+1))
   elif [[ "$resolved_ip" == "$expected_ip" ]]; then
     echo "OK ($resolved_ip)"
-    ((PASS++))
+    PASS=$((PASS+1))
   else
     echo "FAIL (got $resolved_ip, expected $expected_ip)"
-    ((FAIL++))
+    FAIL=$((FAIL+1))
   fi
 }
 
@@ -86,10 +86,10 @@ if [[ -n "$external_address" ]]; then
     if resolved=$(host -t A "$external_address" 2>/dev/null); then
       resolved_ip=$(echo "$resolved" | awk '/has address/{print $NF}' | head -1)
       echo "OK ($resolved_ip)"
-      ((PASS++))
+      PASS=$((PASS+1))
     else
       echo "FAIL (DNS lookup failed)"
-      ((FAIL++))
+      FAIL=$((FAIL+1))
     fi
   fi
 fi
