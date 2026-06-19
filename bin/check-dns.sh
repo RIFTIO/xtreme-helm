@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-YAML="${1:-$(dirname "$0")/alias.yaml}"
+YAML="${1:-$(dirname "$0")/../alias.yaml}"
 
 if [[ ! -f "$YAML" ]]; then
   echo "ERROR: cannot find $YAML" >&2
