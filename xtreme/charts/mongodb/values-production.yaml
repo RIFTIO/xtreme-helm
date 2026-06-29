@@ -460,8 +460,8 @@ externalAccess:
     ##
     image:
       registry: docker.io
-      repository: bitnami/kubectl
-      tag: "1.18.9-debian-10-r4"
+      repository: alpine/k8s
+      tag: "1.36.2"
       ## Specify a imagePullPolicy
       ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
       ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images

@@ -14,8 +14,8 @@ natsfullnameOverride: ""
 global:
   kubectl:
     image:
-      repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/kubectl
-      tag: "1.32.4-debian-12-r0"
+      repository: rt.cloud.dzsi.local/docker-hub/alpine/k8s
+      tag: "1.36.2"
       pullPolicy: IfNotPresent
   busybox:
     image:
