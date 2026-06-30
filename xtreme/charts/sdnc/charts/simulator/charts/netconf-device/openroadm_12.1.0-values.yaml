@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: openroadm-device-12.1.0
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   version: latest
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"

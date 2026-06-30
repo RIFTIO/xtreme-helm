@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: rt.cloud.dzsi.local/docker/simulators/dzs-netconf-device-v6
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: master
 
