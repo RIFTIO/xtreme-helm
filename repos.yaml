@@ -146,7 +146,7 @@ nats:
     repository: nats
   exporter:
     image:
-      repository: bitnamilegacy/nats-exporter
+      repository: natsio/prometheus-nats-exporter
 
 redis:
   image:
