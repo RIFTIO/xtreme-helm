@@ -3,7 +3,7 @@
 
 REGISTRY  ?= rt.cloud.dzsi.local/docker
 IMAGE     := rw.vsftpd
-TAG       ?= 1.1
+TAG       ?= 1.2
 FULL_NAME  = $(REGISTRY)/$(IMAGE):$(TAG)
 
 .PHONY: all build push
