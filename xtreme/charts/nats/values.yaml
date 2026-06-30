@@ -12,7 +12,7 @@ image:
   repository: rt.cloud.dzsi.local/docker-hub/nats
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2.14.1"
+  tag: "2.14.3"
 
 exporter:
   image:
