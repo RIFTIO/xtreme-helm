@@ -803,8 +803,8 @@ metrics:
   ##
   image:
     registry: docker.io
-    repository: bitnami/mongodb-exporter
-    tag: "0.11.1-debian-10-r32"
+    repository: percona/mongodb_exporter
+    tag: "0.51.0"
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
