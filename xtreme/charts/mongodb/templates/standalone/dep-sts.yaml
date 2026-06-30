@@ -275,26 +275,21 @@ spec:
           {{- end }}
 
           command:
-            - /bin/bash
-            - -ec
+            - /mongodb_exporter
           args:
-            - |
-              {{- if .Values.auth.enabled }}
-              {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@[::1]:8006/admin --collector.diagnosticdata --compatible-mode
-              {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:8006/admin --collector.diagnosticdata --compatible-mode
-              {{- end }}
-              {{- else }}
-              {{- if .Values.global.ipv6Mode }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://[::1]:8006/admin --collector.diagnosticdata --compatible-mode
-              {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:8006/admin --collector.diagnosticdata --compatible-mode
-              {{- end }}
-              {{- end }}
+            - --collector.diagnosticdata
+            - --compatible-mode
           env:
+          - name: MONGODB_URI
+            {{- if .Values.global.ipv6Mode }}
+            value: "mongodb://[::1]:8006/admin"
+            {{- else }}
+            value: "mongodb://localhost:8006/admin"
+            {{- end }}
           {{- if .Values.auth.enabled }}
-          - name: MONGODB_ROOT_PASSWORD
+          - name: MONGODB_USER
+            value: root
+          - name: MONGODB_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: {{ include "mongodb.secretName" . }}
