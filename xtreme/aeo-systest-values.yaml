@@ -25,7 +25,7 @@ launchpad:
     image:
       repository: rt.cloud.dzsi.local/docker/rw.aeo
       tag: TPL_IMG_TAG
-      pullPolicy: Always     # This is only for images tagged based on branch
+      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
 
     env:
       RW_RUNTIME_PROFILE: systest
@@ -40,17 +40,17 @@ launchpad:
     image:
       controller:
         tag: TPL_IMG_TAG
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       serviceWorker:
         tag: TPL_IMG_TAG
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       resourceWorker:
         tag: TPL_IMG_TAG
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       tmfServer:
         tag: TPL_IMG_TAG
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
       scriptExec:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
 
   externalAddress: null

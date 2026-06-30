@@ -93,26 +93,26 @@ sdnc:
     nodePort:
       useNodePort: false
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
 
   sdnc-config-mgr:
     nodePort:
       useNodePort: false
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
 
   sdnc-alarm-svc:
     service:
       useNodePort: false
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
 
   sdnc-task-mgr:
     service:
       useNodePort: false
       restconfNodePort: 32125
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
 
 redis:
   enableVolumePermissions: true

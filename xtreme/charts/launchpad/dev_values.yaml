@@ -37,7 +37,7 @@ launchpad:
   image:
     repository: rt.cloud.dzsi.local/docker/rw.lp-base
     tag: TPL_BRANCH
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     imagePullSecrets: []
 
   env:

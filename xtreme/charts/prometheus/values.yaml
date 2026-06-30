@@ -34,7 +34,7 @@ enableVolumePermissions: false
 prometheus:
   image:
     repository: rt.cloud.dzsi.local/quay.io/prometheus/prometheus
-    tag: "v3.5.3"
+    tag: "v3.5.4"
     pullPolicy: IfNotPresent
   resources: {}
   nodeSelector: {}

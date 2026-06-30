@@ -321,7 +321,7 @@ customReadinessProbe: {}
 ## initContainers:
 ##   - name: your-image-name
 ##     image: your-image
-##     imagepullPolicy: Always
+##     imagepullPolicy: IfNotPresent
 ##     ports:
 ##       - name: portname
 ##         containerPort: 1234
@@ -332,7 +332,7 @@ initContainers: {}
 ## sidecars:
 ##   - name: your-image-name
 ##     image: your-image
-##     imagepullPolicy: Always
+##     imagepullPolicy: IfNotPresent
 ##     ports:
 ##       - name: portname
 ##         containerPort: 1234
@@ -671,7 +671,7 @@ arbiter:
   ## initContainers:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagepullPolicy: Always
+  ##     imagepullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -682,7 +682,7 @@ arbiter:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagepullPolicy: Always
+  ##     imagepullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -747,7 +747,7 @@ volumePermissions:
     ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
     ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
     ##
-    pullPolicy: Always
+    pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets (secrets must be manually created in the namespace)
     ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
     ## Example:

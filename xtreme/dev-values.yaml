@@ -14,21 +14,21 @@ launchpad:
     createClusterRole: true   # only for first installation on k8s cluster
   launchpad:
     image:
-      pullPolicy: Always     # This is only for images tagged based on branch
+      pullPolicy: IfNotPresent     # This is only for images tagged based on branch
       tag: "master"
   aeo:
     image:
       controller:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: "master"
       serviceWorker:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: "master"
       resourceWorker:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: "master"
       tmfServer:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: "master"
 
 sdnc-netconf-svc:

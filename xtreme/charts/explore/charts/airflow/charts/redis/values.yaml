@@ -381,7 +381,7 @@ master:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -393,7 +393,7 @@ master:
   ## initContainers:
   ##  - name: your-image-name
   ##    image: your-image
-  ##    imagePullPolicy: Always
+  ##    imagePullPolicy: IfNotPresent
   ##    command: ['sh', '-c', 'echo "hello world"']
   ##
   initContainers: []
@@ -763,7 +763,7 @@ replica:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -775,7 +775,7 @@ replica:
   ## initContainers:
   ##  - name: your-image-name
   ##    image: your-image
-  ##    imagePullPolicy: Always
+  ##    imagePullPolicy: IfNotPresent
   ##    command: ['sh', '-c', 'echo "hello world"']
   ##
   initContainers: []
