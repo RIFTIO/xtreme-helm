@@ -99,6 +99,7 @@ zms=false
 ignore_old_crds=false
 ignore_dns_error=false
 ignore_storage_classes=false
+ignore_kernel_version=false
 delete_mongo_data=false
 imagepuller=false
 
@@ -125,6 +126,7 @@ USAGE:
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
 --ignore-storage-classes  continue even if storageClasses referenced in the chart are missing from the cluster
+--ignore-kernel-version   continue even if a node runs a kernel MongoDB is incompatible with (>= 6.19)
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 --set key=value      pass a --set argument directly to helm; may be used more than once (for debugging only)
 
@@ -164,6 +166,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --ignore-old-crds) ignore_old_crds=true;;
         --ignore-dns-error) ignore_dns_error=true;;
         --ignore-storage-classes) ignore_storage_classes=true;;
+        --ignore-kernel-version) ignore_kernel_version=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         --set) flags+=("--set" "$2"); shift;;
         *) help;;
@@ -443,6 +446,16 @@ handle_mongodb_upgrade() {
 }
 
 if $install; then
+  # MongoDB 8.0.x refuses to start on kernel 6.19+ (TCMalloc/rseq ABI, SERVER-121912)
+  log_info "Checking node kernel versions for MongoDB compatibility..."
+  if ! "${SCRIPT_DIR}/bin/check-kernel-version.sh"; then
+      if $ignore_kernel_version; then
+          log_warn "kernel version check failed — continuing because --ignore-kernel-version was specified."
+      else
+          log_error "kernel version check failed. MongoDB will not start on kernel 6.19 or later. Re-run with --ignore-kernel-version to proceed anyway (not recommended)."
+      fi
+  fi
+
   log_info "Checking storageClasses..."
   if ! "${SCRIPT_DIR}/bin/check-storage-classes.sh" "${release}" "${chart}" "${flags[@]}"; then
       if $ignore_storage_classes; then
