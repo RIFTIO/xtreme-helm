@@ -12,7 +12,7 @@ global:
       repository: busybox
   kubectl:
     image:
-      repository: bitnamilegacy/kubectl
+      repository: dzscloudadmin/rw.kubectl
 
 initContainer:
   waitForDep:
@@ -33,7 +33,7 @@ mongodb:
   metrics:
     image:
       registry: docker.io
-      repository: bitnamilegacy/mongodb-exporter
+      repository: percona/mongodb_exporter
 
 prometheus:
   replicator:
@@ -146,7 +146,7 @@ nats:
     repository: nats
   exporter:
     image:
-      repository: bitnamilegacy/nats-exporter
+      repository: natsio/prometheus-nats-exporter
 
 redis:
   image:

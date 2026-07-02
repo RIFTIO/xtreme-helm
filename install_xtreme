@@ -85,7 +85,7 @@ env="prod"
 chart="xtreme"
 release="xtreme"
 values=""
-flags=""
+flags=()
 init=true
 install=true
 clean=false
@@ -126,6 +126,7 @@ USAGE:
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
 --ignore-storage-classes  continue even if storageClasses referenced in the chart are missing from the cluster
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
+--set key=value      pass a --set argument directly to helm; may be used more than once (for debugging only)
 
 Environment Variables:
   DOCKERHUB_TOKEN  Required for prod installs. Docker Hub authentication token for pulling images.
@@ -164,6 +165,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --ignore-dns-error) ignore_dns_error=true;;
         --ignore-storage-classes) ignore_storage_classes=true;;
         --delete-mongo-data) delete_mongo_data=true;;
+        --set) flags+=("--set" "$2"); shift;;
         *) help;;
     esac
     shift
@@ -199,7 +201,7 @@ if $storage; then
 fi
 
 if $zms; then
-  flags="$flags --set global.install.zms=true"
+  flags+=("--set" "global.install.zms=true")
 fi
 
 log_info "Configuration:"
@@ -353,29 +355,29 @@ if $init; then
 fi
 
 for file in $values; do
-    flags="$flags -f $file"
+    flags+=("-f" "$file")
 done
 
 if $limitresource; then
-    flags="$flags --set global.ensureResourceQuota=true"
+    flags+=("--set" "global.ensureResourceQuota=true")
 fi
 
-flags="$flags --set global.namespace.name=$NS"
+flags+=("--set" "global.namespace.name=$NS")
 if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
-    flags="$flags --set global.dockerhubToken=$DOCKERHUB_TOKEN"
+    flags+=("--set" "global.dockerhubToken=$DOCKERHUB_TOKEN")
 fi
 
 if $dryrun; then
     log_info "Performing dry-run of Helm install..."
-    log_info "Running: helm ${action} ${release} ${chart} $flags --dry-run"
-    helm ${action} ${release} ${chart} $flags --dry-run
+    log_info "Running: helm ${action} ${release} ${chart} ${flags[*]} --dry-run"
+    helm "${action}" "${release}" "${chart}" "${flags[@]}" --dry-run
     log_info "Dry-run completed successfully"
     exit 0
 fi
 
 if $imagepuller; then
     log_info "Running imagepuller to pre-cache all images on every node..."
-    helm install imagepuller-${release} ./imagepuller-chart $flags --wait
+    helm install "imagepuller-${release}" ./imagepuller-chart "${flags[@]}" --wait
     log_info "Imagepuller completed. Images are now cached on all nodes."
     exit 0
 fi
@@ -442,7 +444,7 @@ handle_mongodb_upgrade() {
 
 if $install; then
   log_info "Checking storageClasses..."
-  if ! "${SCRIPT_DIR}/bin/check-storage-classes.sh" "${release}" "${chart}" ${flags}; then
+  if ! "${SCRIPT_DIR}/bin/check-storage-classes.sh" "${release}" "${chart}" "${flags[@]}"; then
       if $ignore_storage_classes; then
           log_warn "storageClass check failed — continuing because --ignore-storage-classes was specified."
       else
@@ -479,8 +481,8 @@ if $install; then
       handle_mongodb_upgrade "$NS"
   fi
 
-  log_info "Running: helm $action ${release} ${chart} $flags"
-  helm $action ${release} ${chart} $flags
+  log_info "Running: helm $action ${release} ${chart} ${flags[*]}"
+  helm "$action" "${release}" "${chart}" "${flags[@]}"
   log_info "Helm $action completed successfully"
 fi
 

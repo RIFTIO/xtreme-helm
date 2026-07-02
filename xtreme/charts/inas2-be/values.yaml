@@ -9,11 +9,11 @@ initContainer:
     image:
       repository: rt.cloud.dzsi.local/ghcr.io/patrickdappollonio/wait-for
       pullPolicy: IfNotPresent
-      tag: "v1.0.0"
+      tag: "v1.2.4"
 
 image:
   repository: rt.cloud.dzsi.local/docker/inas/inas2-be
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 

@@ -281,18 +281,14 @@ spec:
           securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
           command:
-            - /bin/bash
-            - -ec
-          args:
-            - |
-              {{- if .Values.auth.enabled }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://root:$(echo $MONGODB_ROOT_PASSWORD | sed -r "s/@/%40/g;s/:/%3A/g")@localhost:27017/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
-              {{- else }}
-              /bin/mongodb_exporter --mongodb.uri mongodb://localhost:27017/admin{{ .Values.metrics.extraUri }} {{ .Values.metrics.extraFlags }}
-              {{- end }}
+            - /mongodb_exporter
           env:
+          - name: MONGODB_URI
+            value: "mongodb://localhost:27017/admin{{ .Values.metrics.extraUri }}"
           {{- if .Values.auth.enabled }}
-          - name: MONGODB_ROOT_PASSWORD
+          - name: MONGODB_USER
+            value: root
+          - name: MONGODB_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: {{ include "mongodb.secretName" . }}

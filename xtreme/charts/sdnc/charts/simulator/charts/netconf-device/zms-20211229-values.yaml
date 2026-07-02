@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: dzs-netconf-zms-20211229
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   version: latest
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"

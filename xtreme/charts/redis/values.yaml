@@ -17,7 +17,7 @@ redTunnel:
 exporter:
   image:
     repository: rt.cloud.dzsi.local/docker-hub/oliver006/redis_exporter
-    tag: "v1.84.0"
+    tag: "v1.86.0"
     pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""

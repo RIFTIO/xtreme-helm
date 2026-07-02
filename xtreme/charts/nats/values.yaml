@@ -12,12 +12,12 @@ image:
   repository: rt.cloud.dzsi.local/docker-hub/nats
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2.14.1"
+  tag: "2.14.3"
 
 exporter:
   image:
-    repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/nats-exporter
-    tag: "0.17.3-debian-12-r8"
+    repository: rt.cloud.dzsi.local/docker-hub/natsio/prometheus-nats-exporter
+    tag: "0.20.1"
     pullPolicy: IfNotPresent
 
 imagePullSecrets: []

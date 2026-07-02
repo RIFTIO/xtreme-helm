@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: rt.cloud.dzsi.local/docker/simulators/openroadm-device-7.1.0
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: master
 

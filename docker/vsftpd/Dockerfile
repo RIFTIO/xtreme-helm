@@ -3,6 +3,7 @@
 FROM almalinux:9
 
 RUN dnf install -y vsftpd \
+ && dnf update -y expat openssl openssl-libs \
  && dnf clean all \
  && rm -rf /var/cache/dnf
 

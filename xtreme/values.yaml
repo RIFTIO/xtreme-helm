@@ -14,8 +14,8 @@ natsfullnameOverride: ""
 global:
   kubectl:
     image:
-      repository: rt.cloud.dzsi.local/docker-hub/bitnamilegacy/kubectl
-      tag: "1.32.4-debian-12-r0"
+      repository: rt.cloud.dzsi.local/docker/rw.kubectl
+      tag: "1.0"
       pullPolicy: IfNotPresent
   busybox:
     image:
@@ -420,7 +420,7 @@ launchpad:
   launchpad:
     appSelector: aeo
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
       repository: rt.cloud.dzsi.local/docker/rw.aeo
       tag: 13.6.0.1011158
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
@@ -439,16 +439,16 @@ launchpad:
   aeo:
     image:
       controller:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: 13.6.0.1011158
       serviceWorker:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: 13.6.0.1011158
       resourceWorker:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: 13.6.0.1011158
       tmfServer:
-        pullPolicy: Always
+        pullPolicy: IfNotPresent
         tag: 13.6.0.1011158
   storage:
     accessMode: ReadWriteOnce
@@ -468,7 +468,7 @@ sdnc:
       useNodePort: false
       restconfNodePort: 32120
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     daexim:
       volume:
         pvc:
@@ -479,7 +479,7 @@ sdnc:
       useNodePort: false
       restconfNodePort: 32121
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     daexim:
       volume:
         pvc:
@@ -490,7 +490,7 @@ sdnc:
       useNodePort: false
       nodePort: 32122
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
@@ -501,7 +501,7 @@ sdnc:
       useNodePort: false
       nodePort: 32123
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
@@ -513,7 +513,7 @@ sdnc:
       useNodePort: false
       nodePort: 32124
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
@@ -525,14 +525,14 @@ sdnc:
       useNodePort: false
       nodePort: 32125
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
           storageClassName: null
   sdnc-snmpgw:
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
@@ -543,7 +543,7 @@ sdnc:
       useNodePort: false
       nodePort: 32126
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     volume:
       log:
         pvc:
@@ -554,7 +554,7 @@ sdnc:
       useNodePort: false
       restconfNodePort: 32127
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent
     daexim:
       volume:
         pvc:
@@ -565,4 +565,4 @@ sdnc:
       useNodePort: false
       nodePort: 32128
     image:
-      pullPolicy: Always
+      pullPolicy: IfNotPresent

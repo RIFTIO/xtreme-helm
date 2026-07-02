@@ -202,7 +202,7 @@ extraEnvVarsSecrets: []
 ## sidecars:
 ##   - name: your-image-name
 ##     image: your-image
-##     imagePullPolicy: Always
+##     imagePullPolicy: IfNotPresent
 ##     ports:
 ##       - name: portname
 ##         containerPort: 1234
@@ -213,7 +213,7 @@ sidecars: []
 ## initContainers:
 ##   - name: your-image-name
 ##     image: your-image
-##     imagePullPolicy: Always
+##     imagePullPolicy: IfNotPresent
 ##     ports:
 ##       - name: portname
 ##         containerPort: 1234
@@ -448,7 +448,7 @@ web:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -459,7 +459,7 @@ web:
   ## initContainers:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -653,7 +653,7 @@ scheduler:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -664,7 +664,7 @@ scheduler:
   ## initContainers:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -910,7 +910,7 @@ worker:
   ## sidecars:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
@@ -921,7 +921,7 @@ worker:
   ## initContainers:
   ##   - name: your-image-name
   ##     image: your-image
-  ##     imagePullPolicy: Always
+  ##     imagePullPolicy: IfNotPresent
   ##     ports:
   ##       - name: portname
   ##         containerPort: 1234
