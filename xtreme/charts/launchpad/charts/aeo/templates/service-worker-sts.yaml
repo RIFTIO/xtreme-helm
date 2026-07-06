@@ -65,7 +65,7 @@ spec:
         - name: service-worker
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.serviceWorker.repository }}:{{ .Values.image.serviceWorker.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.serviceWorker.repository }}:{{ .Values.image.serviceWorker.tag | default .Values.global.aeoImgTag }}"
           imagePullPolicy: {{ .Values.image.serviceWorker.pullPolicy }}
           command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/service_worker.py"]
           resources:

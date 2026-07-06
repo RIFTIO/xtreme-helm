@@ -68,7 +68,7 @@ spec:
         - name: service-controller
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.controller.repository }}:{{ .Values.image.controller.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.controller.repository }}:{{ .Values.image.controller.tag | default .Values.global.aeoImgTag }}"
           imagePullPolicy: {{ .Values.image.controller.pullPolicy }}
           command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/service_controller.py"]
           resources:
@@ -91,7 +91,7 @@ spec:
           - name: RW_LAUNCHPAD_SVC_FQDN
             value: {{ include "launchpad.fqdn" . }}
           - name: RW_SERVICE_CONTROLLER_VERSION
-            value: {{ .Values.image.controller.tag | default .Chart.AppVersion }}
+            value: {{ .Values.image.controller.tag | default .Values.global.aeoImgTag }}
           ports:
           - containerPort: 11000
             name: prom-metrics
@@ -115,7 +115,7 @@ spec:
         - name: resource-controller
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.controller.repository }}:{{ .Values.image.controller.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.controller.repository }}:{{ .Values.image.controller.tag | default .Values.global.aeoImgTag }}"
           imagePullPolicy: {{ .Values.image.controller.pullPolicy }}
           command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/resource_controller.py"]
           resources:
@@ -148,7 +148,7 @@ spec:
           - name: RW_LAUNCHPAD_SVC_FQDN
             value: {{ include "launchpad.fqdn" . }}
           - name: RW_RESOURCE_CONTROLLER_VERSION
-            value: {{ .Values.image.controller.tag | default .Chart.AppVersion }}
+            value: {{ .Values.image.controller.tag | default .Values.global.aeoImgTag }}
           ports:
           - containerPort: 11010
             name: prom-metrics-2

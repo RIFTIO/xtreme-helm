@@ -1,6 +1,7 @@
 # Copyright 2022 DZS Inc
 
 global:
+  aeoImgTag: TPL_BRANCH
   # kyverno warnings related
   ensureResourceQuota: false
   ensureSecurityContext: false

@@ -65,7 +65,7 @@ spec:
       {{- end }}
 
       - name: launchpad
-        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
 
         {{- if eq .Values.launchpad.appSelector "aeo" }}
@@ -85,7 +85,7 @@ spec:
         {{- if .Values.launchpad.version }}
           value: {{ .Values.launchpad.version }}
         {{- else }}
-          value: {{ .Values.launchpad.image.tag }}
+          value: {{ .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         {{- end }}
         - name: RW_RELEASE_NAME
           value: {{ .Release.Name }}
@@ -365,7 +365,7 @@ spec:
 
       {{- if .Values.enableVolumePermissions }}
       - name: set-rvr-ownership
-        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
         command: ["chown", "-R", "{{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }}", "/usr/rift/var"]
         securityContext:
@@ -380,7 +380,7 @@ spec:
           readOnly: false
 
       - name: set-rvr-perm
-        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
         command: ["chmod", "-R", "775", "/usr/rift/var"]
         securityContext:
@@ -396,7 +396,7 @@ spec:
       {{- end }}
 
       - name: set-ca-bundle
-        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
         command: ["/bin/bash", "-c"]
         args:
@@ -418,7 +418,7 @@ spec:
           readOnly: false
 
       - name: prelaunch
-        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+        image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
         command: ["/bin/bash"]
         args: ["-c", "/usr/rift/rift-shell -- python3 /scripts/prelaunch.py"]
@@ -433,7 +433,7 @@ spec:
         {{- if .Values.launchpad.version }}
           value: {{ .Values.launchpad.version }}
         {{- else }}
-          value: {{ .Values.launchpad.image.tag }}
+          value: {{ .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         {{- end }}
         - name: RW_REDIS_SVC_NAME
           value: {{ include "redis.fullname" . }}
