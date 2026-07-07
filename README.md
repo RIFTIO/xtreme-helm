@@ -31,12 +31,14 @@ or you are inside the Zhone lab.
                 this file need to bo coordinated with your company's DNS system.
 * repos.yaml -- values to use public repos -- you will need this unless you are in the Zhone lab
 * storage.yaml -- values to use the non-default storage class
-* ports.yaml -- values to force all services to use unique ports on a single IP (needed for k3s)
+* ports.yaml -- values to force all services to use unique ports on a single IP (needed when the
+                cluster has only one routable IP address, e.g. k3s with its built-in ServiceLB)
 * install_xtreme -- a script for running the install. Use ./install_xtreme --help 
 * xtreme/ the helm chart
 * JenkinsFile -- part of the Zhone CI pipeline
 * check-dns.sh -- used by install_xtreme  
 * check_upgrade_from -- used by install_xtreme 
+* pool-has-multiple-ips.sh -- used by install_xtreme to decide if the load balancer pool holds more than one IP
 * delete_orphaned_secrets.sh -- used by install_xtreme
 * docker (dir) -- source for some support containers 
 * trivy (dir) -- tools for verifying CVEs
@@ -48,6 +50,10 @@ note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
 * --storage is now the default. --no-storage is the inverse 
 * install_xtreme now confirms that storage.yaml is configured correctly 
 * All aeo images tags are now controlled by globals.aeoImgTag. just like globals.sdncImgtag 
+* alias.yaml and ports.yaml are now enabled by inspecting the cluster's load balancer instead of
+  simply detecting k3s: they are only included when all services must share a single IP address
+  (e.g. k3s ServiceLB/Klipper, or MetalLB with a single-IP pool). A k3s cluster with a real
+  load balancer address pool (e.g. installed via Rancher) no longer gets them by default.
 
 
 ## Changes in 13.6.1
