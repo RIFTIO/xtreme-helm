@@ -65,7 +65,7 @@ spec:
         - name: tmf-server
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.tmfServer.repository }}:{{ .Values.image.tmfServer.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.tmfServer.repository }}:{{ .Values.image.tmfServer.tag | default .Values.global.aeoImgTag }}"
           imagePullPolicy: {{ .Values.image.tmfServer.pullPolicy }}
           command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/service_app.py"]
           resources:

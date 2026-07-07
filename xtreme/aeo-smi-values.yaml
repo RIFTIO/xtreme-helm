@@ -1,6 +1,7 @@
 global:
   exploreNamespacePrefix: "explore"
   sdncImgtag: 11.4.0.1004394
+  aeoImgTag: 11.4.0.1004371
   install:
     explore: true
     inas: false
@@ -23,29 +24,13 @@ launchpad:
   launchpad:
     appSelector: aeo
     image:
-      pullPolicy: IfNotPresent
       repository: rt.cloud.dzsi.local/docker/rw.aeo
-      tag: 11.4.0.1004371
     upgradeFrom: 11.4.0.1004371
   storage:
     storageClassName: null
     capacity: 80Gi
   cluster_logger:
     createClusterRole: true
-  aeo:
-    image:
-      controller:
-        pullPolicy: IfNotPresent
-        tag: 11.4.0.1004371
-      serviceWorker:
-        pullPolicy: IfNotPresent
-        tag: 11.4.0.1004371
-      resourceWorker:
-        pullPolicy: IfNotPresent
-        tag: 11.4.0.1004371
-      tmfServer:
-        pullPolicy: IfNotPresent
-        tag: 11.4.0.1004371
 zms:
   image:
     tag: 4.3.0.1003914
