@@ -96,7 +96,7 @@ spec:
           {{- end }}
           {{- end }}
 
-          image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Chart.AppVersion }}
+          image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
           imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
           command: ["bash", "-c", "/usr/rift/usr/bin/start_tmf_apiserver.sh"]
 

@@ -69,7 +69,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
 
-          image: "{{ .Values.image.resourceWorker.repository }}:{{ .Values.image.resourceWorker.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.resourceWorker.repository }}:{{ .Values.image.resourceWorker.tag | default .Values.global.aeoImgTag }}"
           imagePullPolicy: {{ .Values.image.resourceWorker.pullPolicy }}
           command: ["/usr/rift/rift-shell", "-i", "/", "--", "python3", "/usr/rift/usr/bin/resource_worker.py"]
           resources:

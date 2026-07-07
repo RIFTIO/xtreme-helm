@@ -1,6 +1,7 @@
 # Copyright 2022 DZS Inc
 
 global:
+  aeoImgTag: TPL_IMG_TAG
   namespace:
     name: TPL_NAMESPACE
   install:

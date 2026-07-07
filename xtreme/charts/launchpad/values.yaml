@@ -112,7 +112,6 @@ enableVolumePermissions: false
 launchpad:
   image:
     repository: rt.cloud.dzsi.local/docker/launchpad/dzs
-    tag: "11.2.3"
     pullPolicy: IfNotPresent
     imagePullSecrets: []
   env:

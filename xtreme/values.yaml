@@ -39,6 +39,7 @@ global:
       storageClass: null
  
   sdncImgtag: 13.6.0.1011156
+  aeoImgTag: 13.6.0.1011158
 
   # If switched to "true", Kafka service will be enabled; If switched to "false", Kafka service will be disabled.
   enableKafka_netconf: true
@@ -420,9 +421,7 @@ launchpad:
   launchpad:
     appSelector: aeo
     image:
-      pullPolicy: IfNotPresent
       repository: rt.cloud.dzsi.local/docker/rw.aeo
-      tag: 13.6.0.1011158
     # The image version. Must be an exact match to the build version. Defaults to the tag so it is optional
     # useful for testing patches, e.g when the tag is 12.8.1.1008561-JLM you can set this to 12.8.1.1008561
     # version: __image_version__
@@ -436,20 +435,6 @@ launchpad:
       # The primary group for the user.
       runAsGroup: 1001
     upgradeFrom: 13.6.0.1011158
-  aeo:
-    image:
-      controller:
-        pullPolicy: IfNotPresent
-        tag: 13.6.0.1011158
-      serviceWorker:
-        pullPolicy: IfNotPresent
-        tag: 13.6.0.1011158
-      resourceWorker:
-        pullPolicy: IfNotPresent
-        tag: 13.6.0.1011158
-      tmfServer:
-        pullPolicy: IfNotPresent
-        tag: 13.6.0.1011158
   storage:
     accessMode: ReadWriteOnce
     capacity: 80Gi

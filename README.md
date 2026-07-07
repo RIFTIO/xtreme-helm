@@ -47,6 +47,7 @@ note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
 * there is a new option --image-puller
 * --storage is now the default. --no-storage is the inverse 
 * install_xtreme now confirms that storage.yaml is configured correctly 
+* All aeo images tags are now controlled by globals.aeoImgTag. just like globals.sdncImgtag 
 
 
 ## Changes in 13.6.1

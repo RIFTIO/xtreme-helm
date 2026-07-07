@@ -15,20 +15,15 @@ image:
   controller:
     repository: rt.cloud.dzsi.local/docker/rw.aeo
     pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "10.2.0.6"
   serviceWorker:
     repository: rt.cloud.dzsi.local/docker/rw.aeo
     pullPolicy: IfNotPresent
-    tag: "10.2.0.6"
   resourceWorker:
     repository: rt.cloud.dzsi.local/docker/rw.aeo
     pullPolicy: IfNotPresent
-    tag: "10.2.0.6"
   tmfServer:
     repository: rt.cloud.dzsi.local/docker/rw.aeo
     pullPolicy: IfNotPresent
-    tag: "10.2.0.6"
   scriptExec:
     repository: rt.cloud.dzsi.local/docker/rw.aeo-script-exec
     pullPolicy: IfNotPresent
