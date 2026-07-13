@@ -388,6 +388,12 @@ global:
       createClusterRole: true
     sdnc-snmpgw:
       createClusterRole: true
+  # external address config, such as NAT address
+  externalAddress:
+    sftp:
+      address: "sftp-external-ip"
+      port: 22
+
   # Global config ends here
 
 storage:
