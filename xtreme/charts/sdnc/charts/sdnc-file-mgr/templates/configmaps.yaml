@@ -98,6 +98,8 @@ data:
                 },
                 "remoteAddress":"sftp-external-ip",
                 "remotePort":{{ default 22 .Values.sftp.port }},
+                "externalAddress": {{ coalesce .Values.global.externalAddress.sftp.address "sftp-external-ip" | quote }},
+                "externalPort": {{ coalesce .Values.global.externalAddress.sftp.port .Values.sftp.port 22 }},
                 "repo-id":"dzslocal",
                 "repo-type":"sftp"
              }

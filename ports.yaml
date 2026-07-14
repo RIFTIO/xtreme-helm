@@ -9,6 +9,11 @@ global:
   ingress:
     service:
       type: LoadBalancer
+  # external address config, such as NAT address
+  externalAddress:
+    sftp:
+      address: "sftp-external-ip"
+      port: 2222
 
 launchpad:
   haproxy-ingress:
