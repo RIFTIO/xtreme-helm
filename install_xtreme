@@ -71,6 +71,63 @@ check_k8s_type() {
     fi
 }
 
+# alias.yaml and ports.yaml exist because some clusters only have a single
+# routable IP address, so all services must share it (unique ports behind one
+# address, FQDN aliasing). K3s itself is not the real signal: a K3s cluster
+# may carry a real load balancer (e.g. MetalLB installed via Rancher), while
+# its built-in ServiceLB (Klipper) merely reuses the node IP. So inspect the
+# load balancer instead of the distribution:
+#   1. MetalLB installed: count the IPs in its address pools
+#   2. an existing LoadBalancer service holding an address that is not a node
+#      IP: some other load balancer is handing out real addresses
+#   3. otherwise on K3s: Klipper shares the node's single IP
+#   4. otherwise: assume the cluster provides routable service addresses
+# Returns 0 (success) when all services must share one IP, 1 otherwise.
+cluster_shares_single_ip() {
+    # MetalLB v0.13+ keeps its pools in IPAddressPool resources
+    if kubectl get crd ipaddresspools.metallb.io >/dev/null 2>&1; then
+        local addresses
+        addresses=$(kubectl get ipaddresspools.metallb.io -A \
+            -o jsonpath='{range .items[*]}{range .spec.addresses[*]}{@}{"\n"}{end}{end}' 2>/dev/null || true)
+        if [ -n "$addresses" ]; then
+            if "${SCRIPT_DIR}/bin/pool-has-multiple-ips.sh" "$addresses"; then
+                log_info "Detected MetalLB with a real address pool"
+                return 1
+            fi
+            log_info "Detected MetalLB, but its address pool only holds a single IP"
+            return 0
+        fi
+        log_warn "MetalLB CRDs found but no IPAddressPool is configured"
+    fi
+
+    # A LoadBalancer service that already holds a hostname or a non-node IP
+    # proves a real load balancer is at work (Klipper only assigns node IPs).
+    local lb_hostnames lb_ips node_ips ip
+    lb_hostnames=$(kubectl get svc -A -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.status.loadBalancer.ingress[*].hostname}{" "}{end}' 2>/dev/null || true)
+    if [ -n "${lb_hostnames// /}" ]; then
+        log_info "Detected a load balancer assigning hostnames — assuming a real address pool"
+        return 1
+    fi
+    lb_ips=$(kubectl get svc -A -o jsonpath='{range .items[?(@.spec.type=="LoadBalancer")]}{.status.loadBalancer.ingress[*].ip}{" "}{end}' 2>/dev/null || true)
+    node_ips=$(kubectl get nodes -o jsonpath='{range .items[*]}{.status.addresses[*].address}{" "}{end}' 2>/dev/null || true)
+    for ip in $lb_ips; do
+        case " $node_ips " in
+            *" $ip "*) ;;
+            *)
+                log_info "Detected a load balancer assigning non-node IPs (e.g. $ip) — assuming a real address pool"
+                return 1;;
+        esac
+    done
+
+    if $is_k3s; then
+        log_info "No address-pool load balancer found — assuming K3s ServiceLB, which shares the node's single IP"
+        return 0
+    fi
+
+    log_info "Standard Kubernetes with no single-IP indicators — assuming routable service addresses"
+    return 1
+}
+
 log_info "Starting Xtreme Helm Deployment Script v1.0.0"
 
 # Check Helm version
@@ -187,11 +244,11 @@ else
     default_values="xtreme/aeo-values.yaml"
 fi
 
-if $is_k3s; then
-    default_values="$default_values alias.yaml ports.yaml"
-fi
-
 if [ -z "$values" ]; then
+    if cluster_shares_single_ip; then
+        log_info "Cluster services must share a single IP address — enabling alias.yaml and ports.yaml"
+        default_values="$default_values alias.yaml ports.yaml"
+    fi
     values="${default_values}"
 fi
 
