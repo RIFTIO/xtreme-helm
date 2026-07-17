@@ -600,22 +600,40 @@ if $clean; then
   log_info "Uninstalling Helm release: $release"
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
   helm uninstall imagepuller-${release} 2>/dev/null || true
-  
+
+  # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
+  # Kafka* custom resources) were just removed by the helm uninstall above. Any leftover
+  # Strimzi CRs still carrying those finalizers will never clear them, which hangs CRD
+  # deletion and namespace deletion below forever. Strip the finalizers first.
+  log_info "Clearing finalizers on leftover Strimzi custom resources..."
+  for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
+    for ns in ${NS} aeo-${NS}; do
+      for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
+        log_info "Clearing finalizers on $res in namespace $ns"
+        kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || log_warn "Failed to clear finalizers on $res"
+      done
+    done
+  done
+
   log_info "Deleting CRDs..."
   for f in xtreme/crds/*
-  do 
+  do
     if [ -f "$f" ]; then
-      crd_name=$(basename "$f" .yaml)
+      crd_name=$(grep -m1 '^  name:' "$f" | awk '{print $2}')
+      if [ -z "$crd_name" ]; then
+        log_warn "Could not determine CRD name from $f, skipping"
+        continue
+      fi
       log_info "Deleting CRD: $crd_name"
       kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
     fi
   done
-  
+
   for ns in ${NS} aeo-${NS}; do
     log_info "Deleting namespace: $ns (this will remove all remaining resources)"
     kubectl delete ns $ns --ignore-not-found=true || log_warn "Failed to delete namespace: $ns"
   done
-  
+
   log_info "Comprehensive cleanup completed successfully"
   exit 0
 fi
