@@ -159,6 +159,7 @@ ignore_storage_classes=false
 ignore_kernel_version=false
 delete_mongo_data=false
 imagepuller=false
+purge_crds=false
 
 help() {
 cat >&2 <<EOF
@@ -173,7 +174,8 @@ USAGE:
 --install         ONLY install
 --upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
---clean           clean up
+--clean           clean up (uninstalls the release and deletes the namespace; leaves CRDs in place since they are cluster-scoped and may be shared by other namespaces)
+--purge-crds      with --clean, also delete the CRDs (only safe if this is the only xtreme install on the cluster)
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
@@ -213,6 +215,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --upgrade) action=upgrade; init=false;;
         --dry-run) dryrun=true; init=false; install=false; check=false;;
         --clean) clean=true; init=false; install=false; check=false;;
+        --purge-crds) purge_crds=true;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
@@ -601,33 +604,40 @@ if $clean; then
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
   helm uninstall imagepuller-${release} 2>/dev/null || true
 
-  # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
-  # Kafka* custom resources) were just removed by the helm uninstall above. Any leftover
-  # Strimzi CRs still carrying those finalizers will never clear them, which hangs CRD
-  # deletion and namespace deletion below forever. Strip the finalizers first.
-  log_info "Clearing finalizers on leftover Strimzi custom resources..."
-  for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
-    for ns in ${NS} aeo-${NS}; do
-      for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
-        log_info "Clearing finalizers on $res in namespace $ns"
-        kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || log_warn "Failed to clear finalizers on $res"
+  if $purge_crds; then
+    # CRDs are cluster-scoped, so this affects every namespace on the cluster, not just
+    # ${NS}. Only run with --purge-crds if this is the sole xtreme install on the cluster.
+
+    # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
+    # Kafka* custom resources) were just removed by the helm uninstall above. Any leftover
+    # Strimzi CRs still carrying those finalizers will never clear them, which hangs CRD
+    # deletion and namespace deletion below forever. Strip the finalizers first.
+    log_info "Clearing finalizers on leftover Strimzi custom resources..."
+    for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
+      for ns in ${NS} aeo-${NS}; do
+        for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
+          log_info "Clearing finalizers on $res in namespace $ns"
+          kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || log_warn "Failed to clear finalizers on $res"
+        done
       done
     done
-  done
 
-  log_info "Deleting CRDs..."
-  for f in xtreme/crds/*
-  do
-    if [ -f "$f" ]; then
-      crd_name=$(grep -m1 '^  name:' "$f" | awk '{print $2}')
-      if [ -z "$crd_name" ]; then
-        log_warn "Could not determine CRD name from $f, skipping"
-        continue
+    log_info "Deleting CRDs..."
+    for f in xtreme/crds/*
+    do
+      if [ -f "$f" ]; then
+        crd_name=$(grep -m1 '^  name:' "$f" | awk '{print $2}')
+        if [ -z "$crd_name" ]; then
+          log_warn "Could not determine CRD name from $f, skipping"
+          continue
+        fi
+        log_info "Deleting CRD: $crd_name"
+        kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
       fi
-      log_info "Deleting CRD: $crd_name"
-      kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
-    fi
-  done
+    done
+  else
+    log_info "Skipping CRD deletion (CRDs are cluster-scoped; pass --purge-crds to also delete them)"
+  fi
 
   for ns in ${NS} aeo-${NS}; do
     log_info "Deleting namespace: $ns (this will remove all remaining resources)"
