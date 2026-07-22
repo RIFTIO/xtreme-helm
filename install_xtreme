@@ -409,6 +409,27 @@ handle_mongodb_upgrade() {
     fi
 }
 
+# The grafana chart creates datasource-provision/grafana-config ConfigMaps
+# behind a "lookup, only create if missing" guard, and the
+# helm.sh/resource-policy: keep annotation lives inside that same guarded
+# block. Any CM created before that annotation was added to the chart (13.6.1
+# and earlier) never gets it, so on upgrade the CM drops out of the rendered
+# manifest (lookup finds it, guard skips it) and helm's prune step deletes it
+# since nothing protects it. Stamp the annotation on the live objects before
+# upgrading so they survive.
+# TODO: remove once 13.6.1 is past EOL and no installs predate the chart fix.
+patch_grafana_provisioning_cm_annotations() {
+    local ns=$1
+    local cms=(dashboard-provision datasource-provision grafana-config)
+
+    for cm in "${cms[@]}"; do
+        if kubectl get configmap "$cm" -n "$ns" >/dev/null 2>&1; then
+            log_info "Ensuring helm.sh/resource-policy=keep on configmap $cm in namespace $ns"
+            kubectl annotate configmap "$cm" -n "$ns" helm.sh/resource-policy=keep --overwrite >/dev/null
+        fi
+    done
+}
+
 if $install; then
   log_info "Performing $action of Helm release..."
 
@@ -437,6 +458,7 @@ if $install; then
       fi
 
       handle_mongodb_upgrade "$NS"
+      patch_grafana_provisioning_cm_annotations "$NS"
   fi
 
   log_info "Running: helm $action ${release} ${chart} $flags"
