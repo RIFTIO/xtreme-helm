@@ -626,24 +626,27 @@ if $clean; then
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
   helm uninstall imagepuller-${release} 2>/dev/null || true
 
+  # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
+  # Kafka* custom resources) were just removed by the helm uninstall above, but the
+  # operator pod can still be mid-termination at this point. Clearing finalizers only
+  # once here races that shutdown: if the operator is still alive and reconciles the CR
+  # again before it exits, it just re-adds the finalizer we cleared. So instead of a
+  # single upfront pass, keep clearing finalizers in a loop, alongside the namespace
+  # delete below, until each namespace actually finishes deleting.
+  clear_strimzi_finalizers() {
+    local ns=$1
+    local crd_name res
+    for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
+      for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
+        log_info "Clearing finalizers on $res in namespace $ns"
+        kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' >/dev/null 2>&1 || true
+      done
+    done
+  }
+
   if $purge_crds; then
     # CRDs are cluster-scoped, so this affects every namespace on the cluster, not just
     # ${NS}. Only run with --purge-crds if this is the sole xtreme install on the cluster.
-
-    # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
-    # Kafka* custom resources) were just removed by the helm uninstall above. Any leftover
-    # Strimzi CRs still carrying those finalizers will never clear them, which hangs CRD
-    # deletion and namespace deletion below forever. Strip the finalizers first.
-    log_info "Clearing finalizers on leftover Strimzi custom resources..."
-    for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
-      for ns in ${NS} aeo-${NS}; do
-        for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
-          log_info "Clearing finalizers on $res in namespace $ns"
-          kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' 2>/dev/null || log_warn "Failed to clear finalizers on $res"
-        done
-      done
-    done
-
     log_info "Deleting CRDs..."
     for f in xtreme/crds/*
     do
@@ -663,7 +666,19 @@ if $clean; then
 
   for ns in ${NS} aeo-${NS}; do
     log_info "Deleting namespace: $ns (this will remove all remaining resources)"
-    kubectl delete ns $ns --ignore-not-found=true || log_warn "Failed to delete namespace: $ns"
+    kubectl delete ns "$ns" --ignore-not-found=true --wait=false 2>/dev/null || true
+
+    attempt=0
+    max_attempts=60
+    while kubectl get ns "$ns" >/dev/null 2>&1; do
+      attempt=$((attempt + 1))
+      if [ "$attempt" -gt "$max_attempts" ]; then
+        log_warn "Namespace $ns did not finish deleting after ${max_attempts} attempts (5s apart). It may still be stuck on a finalizer; check with: kubectl get ns $ns -o json"
+        break
+      fi
+      clear_strimzi_finalizers "$ns"
+      sleep 5
+    done
   done
 
   log_info "Comprehensive cleanup completed successfully"
