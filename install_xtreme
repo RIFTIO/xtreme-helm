@@ -179,7 +179,7 @@ USAGE:
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
---no-storage      do not include storage.yaml (included by default)
+--no-storage      do not include storage.yaml (included by default) and do not generate/use auto-storage.yaml on upgrade
 --zms             install zms also
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
@@ -574,6 +574,24 @@ if $install; then
 
       handle_mongodb_upgrade "$NS"
       patch_grafana_provisioning_cm_annotations "$NS"
+
+      if $storage; then
+          # Existing PVCs are already bound to whatever storageClassName the
+          # initial install used, and storageClassName is immutable once a PVC
+          # exists — so on upgrade, prefer those original values over
+          # storage.yaml's defaults. Extract them from the initial install
+          # (revision 1) and load auto-storage.yaml after storage.yaml so it
+          # wins on any leaf both files set.
+          auto_storage_file="auto-storage.yaml"
+          log_info "Extracting original storageClassName values from ${release} revision 1 into $auto_storage_file"
+          if helm get values "$release" --revision 1 2>/dev/null | "${SCRIPT_DIR}/bin/compare-storage-class-names" - > "$auto_storage_file"; then
+              flags+=("-f" "$auto_storage_file")
+              log_info "Including $auto_storage_file on the helm upgrade command-line"
+          else
+              log_warn "Could not extract storageClassName values from ${release} revision 1 — continuing without $auto_storage_file"
+              rm -f "$auto_storage_file"
+          fi
+      fi
   fi
 
   log_info "Running: helm $action ${release} ${chart} ${flags[*]}"

@@ -100,7 +100,9 @@ def dump_leaves(docs):
     pruned_docs = [p for p in (prune(doc) for doc in docs) if p is not None]
 
     if not pruned_docs:
-        print(f"INFO: no '{LEAF_KEY}' leaves found.")
+        # stdout is expected to be pure YAML in this mode (e.g. redirected to a
+        # values file), so status messages must go to stderr, not stdout.
+        print(f"INFO: no '{LEAF_KEY}' leaves found.", file=sys.stderr)
         return 0
 
     if len(pruned_docs) == 1:
