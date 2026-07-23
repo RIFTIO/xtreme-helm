@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""compare-storage-class-names -- diff/dump every "storageClassName" leaf in helm values files
+
+Usage:
+  compare-storage-class-names <file1.yaml> <file2.yaml>
+      Compare the storageClassName leaves in the two files.
+
+  compare-storage-class-names <file.yaml>
+      Print every storageClassName leaf found in the file, as valid helm
+      values YAML (structure preserved, everything else pruned out).
+
+  Use '-' in place of a filename to read that file from stdin.
+
+Exit codes:
+  0 - (two files) all storageClassName leaves present in both match
+      (one file)  always 0 on success, regardless of how many leaves were found
+  1 - (two files only) at least one storageClassName leaf differs, or exists in only one file
+  2 - a file could not be read/parsed (missing file, YAML syntax error, etc.)
+"""
+
+import sys
+
+try:
+    import yaml
+except ImportError:
+    print("ERROR: PyYAML is required (pip install pyyaml)", file=sys.stderr)
+    sys.exit(2)
+
+LEAF_KEY = "storageClassName"
+
+
+def load_docs(path):
+    """Return the list of YAML documents in path ('-' means stdin), or raise on I/O/parse error."""
+    if path == "-":
+        return [doc for doc in yaml.safe_load_all(sys.stdin) if doc is not None]
+    with open(path, "r") as f:
+        return [doc for doc in yaml.safe_load_all(f) if doc is not None]
+
+
+def read_file_docs(path):
+    """Return (docs, None) on success or (None, error_message) on failure."""
+    try:
+        return load_docs(path), None
+    except FileNotFoundError:
+        return None, f"{path}: file not found"
+    except yaml.YAMLError as e:
+        return None, f"{path}: YAML syntax error: {e}"
+    except OSError as e:
+        return None, f"{path}: {e}"
+
+
+def walk(node, path, results):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            child_path = f"{path}.{key}" if path else key
+            if key == LEAF_KEY:
+                results[child_path] = value
+            walk(value, child_path, results)
+    elif isinstance(node, list):
+        for index, item in enumerate(node):
+            child_path = f"{path}[{index}]"
+            walk(item, child_path, results)
+
+
+def collect_storage_class_names(docs):
+    results = {}
+    if len(docs) == 1:
+        walk(docs[0], "", results)
+    else:
+        for i, doc in enumerate(docs):
+            walk(doc, f"doc[{i}]", results)
+    return results
+
+
+def prune(node):
+    """Return a copy of node containing only branches that lead to a storageClassName
+    leaf, preserving dict/list structure. Returns None if node has no such leaf."""
+    if isinstance(node, dict):
+        result = {}
+        for key, value in node.items():
+            if key == LEAF_KEY:
+                result[key] = value
+            else:
+                sub = prune(value)
+                if sub is not None:
+                    result[key] = sub
+        return result if result else None
+    elif isinstance(node, list):
+        result = []
+        for item in node:
+            sub = prune(item)
+            if sub is not None:
+                result.append(sub)
+        return result if result else None
+    return None
+
+
+def dump_leaves(docs):
+    """Print every storageClassName leaf in docs as helm-values-style YAML."""
+    pruned_docs = [p for p in (prune(doc) for doc in docs) if p is not None]
+
+    if not pruned_docs:
+        print(f"INFO: no '{LEAF_KEY}' leaves found.")
+        return 0
+
+    if len(pruned_docs) == 1:
+        yaml.dump(pruned_docs[0], sys.stdout, default_flow_style=False, sort_keys=False)
+    else:
+        yaml.dump_all(pruned_docs, sys.stdout, default_flow_style=False, sort_keys=False)
+    return 0
+
+
+def compare(file1, file2, docs1, docs2):
+    results1 = collect_storage_class_names(docs1)
+    results2 = collect_storage_class_names(docs2)
+
+    all_paths = sorted(set(results1) | set(results2))
+
+    if not all_paths:
+        print(f"INFO: no '{LEAF_KEY}' leaves found in either file.")
+        return 0
+
+    mismatches = []
+    only_in_1 = []
+    only_in_2 = []
+    matches = []
+
+    for p in all_paths:
+        in1 = p in results1
+        in2 = p in results2
+        if in1 and in2:
+            if results1[p] == results2[p]:
+                matches.append(p)
+            else:
+                mismatches.append(p)
+        elif in1:
+            only_in_1.append(p)
+        else:
+            only_in_2.append(p)
+
+    for p in matches:
+        print(f"  MATCH:     {p}: {results1[p]!r}")
+    for p in mismatches:
+        print(f"  MISMATCH:  {p}: {file1}={results1[p]!r}  {file2}={results2[p]!r}")
+    for p in only_in_1:
+        print(f"  ONLY IN {file1}: {p}: {results1[p]!r}")
+    for p in only_in_2:
+        print(f"  ONLY IN {file2}: {p}: {results2[p]!r}")
+
+    total_diff = len(mismatches) + len(only_in_1) + len(only_in_2)
+    print(f"\n{len(all_paths)} '{LEAF_KEY}' leaf/leaves found: "
+          f"{len(matches)} match, {total_diff} differ.")
+
+    return 1 if total_diff else 0
+
+
+def main(argv):
+    if len(argv) not in (2, 3):
+        print(f"Usage: {argv[0]} <file1.yaml> [file2.yaml]  (use '-' for stdin)", file=sys.stderr)
+        return 2
+
+    paths = argv[1:]
+
+    if paths.count("-") > 1:
+        print("ERROR: stdin ('-') can only be used for one file at a time", file=sys.stderr)
+        return 2
+
+    docs_by_path = {}
+    for path in paths:
+        docs, err = read_file_docs(path)
+        if err is not None:
+            print(f"ERROR: {err}", file=sys.stderr)
+            return 2
+        docs_by_path[path] = docs
+
+    if len(paths) == 1:
+        return dump_leaves(docs_by_path[paths[0]])
+
+    file1, file2 = paths
+    return compare(file1, file2, docs_by_path[file1], docs_by_path[file2])
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
