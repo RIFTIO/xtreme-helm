@@ -579,12 +579,15 @@ if $install; then
           # Existing PVCs are already bound to whatever storageClassName the
           # initial install used, and storageClassName is immutable once a PVC
           # exists — so on upgrade, prefer those original values over
-          # storage.yaml's defaults. Extract them from the initial install
-          # (revision 1) and load auto-storage.yaml after storage.yaml so it
-          # wins on any leaf both files set.
+          # storage.yaml's defaults. --all is required: a plain `helm get
+          # values` only returns values the user explicitly set, so any leaf
+          # that was left at the chart's own default would be missing and
+          # storage.yaml's forced value would win for it instead. Load
+          # auto-storage.yaml after storage.yaml so it wins on any leaf both
+          # files set.
           auto_storage_file="auto-storage.yaml"
           log_info "Extracting original storageClassName values from ${release} revision 1 into $auto_storage_file"
-          if helm get values "$release" --revision 1 2>/dev/null | "${SCRIPT_DIR}/bin/compare-storage-class-names" - > "$auto_storage_file"; then
+          if helm get values "$release" --revision 1 --all 2>/dev/null | "${SCRIPT_DIR}/bin/compare-storage-class-names" - > "$auto_storage_file"; then
               flags+=("-f" "$auto_storage_file")
               log_info "Including $auto_storage_file on the helm upgrade command-line"
           else
