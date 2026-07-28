@@ -152,7 +152,6 @@ limitresource=false
 action=install
 pullpolicy=false
 storage=true
-zms=false
 ignore_old_crds=false
 ignore_dns_error=false
 ignore_storage_classes=false
@@ -180,7 +179,6 @@ USAGE:
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
 --no-storage      do not include storage.yaml (included by default) and do not generate/use auto-storage.yaml on upgrade
---zms             install zms also
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
@@ -221,7 +219,6 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --pullpolicy) pullpolicy=true;;
         --no-storage) storage=false;;
         --storage) ;;
-        --zms) zms=true;;
         --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
         --ignore-dns-error) ignore_dns_error=true;;
@@ -261,10 +258,6 @@ fi
 
 if $storage; then
   values="$values storage.yaml"
-fi
-
-if $zms; then
-  flags+=("--set" "global.install.zms=true")
 fi
 
 log_info "Configuration:"

@@ -19,7 +19,6 @@ global:
     sdnc: false
     sftp: false
     zhone-ai: true
-    zms: false
 
   ingress:
     createClusterRole: true

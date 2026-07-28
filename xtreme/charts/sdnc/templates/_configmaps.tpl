@@ -97,7 +97,7 @@ data:
             "mailboxCapacity":1000,
             "moduleShardsConfig": "configuration/initial/module-shards.conf",
             "modulesConfig": "configuration/initial/modules.conf",
-            {{- if and (eq .Values.lighty.initData.hasInitData true) (eq .Values.global.install.zms true) }}
+            {{- if (eq .Values.lighty.initData.hasInitData true) }}
             "initialConfigData": {
                 "pathToInitDataFile": "{{ .Values.lighty.configDirectoryName }}/initData.json",
                 "format": "json"

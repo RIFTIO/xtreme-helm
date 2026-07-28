@@ -4,7 +4,6 @@ global:
   namespace:
     name: TPL_HOSTNAME
   install:
-    zms: false
     inas: false
     sdnc: false
     explore: false

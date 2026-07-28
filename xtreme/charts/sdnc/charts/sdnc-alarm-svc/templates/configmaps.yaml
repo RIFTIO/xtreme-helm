@@ -111,11 +111,7 @@ data:
           "zms": {
             "connection": {
               "httpAddress": "http://{{- $netconf_svc -}}:8888",
-              "authType": "basic",
-              "authDetail": {
-                "username": "admin",
-                "password": "nms"
-              }
+              "authType": "none"
             },
             "supportLastChanged": true
           },
@@ -523,6 +519,13 @@ data:
             "service": "SNMPGW",
             "connection": {
               "httpAddress": "http://{{- $snmpgw -}}:8881",
+              "authType": "none"
+            }
+          },
+          "InventoryMgr": {
+            "service": "InventoryMgr",
+            "connection": {
+              "httpAddress": "http://{{- $inventory_mgr -}}:8899",
               "authType": "none"
             }
           }

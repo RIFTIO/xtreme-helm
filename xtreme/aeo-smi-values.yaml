@@ -9,7 +9,6 @@ global:
     sdnc: true
     ftp: true
     sftp: true
-    zms: false
     aeo: true
     kafka: true
   namespace:
@@ -31,9 +30,6 @@ launchpad:
     capacity: 80Gi
   cluster_logger:
     createClusterRole: true
-zms:
-  image:
-    tag: 4.3.0.1003914
 
 sdnc:
   sdnc-netconf-svc:

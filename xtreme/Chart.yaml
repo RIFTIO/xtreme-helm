@@ -41,9 +41,6 @@ dependencies:
   - name: sftp
     version: 0.1.0
     condition: global.install.aeo
-  - name: zms
-    repository: file://.charts/zms
-    condition: global.install.zms
   - name: postgres
     repository: file://.charts/postgres
     condition: global.install.explore, global.install.inas

@@ -34,10 +34,6 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: RW_MONGODB_SVC_NAME
               value: {{ include "mongodb.fqdn" . }}
-            {{- if and (eq .Values.svcName "netconf") (eq .Values.global.install.zms true) }}
-            - name: RW_ZMS_SVC_NAME
-              value: {{ .Values.zms.internal.host }}
-            {{- end }}
             {{- if and (eq .Values.svcName "config") (eq .Values.global.install.inas true) }}
             - name: RW_INAS2_BE_SVC_NAME
               value: {{ include "inas-be.fqdn" . }}
@@ -55,9 +51,6 @@ spec:
           args:
             - --host="$(RW_NATS_SVC_NAME):4222"
             - --host="$(RW_MONGODB_SVC_NAME):8006"
-            {{- if and (eq .Values.svcName "netconf") (eq .Values.global.install.zms true) }}
-            - --host="$(RW_ZMS_SVC_NAME):830"
-            {{- end }}
             {{- if and (eq .Values.svcName "config") (eq .Values.global.install.inas true) }}
             - --host="$(RW_INAS2_BE_SVC_NAME):30522"
             {{- end }}
@@ -115,18 +108,6 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: CACHE_SCHEMA
               value: "false"
-            - name: INSTALL_INTERNAL_ZMS
-              value: {{ .Values.global.install.zms | quote }}
-            {{- if and (eq .Values.svcName "netconf") (eq .Values.global.install.zms true) }}
-            - name: ZMS_HOST
-              value: {{ .Values.zms.internal.host }}
-            - name: ZMS_PORT
-              value: {{ .Values.zms.internal.port | quote }}
-            - name: ZMS_USER
-              value: {{ .Values.zms.internal.user }}
-            - name: ZMS_PASSWORD
-              value: {{ .Values.zms.internal.password }}
-            {{- end }}
 
             - name: JAVA_OPTS
               value:  "{{ .Values.java.opts.xmx }}

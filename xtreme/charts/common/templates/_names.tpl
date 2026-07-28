@@ -360,35 +360,6 @@ App name for SDNC BE UI FQDN.
 {{- end -}}
 
 {{/*
- Namespace where ZMS runs. Overrides the one defined in subchart.
-*/}}
-{{- define "zms.namespace" -}}
-{{- if .Values.global -}}
-{{- if .Values.global.zmsNamespacePrefix -}}
-{{- printf "%s-%s" .Values.global.zmsNamespacePrefix .Values.global.namespace.name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{ .Values.global.namespace.name | trunc 63 | trimSuffix "-" }}
-{{- end -}}
-{{- else -}}
-{{ .Release.Namespace }}
-{{- end -}}
-{{-  end -}}
-
-{{/*
-App name for ZMS.
-*/}}
-{{- define "zms.fullname" -}}
-{{ include "common.fullname" (list . "zms") -}}
-{{- end -}}
-
-{{/*
-App name for ZMS FQDN.
-*/}}
-{{- define "zms.fqdn" -}}
-{{ include "zms.fullname" . -}}.{{- include "zms.namespace" . }}
-{{- end -}}
-
-{{/*
  Namespace where INAS runs. Overrides the one defined in subchart.
 */}}
 {{- define "inas.namespace" -}}
