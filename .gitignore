@@ -2,3 +2,4 @@ dockerhub-token
 .idea
 *tgz
 .image.list
+auto-storage.yaml
