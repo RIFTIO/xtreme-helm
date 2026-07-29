@@ -63,7 +63,7 @@ lighty:
     "messagingClientConfig": {
       	"entries": [
         {
-          "serviceIdentifier": "KAFKA",
+          "serviceIdentifier": "KAFKA-PUB",
           "enabled": enableKafka,
           "serverType": "KAFKA",
           "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
@@ -90,6 +90,27 @@ lighty:
               "key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
               "value.serializer": "io.cloudevents.kafka.CloudEventSerializer"
             }
+          }
+        },
+        {
+          "serviceIdentifier": "KAFKA-SUB",
+          "enabled": enableKafka,
+          "serverType": "KAFKA",
+          "configClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientConfig",
+          "clientClass": "com.dzsi.sdnc.common.messaging.kafka.KafkaClientService",
+          "config": {
+            "type": "SUB",
+            "consumerConfig": {
+              "bootstrap.servers": "kafka-headless",
+	      "group.id": "service",
+	      "enable.auto.commit": "true",
+	      "auto.offset.reset": "latest",
+	      "key.deserializer": "org.apache.kafka.common.serialization.StringDeserializer",
+	      "value.deserializer": "io.cloudevents.kafka.CloudEventDeserializer"
+            },
+	      "consumerTopics": [
+	        "zhone.sdnc.transport.service"
+              ]
           }
         },
         {
@@ -222,4 +243,3 @@ daexim:
 java:
   opts:
     xmx: "-Xmx2g"  
-    
