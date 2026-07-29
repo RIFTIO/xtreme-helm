@@ -71,6 +71,38 @@ check_k8s_type() {
     fi
 }
 
+# Function to check the Kubernetes server version. Kafka requires 1.30 or later.
+# Aborts unless $ignore_k8s_version is true, in which case it only warns.
+check_k8s_version() {
+    local server_version version_number major minor
+    if ! server_version=$(kubectl version -o json 2>/dev/null | grep '"gitVersion"' | tail -1 | sed 's/.*"\(v[^"]*\)".*/\1/'); then
+        log_error "Unable to determine Kubernetes server version"
+        exit 1
+    fi
+
+    if [ -z "$server_version" ]; then
+        log_error "Unable to retrieve Kubernetes server version"
+        exit 1
+    fi
+
+    version_number=$(echo "$server_version" | sed 's/^v//' | cut -d'+' -f1)
+    major=$(echo "$version_number" | cut -d. -f1)
+    minor=$(echo "$version_number" | cut -d. -f2)
+
+    if [ -z "$major" ] || [ -z "$minor" ]; then
+        log_warn "Unable to parse Kubernetes server version '$server_version' — skipping the 1.30 minimum-version check"
+        return
+    fi
+
+    if [ "$major" -lt 1 ] || ([ "$major" -eq 1 ] && [ "$minor" -lt 30 ]); then
+        if $ignore_k8s_version; then
+            log_warn "Kubernetes server version $server_version is below 1.30. Continuing anyway (--ignore-k8s-version); this is HIGHLY DISCOURAGED as Kafka requires Kubernetes 1.30 or later."
+        else
+            log_error "Kubernetes server version $server_version is below 1.30. Kafka requires Kubernetes 1.30 or later. Upgrade the cluster, or pass --ignore-k8s-version to override (HIGHLY DISCOURAGED)."
+        fi
+    fi
+}
+
 # alias.yaml and ports.yaml exist because some clusters only have a single
 # routable IP address, so all services must share it (unique ports behind one
 # address, FQDN aliasing). K3s itself is not the real signal: a K3s cluster
@@ -130,6 +162,11 @@ cluster_shares_single_ip() {
 
 log_info "Starting Xtreme Helm Deployment Script v1.0.0"
 
+# Check that jq is installed
+if ! command -v jq >/dev/null 2>&1; then
+    log_error "jq is not installed or not in PATH. Please install jq before running this script."
+fi
+
 # Check Helm version
 check_helm_version
 
@@ -156,6 +193,7 @@ ignore_old_crds=false
 ignore_dns_error=false
 ignore_storage_classes=false
 ignore_kernel_version=false
+ignore_k8s_version=false
 delete_mongo_data=false
 imagepuller=false
 purge_crds=false
@@ -184,6 +222,7 @@ USAGE:
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
 --ignore-storage-classes  continue even if storageClasses referenced in the chart are missing from the cluster
 --ignore-kernel-version   continue even if a node runs a kernel MongoDB is incompatible with (>= 6.19)
+--ignore-k8s-version      continue even if the Kubernetes server version is below 1.30 (HIGHLY DISCOURAGED — Kafka requires 1.30 or later)
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 --set key=value      pass a --set argument directly to helm; may be used more than once (for debugging only)
 
@@ -224,6 +263,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --ignore-dns-error) ignore_dns_error=true;;
         --ignore-storage-classes) ignore_storage_classes=true;;
         --ignore-kernel-version) ignore_kernel_version=true;;
+        --ignore-k8s-version) ignore_k8s_version=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         --set) flags+=("--set" "$2"); shift;;
         *) help;;
@@ -233,6 +273,9 @@ done
 if [ $# -gt 0 ]; then
     help
 fi
+
+# Enforce the minimum Kubernetes version now that --ignore-k8s-version is parsed
+check_k8s_version
 
 # Delete orphaned secrets before deployment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
