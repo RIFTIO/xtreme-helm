@@ -116,11 +116,7 @@ data:
           "zms": {
             "connection": {
               "httpAddress": "http://{{- $netconf_svc -}}:8888",
-              "authType": "basic",
-              "authDetail": {
-                "username": "admin",
-                "password": "nms"
-              }
+              "authType": "none"
             },
             "supportLastChanged": true
           },

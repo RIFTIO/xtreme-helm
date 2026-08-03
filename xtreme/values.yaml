@@ -74,7 +74,7 @@ global:
 
   # This is needed for fixing readOnlyFileSystem issue, when set true
   # A local volume of type emptyDir is added
-  ensureEmptyDirCreation: false
+  ensureEmptyDirCreation: true
   excludeAppsInEmptyDirCreation: []
 
   # This is the simplest probe which fixes kyverno probe related warnings
@@ -179,9 +179,7 @@ global:
   aeoNamespacePrefix: "aeo"
   # If not empty assigns a prefix for sdnc services
   sdncNamespacePrefix: "aeo"
-  # If not empty assigns a prefix for zms service
-  zmsNamespacePrefix: "aeo"
-  # If not empty assigns a prefix for zms service
+  # If not empty assigns a prefix for inas service
   inasNamespacePrefix: "aeo"
   # If not empty assign a prefix for explore related services
   exploreNamespacePrefix: "aeo"
@@ -353,7 +351,6 @@ global:
     sdnc: true
     ftp: true
     sftp: true
-    zms: false
     aeo: true
     kafka: true
     deviceSimulator: false

@@ -4,7 +4,6 @@ global:
   namespace:
     name: dzs
   install:
-    zms: true
     inas: true
   ingress:
     createClusterRole: true   # only for first installation on k8s cluster
@@ -45,7 +44,3 @@ sdnc-transportpce:
   nodePort:
     userNodePort: false
     restconfNodePort: 33010
-
-zms:
-  sevice:
-    zmsHostNetwork: false

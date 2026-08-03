@@ -11,7 +11,6 @@ global:
     name: TPL_HOSTNAME
   install:
     explore: false
-    zms: false
     inas: false
     sdnc: true
     ftp: true

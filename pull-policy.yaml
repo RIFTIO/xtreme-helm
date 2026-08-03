@@ -21,18 +21,6 @@ nats:
     image:
       pullPolicy: Never
 
-# ── zms sub-chart ──────────────────────────────────────────────────────────
-
-zms:
-  initContainer:
-    waitForDep:
-      image:
-        pullPolicy: Never
-  image:
-    pullPolicy: Never
-  mariadb:
-    pullPolicy: Never
-
 # ── redis sub-chart ────────────────────────────────────────────────────────
 
 redis:

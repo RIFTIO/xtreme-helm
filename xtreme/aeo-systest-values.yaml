@@ -6,7 +6,6 @@ global:
     name: TPL_NAMESPACE
   install:
     explore: false
-    zms: false
     inas: false
     sdnc: true
     ftp: true

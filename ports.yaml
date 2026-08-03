@@ -52,9 +52,4 @@ sdnc:
     service:
       annotations:
         metallb.universe.tf/allow-shared-ip: "dzs-xtreme-key"
-zms:
-  vsftp:
-    port: 2224
-  ftp:
-    port: 21
-    port20: 20
+

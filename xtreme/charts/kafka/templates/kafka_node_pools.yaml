@@ -5,6 +5,8 @@ metadata:
   namespace: {{  .Values.global.namespace.name }}
   labels:
     strimzi.io/cluster: {{ include "kafka.prefix" . }}
+  annotations:
+     strimzi.io/next-node-ids: "[1]"
 spec:
   replicas: 1
   roles:
@@ -32,6 +34,8 @@ metadata:
   namespace: {{  .Values.global.namespace.name }}
   labels:
     strimzi.io/cluster: {{ include "kafka.prefix" . }}
+  annotations:
+     strimzi.io/next-node-ids: "[0]"
 spec:
   replicas: 1
   roles:

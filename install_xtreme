@@ -71,6 +71,38 @@ check_k8s_type() {
     fi
 }
 
+# Function to check the Kubernetes server version. Kafka requires 1.30 or later.
+# Aborts unless $ignore_k8s_version is true, in which case it only warns.
+check_k8s_version() {
+    local server_version version_number major minor
+    if ! server_version=$(kubectl version -o json 2>/dev/null | grep '"gitVersion"' | tail -1 | sed 's/.*"\(v[^"]*\)".*/\1/'); then
+        log_error "Unable to determine Kubernetes server version"
+        exit 1
+    fi
+
+    if [ -z "$server_version" ]; then
+        log_error "Unable to retrieve Kubernetes server version"
+        exit 1
+    fi
+
+    version_number=$(echo "$server_version" | sed 's/^v//' | cut -d'+' -f1)
+    major=$(echo "$version_number" | cut -d. -f1)
+    minor=$(echo "$version_number" | cut -d. -f2)
+
+    if [ -z "$major" ] || [ -z "$minor" ]; then
+        log_warn "Unable to parse Kubernetes server version '$server_version' — skipping the 1.30 minimum-version check"
+        return
+    fi
+
+    if [ "$major" -lt 1 ] || ([ "$major" -eq 1 ] && [ "$minor" -lt 30 ]); then
+        if $ignore_k8s_version; then
+            log_warn "Kubernetes server version $server_version is below 1.30. Continuing anyway (--ignore-k8s-version); this is HIGHLY DISCOURAGED as Kafka requires Kubernetes 1.30 or later."
+        else
+            log_error "Kubernetes server version $server_version is below 1.30. Kafka requires Kubernetes 1.30 or later. Upgrade the cluster, or pass --ignore-k8s-version to override (HIGHLY DISCOURAGED)."
+        fi
+    fi
+}
+
 # alias.yaml and ports.yaml exist because some clusters only have a single
 # routable IP address, so all services must share it (unique ports behind one
 # address, FQDN aliasing). K3s itself is not the real signal: a K3s cluster
@@ -130,6 +162,11 @@ cluster_shares_single_ip() {
 
 log_info "Starting Xtreme Helm Deployment Script v1.0.0"
 
+# Check that jq is installed
+if ! command -v jq >/dev/null 2>&1; then
+    log_error "jq is not installed or not in PATH. Please install jq before running this script."
+fi
+
 # Check Helm version
 check_helm_version
 
@@ -152,13 +189,14 @@ limitresource=false
 action=install
 pullpolicy=false
 storage=true
-zms=false
 ignore_old_crds=false
 ignore_dns_error=false
 ignore_storage_classes=false
 ignore_kernel_version=false
+ignore_k8s_version=false
 delete_mongo_data=false
 imagepuller=false
+purge_crds=false
 
 help() {
 cat >&2 <<EOF
@@ -173,17 +211,18 @@ USAGE:
 --install         ONLY install
 --upgrade         upgrade instead of install
 --dry-run         do not install, just do a dry-run
---clean           clean up
+--clean           clean up (uninstalls the release and deletes the namespace; leaves CRDs in place since they are cluster-scoped and may be shared by other namespaces)
+--purge-crds      with --clean, also delete the CRDs (only safe if this is the only xtreme install on the cluster)
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
---no-storage      do not include storage.yaml (included by default)
---zms             install zms also
+--no-storage      do not include storage.yaml (included by default) and do not generate/use auto-storage.yaml on upgrade
 --imagepuller     run imagepuller first to pre-cache all images on every node
 --ignore-old-crds    continue even if deprecated Strimzi CRD versions are found (use with caution)
 --ignore-dns-error   continue even if check-dns.sh reports errors (only relevant on k3s with alias.yaml)
 --ignore-storage-classes  continue even if storageClasses referenced in the chart are missing from the cluster
 --ignore-kernel-version   continue even if a node runs a kernel MongoDB is incompatible with (>= 6.19)
+--ignore-k8s-version      continue even if the Kubernetes server version is below 1.30 (HIGHLY DISCOURAGED — Kafka requires 1.30 or later)
 --delete-mongo-data  on upgrade, erase MongoDB data if the existing schema is too old to migrate (required when upgrading from 13.4.0 or earlier)
 --set key=value      pass a --set argument directly to helm; may be used more than once (for debugging only)
 
@@ -213,17 +252,18 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --upgrade) action=upgrade; init=false;;
         --dry-run) dryrun=true; init=false; install=false; check=false;;
         --clean) clean=true; init=false; install=false; check=false;;
+        --purge-crds) purge_crds=true;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
         --no-storage) storage=false;;
         --storage) ;;
-        --zms) zms=true;;
         --imagepuller) imagepuller=true;;
         --ignore-old-crds) ignore_old_crds=true;;
         --ignore-dns-error) ignore_dns_error=true;;
         --ignore-storage-classes) ignore_storage_classes=true;;
         --ignore-kernel-version) ignore_kernel_version=true;;
+        --ignore-k8s-version) ignore_k8s_version=true;;
         --delete-mongo-data) delete_mongo_data=true;;
         --set) flags+=("--set" "$2"); shift;;
         *) help;;
@@ -233,6 +273,9 @@ done
 if [ $# -gt 0 ]; then
     help
 fi
+
+# Enforce the minimum Kubernetes version now that --ignore-k8s-version is parsed
+check_k8s_version
 
 # Delete orphaned secrets before deployment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -258,10 +301,6 @@ fi
 
 if $storage; then
   values="$values storage.yaml"
-fi
-
-if $zms; then
-  flags+=("--set" "global.install.zms=true")
 fi
 
 log_info "Configuration:"
@@ -322,29 +361,35 @@ check_kafka_crd_versions() {
         crd_name="${crd#customresourcedefinition.apiextensions.k8s.io/}"
         old_versions=$(kubectl get crd "$crd_name" \
             -o jsonpath='{range .spec.versions[*]}{.name}{"\n"}{end}' 2>/dev/null \
-            | grep -E "^v1beta1$|^v1alpha1$|^v1beta3$" || true)
+            | grep -E "^v1beta1$|^v1alpha1$|^v1beta3$|^v1beta2$" || true)
         if [ -n "$old_versions" ]; then
             log_warn "CRD $crd_name still has deprecated versions: $(echo $old_versions | tr '\n' ' ')"
             found=1
         fi
     done
     if [ "$found" -ne 0 ]; then
-        log_warn "One or more Strimzi CRDs have pre-v1beta2 versions still installed."
+        log_warn "One or more Strimzi CRDs have pre-v1 versions still installed."
         log_warn "Remove them before deploying:"
         log_warn "  kubectl patch crd <name> --type=json -p='[{\"op\":\"remove\",\"path\":\"/spec/versions/N\"}]'"
         if $ignore_old_crds; then
             log_warn "Continuing anyway because --ignore-old-crds was specified."
+	    return 0
         else
-            log_error "Aborting. Re-run with --ignore-old-crds to deploy anyway (not recommended)."
-            exit 1
+            log_warn "One or more Strimzi CRDs have pre-v1 versions still installed."
+	    return 1
         fi
     else
-        log_info "All Strimzi Kafka CRDs are at v1beta2 only — OK"
+        log_info "All Strimzi Kafka CRDs are at v1 only — OK"
+	return 0
     fi
 }
 
 if ! $dryrun && ! $clean && ( $init || $install ); then
-    check_kafka_crd_versions
+    log_info " checkig kafka crds"	
+    if ! check_kafka_crd_versions; then
+          ${SCRIPT_DIR}/bin/delete_kafka_crds_pvcs.sh  --ns "$NS"
+    fi	  
+    	  
 fi
 
 # Validate DOCKERHUB_TOKEN: required in prod, optional in dev
@@ -502,6 +547,27 @@ handle_mongodb_upgrade() {
     fi
 }
 
+# The grafana chart creates datasource-provision/grafana-config ConfigMaps
+# behind a "lookup, only create if missing" guard, and the
+# helm.sh/resource-policy: keep annotation lives inside that same guarded
+# block. Any CM created before that annotation was added to the chart (13.6.1
+# and earlier) never gets it, so on upgrade the CM drops out of the rendered
+# manifest (lookup finds it, guard skips it) and helm's prune step deletes it
+# since nothing protects it. Stamp the annotation on the live objects before
+# upgrading so they survive.
+# TODO: remove once 13.6.1 is past EOL and no installs predate the chart fix.
+patch_grafana_provisioning_cm_annotations() {
+    local ns=$1
+    local cms=(dashboard-provision datasource-provision grafana-config)
+
+    for cm in "${cms[@]}"; do
+        if kubectl get configmap "$cm" -n "$ns" >/dev/null 2>&1; then
+            log_info "Ensuring helm.sh/resource-policy=keep on configmap $cm in namespace $ns"
+            kubectl annotate configmap "$cm" -n "$ns" helm.sh/resource-policy=keep --overwrite >/dev/null
+        fi
+    done
+}
+
 if $install; then
   # MongoDB 8.0.x refuses to start on kernel 6.19+ (TCMalloc/rseq ABI, SERVER-121912)
   log_info "Checking node kernel versions for MongoDB compatibility..."
@@ -549,6 +615,28 @@ if $install; then
       fi
 
       handle_mongodb_upgrade "$NS"
+      patch_grafana_provisioning_cm_annotations "$NS"
+
+      if $storage; then
+          # Existing PVCs are already bound to whatever storageClassName the
+          # initial install used, and storageClassName is immutable once a PVC
+          # exists — so on upgrade, prefer those original values over
+          # storage.yaml's defaults. --all is required: a plain `helm get
+          # values` only returns values the user explicitly set, so any leaf
+          # that was left at the chart's own default would be missing and
+          # storage.yaml's forced value would win for it instead. Load
+          # auto-storage.yaml after storage.yaml so it wins on any leaf both
+          # files set.
+          auto_storage_file="auto-storage.yaml"
+          log_info "Extracting original storageClassName values from ${release} revision 1 into $auto_storage_file"
+          if helm get values "$release" --revision 1 --all 2>/dev/null | "${SCRIPT_DIR}/bin/compare-storage-class-names" - > "$auto_storage_file"; then
+              flags+=("-f" "$auto_storage_file")
+              log_info "Including $auto_storage_file on the helm upgrade command-line"
+          else
+              log_warn "Could not extract storageClassName values from ${release} revision 1 — continuing without $auto_storage_file"
+              rm -f "$auto_storage_file"
+          fi
+      fi
   fi
 
   log_info "Running: helm $action ${release} ${chart} ${flags[*]}"
@@ -600,22 +688,62 @@ if $clean; then
   log_info "Uninstalling Helm release: $release"
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
   helm uninstall imagepuller-${release} 2>/dev/null || true
-  
-  log_info "Deleting CRDs..."
-  for f in xtreme/crds/*
-  do 
-    if [ -f "$f" ]; then
-      crd_name=$(basename "$f" .yaml)
-      log_info "Deleting CRD: $crd_name"
-      kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
-    fi
-  done
-  
+
+  # The Strimzi operators (which own the strimzi.io/topic-operator etc. finalizers on
+  # Kafka* custom resources) were just removed by the helm uninstall above, but the
+  # operator pod can still be mid-termination at this point. Clearing finalizers only
+  # once here races that shutdown: if the operator is still alive and reconciles the CR
+  # again before it exits, it just re-adds the finalizer we cleared. So instead of a
+  # single upfront pass, keep clearing finalizers in a loop, alongside the namespace
+  # delete below, until each namespace actually finishes deleting.
+  clear_strimzi_finalizers() {
+    local ns=$1
+    local crd_name res
+    for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
+      for res in $(kubectl get "$crd_name" -n "$ns" -o name 2>/dev/null); do
+        log_info "Clearing finalizers on $res in namespace $ns"
+        kubectl patch "$res" -n "$ns" --type=merge -p '{"metadata":{"finalizers":[]}}' >/dev/null 2>&1 || true
+      done
+    done
+  }
+
+  if $purge_crds; then
+    # CRDs are cluster-scoped, so this affects every namespace on the cluster, not just
+    # ${NS}. Only run with --purge-crds if this is the sole xtreme install on the cluster.
+    log_info "Deleting CRDs..."
+    for f in xtreme/crds/*
+    do
+      if [ -f "$f" ]; then
+        crd_name=$(grep -m1 '^  name:' "$f" | awk '{print $2}')
+        if [ -z "$crd_name" ]; then
+          log_warn "Could not determine CRD name from $f, skipping"
+          continue
+        fi
+        log_info "Deleting CRD: $crd_name"
+        kubectl delete crd "$crd_name" --ignore-not-found=true || log_warn "Failed to delete CRD: $crd_name"
+      fi
+    done
+  else
+    log_info "Skipping CRD deletion (CRDs are cluster-scoped; pass --purge-crds to also delete them)"
+  fi
+
   for ns in ${NS} aeo-${NS}; do
     log_info "Deleting namespace: $ns (this will remove all remaining resources)"
-    kubectl delete ns $ns --ignore-not-found=true || log_warn "Failed to delete namespace: $ns"
+    kubectl delete ns "$ns" --ignore-not-found=true --wait=false 2>/dev/null || true
+
+    attempt=0
+    max_attempts=60
+    while kubectl get ns "$ns" >/dev/null 2>&1; do
+      attempt=$((attempt + 1))
+      if [ "$attempt" -gt "$max_attempts" ]; then
+        log_warn "Namespace $ns did not finish deleting after ${max_attempts} attempts (5s apart). It may still be stuck on a finalizer; check with: kubectl get ns $ns -o json"
+        break
+      fi
+      clear_strimzi_finalizers "$ns"
+      sleep 5
+    done
   done
-  
+
   log_info "Comprehensive cleanup completed successfully"
   exit 0
 fi

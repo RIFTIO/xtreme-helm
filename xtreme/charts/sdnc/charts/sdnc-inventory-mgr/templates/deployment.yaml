@@ -80,6 +80,8 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: JAVA_OPTS
               value: {{ .Values.java.opts }}
+            - name: REMOVE_INTERNAL_ZMS
+              value: "true"
           ports:
             - name: http
               containerPort: 8899

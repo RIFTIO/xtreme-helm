@@ -30,11 +30,7 @@ data:
     logger.kafka.name = org.apache.kafka
     logger.kafka.level = WARN
 
-
     # Keeps separate level for Netty logging -> to not be changed by the root logger
     logger.netty.name = io.netty
     logger.netty.level = INFO
-
-    logger.okhttp3.name = okhttp3
-    logger.okhttp3.level = INFO
     {{- end }}

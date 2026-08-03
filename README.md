@@ -24,6 +24,12 @@ PLEASE NOTE that this helm chart is useless unless you have a token for accessin
 the Zhone Inc container image repository currently hosted on dockerhub
 or you are inside the Zhone lab.
 
+## Breaking change for upgrades from 13.6.x or earlier
+
+The defaults for managing storage have flipped. The default used to be that you had to specify --storage if
+you did not want to use the default storage clasees. The new default is to include this file. So if you 
+did not use --storage for your initial install, you must use --no-storage on the upgrade. 
+
 ## files in this dir
 * README.md this file
 * alias.yaml -- values to force xtreme to use a FQDN instead of an IP address. When running on a single node
