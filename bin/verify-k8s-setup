@@ -104,6 +104,58 @@ else
     fail "Helm is NOT installed"
 fi
 
+section "MetalLB LoadBalancer Announce Readiness"
+if kubectl get ns metallb-system &>/dev/null; then
+    mlb_image=$(kubectl get daemonset speaker -n metallb-system -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null)
+    mlb_version=$(echo "$mlb_image" | sed -n 's/.*:v\?\([0-9]*\.[0-9]*\).*/\1/p')
+    mlb_major=$(echo "$mlb_version" | cut -d. -f1)
+    mlb_minor=$(echo "$mlb_version" | cut -d. -f2)
+
+    honors_exclusion_label=0
+    if [ -n "$mlb_minor" ] && { [ "$mlb_major" -gt 0 ] || [ "$mlb_minor" -ge 13 ]; }; then
+        honors_exclusion_label=1
+    fi
+
+    total_nodes=$(kubectl get nodes --no-headers | wc -l)
+    excluded_nodes=$(kubectl get nodes -o json | jq -r '.items[] | select(.metadata.labels | has("node.kubernetes.io/exclude-from-external-load-balancers")) | .metadata.name')
+    excluded_count=$(printf '%s\n' "$excluded_nodes" | grep -c . || true)
+    eligible_count=$((total_nodes - excluded_count))
+
+    if [ "$excluded_count" -gt 0 ]; then
+        echo "        Excluded node(s): (MetalLB $mlb_image)"
+        printf '%s\n' "$excluded_nodes" | sed 's/^/          /'
+    fi
+
+    if [ "$honors_exclusion_label" -eq 0 ]; then
+        if [ "$excluded_count" -gt 0 ]; then
+            warn "$excluded_count node(s) carry exclude-from-external-load-balancers, but MetalLB $mlb_version predates enforcement (pre-v0.13) — inert for now, but WILL break ingress if upgraded without removing this label first"
+        else
+            pass "No nodes excluded (MetalLB $mlb_version doesn't enforce this label anyway)"
+        fi
+    else
+        if [ "$eligible_count" -eq 0 ]; then
+            fail "All $total_nodes node(s) carry exclude-from-external-load-balancers — MetalLB $mlb_version cannot announce ANY VIP"
+        elif [ "$excluded_count" -gt 0 ]; then
+            warn "$excluded_count of $total_nodes node(s) excluded from external load balancers"
+        else
+            pass "No nodes excluded from external load balancers ($total_nodes eligible)"
+        fi
+    fi
+
+    lb_svc_count=$(kubectl get svc -A --field-selector spec.type=LoadBalancer --no-headers 2>/dev/null | wc -l)
+    l2status_count=$(kubectl get servicel2statuses.metallb.io -A --no-headers 2>/dev/null | wc -l)
+
+    if [ "$honors_exclusion_label" -eq 1 ] && [ "$lb_svc_count" -gt 0 ] && [ "$l2status_count" -eq 0 ]; then
+        fail "$lb_svc_count LoadBalancer service(s) exist but 0 servicel2statuses — MetalLB is not announcing anything"
+    elif [ "$honors_exclusion_label" -eq 1 ] && [ "$lb_svc_count" -gt 0 ]; then
+        pass "$l2status_count active L2 announcement(s) found for $lb_svc_count LoadBalancer service(s)"
+    else
+        pass "servicel2statuses check skipped or N/A on this MetalLB version"
+    fi
+else
+    warn "metallb-system namespace not found — skipping MetalLB checks"
+fi
+
 # ── Host-level checks via privileged pod ─────────────────────────────────────
 
 echo ""
