@@ -24,6 +24,12 @@ PLEASE NOTE that this helm chart is useless unless you have a token for accessin
 the Zhone Inc container image repository currently hosted on dockerhub
 or you are inside the Zhone lab.
 
+## Pre-requisites 
+* the worker nodes must be running linux kernel 5.x or 6.x. 7.x is not supported today
+* The cluster must be running k8s 1.30 or later 
+* for k3s, there must be 500 GB available in /var/lib/ on the host 
+* helm 3.13 is a minimum, 3.20 is recommended. 4.x is not supported. 
+
 ## Breaking change for upgrades from 13.6.x or earlier
 
 The defaults for managing storage have flipped. The default used to be that you had to specify --storage if
@@ -72,7 +78,7 @@ note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
 * If the script detects that the target cluster is running k3s, alias.yaml and ports.yaml are automatically included. 
 
 
-## INSTALLATION 
+# INSTALLATION 
 
 Unless you are in the Zhone lab, you must have a token in order to download container 
 images from the Zhone docker-hub repository. Place
@@ -106,6 +112,12 @@ kubectl get pods -n aeo-<namespace> -w
 
 to watch it finish up 
 
+## upgrade notes 
+* make sure you use the same --ns and --release arguments as your initial install
+* * Use ```helm ls``` and look at NAME to get the release
+* * Use ```kubectl get pods -A | egrep 'NAME|launchpad``` to figure out the ns (namespace) 
+* add --upgrade as an argument 
+* the installer will figure out your storage classes
 
 ## notes
 
