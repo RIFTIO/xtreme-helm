@@ -59,7 +59,8 @@ note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
 
 ## Changes in 13.7.0
 * there is a new option --image-puller
-* --storage is now the default. --no-storage is the inverse 
+* --storage is now the default. --no-storage is the inverse. For upgrades, the script will 
+  determine the proper storage settings
 * install_xtreme now confirms that storage.yaml is configured correctly 
 * All aeo images tags are now controlled by globals.aeoImgTag. just like globals.sdncImgtag 
 * alias.yaml and ports.yaml are now enabled by inspecting the cluster's load balancer instead of
