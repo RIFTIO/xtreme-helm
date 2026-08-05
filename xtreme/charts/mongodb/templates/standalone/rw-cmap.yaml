@@ -15,7 +15,10 @@ data:
       {{- end }}
       logAppend: true
       logRotate: reopen
-      traceAllExceptions: true
+      # traceAllExceptions=true prints a full symbolized stack trace for every
+      # DBException (incl. routine client disconnects). Under connection churn
+      # this pegs several CPU cores and starves mongod. Keep it disabled.
+      traceAllExceptions: false
       timeStampFormat: iso8601-utc
     processManagement:
       fork: false
