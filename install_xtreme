@@ -384,12 +384,13 @@ check_kafka_crd_versions() {
     fi
 }
 
+kafka_crds_mismatch=false
+
 if ! $dryrun && ! $clean && ( $init || $install ); then
-    log_info " checkig kafka crds"	
+    log_info " checkig kafka crds"
     if ! check_kafka_crd_versions; then
-          ${SCRIPT_DIR}/bin/delete_kafka_crds_pvcs.sh  --ns "$NS"
-    fi	  
-    	  
+	kafka_crds_mismatch=true
+    fi
 fi
 
 # Validate DOCKERHUB_TOKEN: required in prod, optional in dev
@@ -449,13 +450,15 @@ if $init; then
        log_info "Expanding chart archive: $chart"
        tar xzf ${chart}
     fi
-
-  log_info "Creating CRDs..."
-  for f in xtreme/crds/*
-  do 
-    log_info "Applying CRD: $f"
-    kubectl apply -f $f
-  done
+  #handle fresh installation where kafka crds mismatch is not expected. Apply CRDs will fail when pre-v1 crds exist in the system  
+  if [ "$kafka_crds_mismatch" = "false" ]; then
+  	log_info "Creating CRDs..."
+  	for f in xtreme/crds/*
+  	do 
+    		log_info "Applying CRD: $f"
+    		kubectl apply -f $f
+  	done
+  fi
   log_info "Initialization completed"
 fi
 
@@ -533,17 +536,8 @@ handle_mongodb_upgrade() {
     fi
 
     if $needs_wipe; then
-        if ! $delete_mongo_data; then
-            log_error "MongoDB data is incompatible with the new version and must be erased before upgrading. Re-run with --delete-mongo-data to proceed."
-        fi
-        log_warn "MongoDB data is incompatible with the new version and will be erased"
-        log_info "Deleting MongoDB StatefulSet $sts in namespace $ns"
-        kubectl delete sts "$sts" -n "$ns" --ignore-not-found=true
-        log_info "Deleting MongoDB PVC $pvc in namespace $ns"
-        kubectl delete pvc "$pvc" -n "$ns" --ignore-not-found=true
-        log_info "Waiting for PVC deletion to complete..."
-        kubectl wait --for=delete pvc/"$pvc" -n "$ns" --timeout=60s 2>/dev/null || true
-        log_info "MongoDB cleared — fresh database will be initialized by the upgrade"
+	log_info "Upgrading mongoDB to version 8.0.26 and migrating mongoDB data" 
+	${SCRIPT_DIR}/bin/mongodb-upgrade.sh -n "$NS" 
     fi
 }
 
@@ -653,7 +647,21 @@ if $install; then
               rm -f "$auto_storage_file"
           fi
       fi
+
+      if [ "$kafka_crds_mismatch" = "true" ]; then
+         log_info "Upgrading Kafka server to Strimzi 1.1.0 and Kafka 4.3.0"
+         ${SCRIPT_DIR}/bin/strimzi-migrate-to-1.1.0.sh --ns "$NS" --yes
+         log_info "deleting cluster role binding"
+         kubectl delete clusterrolebinding $NS-strimzi-cluster-operator || true
+      fi
+
+   
   fi
+  # install operation with pre-v1 crds not allowed. so we need to delete old crds and install new crds.
+  # The following section performs delete old crds and install new crds
+  if [ "$action" = "install" ] && [ "$kafka_crds_mismatch" = "true" ]; then
+      ${SCRIPT_DIR}/bin/delete_kafka_crds_pvcs.sh --ns "$NS"
+  fi      
 
   log_info "Running: helm $action ${release} ${chart} ${flags[*]}"
   helm "$action" "${release}" "${chart}" "${flags[@]}"
