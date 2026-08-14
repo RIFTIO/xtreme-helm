@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# set_tags — update image tags in xtreme/aeo-values.yaml
+#
+#   set_tags <aeoImgTag> <sdncImgtag> [upgradeFrom]
+#
+#     global.aeoImgTag                = $1
+#     global.sdncImgtag               = $2
+#     launchpad.launchpad.upgradeFrom = $3 if given, otherwise $1
+#
+set -euo pipefail
+
+if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
+  echo "usage: $(basename "$0") <aeoImgTag> <sdncImgtag> [upgradeFrom]" >&2
+  exit 1
+fi
+
+aeo="$1"
+sdnc="$2"
+upgrade_from="${3:-$1}"
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+file="$script_dir/../xtreme/aeo-values.yaml"
+
+if [ ! -f "$file" ]; then
+  echo "error: $file not found" >&2
+  exit 1
+fi
+
+sed -i -E \
+  -e "s|^([[:space:]]*aeoImgTag:).*|\1 ${aeo}|" \
+  -e "s|^([[:space:]]*sdncImgtag:).*|\1 ${sdnc}|" \
+  -e "s|^([[:space:]]*upgradeFrom:).*|\1 ${upgrade_from}|" \
+  "$file"
+
+echo "updated ${file}:"
+grep -nE '^[[:space:]]*(aeoImgTag|sdncImgtag|upgradeFrom):' "$file"
