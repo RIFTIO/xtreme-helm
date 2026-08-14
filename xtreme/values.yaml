@@ -23,6 +23,23 @@ global:
       tag: "1.38.0"
       pullPolicy: IfNotPresent
 
+  # Single switch for ALL stateful pods: run a root init container that chowns each
+  # pod's data volume to its runtime UID/GID before the app starts. Required on
+  # shared-filesystem storage (NFS/SMB) where fsGroup is not enforced; harmless on
+  # block storage. Set false only if every StorageClass in use honors fsGroup.
+  enableVolumePermissions: true
+
+  # When true, additionally do a one-time recursive chown (chown -R) over the whole
+  # volume to ADOPT existing contents owned by the wrong UID (uid migration, or data
+  # previously written as root). It is guarded by a sentinel file .chown<uid> written
+  # to the volume after the first successful recursive pass, so the expensive walk
+  # runs ONCE, not on every restart; subsequent starts do only the O(1) mount-point
+  # chown. Changing the target UID invalidates the guard and re-triggers it.
+  # Default true for now (adopts existing mis-owned volumes automatically); the
+  # sentinel guard keeps it to a single walk per (volume, uid). Set false to do only
+  # the O(1) mount-point chown when every volume is fresh/small or already correct.
+  recursiveVolumePermissions: true
+
   pvcmetadata:
     storageClass: null
 

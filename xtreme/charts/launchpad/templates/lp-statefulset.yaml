@@ -363,11 +363,11 @@ spec:
           runAsUser: {{ .Values.launchpad.runAsUser }}
         {{- end }}
 
-      {{- if .Values.enableVolumePermissions }}
+      {{- if .Values.global.enableVolumePermissions }}
       - name: set-rvr-ownership
         image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.image.tag | default .Values.global.aeoImgTag }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
-        command: ["chown", "-R", "{{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }}", "/usr/rift/var"]
+        command: ["sh", "-c", "chown {{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }} /usr/rift/var{{ if .Values.global.recursiveVolumePermissions }}; if [ ! -e /usr/rift/var/.chown{{ .Values.launchpad.securityContext.runAsUser }} ]; then chown -R {{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }} /usr/rift/var && touch /usr/rift/var/.chown{{ .Values.launchpad.securityContext.runAsUser }}; fi{{ end }}"]
         securityContext:
         {{- if and .Values.global.ensureSecurityContext (not (has "appLaunchpad" .Values.global.excludeAppsInSecurityContext)) }}
           {{ toYaml .Values.global.partialSecurityContext | nindent 10 }}

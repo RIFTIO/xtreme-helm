@@ -33,7 +33,7 @@ redis:
 
 securityContext: {}
 
-enableVolumePermissions: false
+# Volume-permission chown is controlled cluster-wide by global.enableVolumePermissions
 
 redisCustomNetworking:
   bindToAllAddresses: false
