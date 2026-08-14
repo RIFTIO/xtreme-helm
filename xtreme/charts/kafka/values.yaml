@@ -44,6 +44,11 @@ deploymentAnnotations: {}
 deploymentStrategy: {}
 priorityClassName: ""
 
+# Storage class for the Kafka node-pool PVCs (broker + controller).
+# Empty = use the cluster default StorageClass; override (e.g. nfs-csi) via storage.yaml.
+kafkaStorage:
+  storageClassName: ""
+
 podSecurityContext: {}
 securityContext: {}
 rbac:
