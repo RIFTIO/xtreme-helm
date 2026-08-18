@@ -29,7 +29,7 @@ replicator:
     tag: "2.7"
     pullPolicy: IfNotPresent
 
-enableVolumePermissions: false
+# Volume-permission chown is controlled cluster-wide by global.enableVolumePermissions
 
 prometheus:
   image:

@@ -115,6 +115,25 @@ spec:
           readOnly: false
 
       initContainers:
+      {{- if .Values.global.enableVolumePermissions }}
+      {{- /* grafana runs as grafana.runAsUser only when ensureSecurityContext is set; otherwise it uses podSecurityContext or the grafana image default (472). Chown to the uid it actually runs as. */}}
+      {{- $gEnsure := and .Values.global.ensureSecurityContext (not (has "appGrafana" .Values.global.excludeAppsInSecurityContext)) }}
+      {{- $gUid := ternary .Values.grafana.runAsUser (dig "runAsUser" (dig "runAsUser" 472 (.Values.global.podSecurityContext | default dict)) (.Values.podSecurityContext | default dict)) $gEnsure }}
+      - name: grafana-pl-perm
+        image: {{ .Values.global.busybox.image.repository }}:{{ .Values.global.busybox.image.tag }}
+        imagePullPolicy: {{ .Values.global.busybox.image.pullPolicy | quote }}
+        command: ["sh", "-c", "chown {{ $gUid }}:{{ .Values.global.defaultGroup }} /data{{ if .Values.global.recursiveVolumePermissions }}; if [ ! -e /data/.chown{{ $gUid }} ]; then chown -R {{ $gUid }}:{{ .Values.global.defaultGroup }} /data && touch /data/.chown{{ $gUid }}; fi{{ end }}"]
+        securityContext:
+          runAsUser: 0
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - CAP_NET_RAW
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          readOnly: false
+      {{- end }}
       - name: init-grafana
         image: {{ .Values.grafana.image.repository -}} : {{- .Values.grafana.image.tag }}
         imagePullPolicy: {{ .Values.grafana.image.pullPolicy }}

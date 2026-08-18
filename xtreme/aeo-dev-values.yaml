@@ -115,7 +115,6 @@ sdnc:
       pullPolicy: IfNotPresent
 
 redis:
-  enableVolumePermissions: true
   containerSecurityContext:
     runAsUser: 1001
   podSecurityContext:
@@ -127,7 +126,6 @@ redis:
       mountPath: TPL_RIFT_INSTALL/usr/rift/var/rift/TPL_HOSTNAME/redis
 
 mongodb:
-  enableVolumePermissions: true
   containerSecurityContext:
     runAsUser: 1001
   podSecurityContext:
@@ -141,7 +139,6 @@ mongodb:
 
   # Override values for prometheus
 prometheus:
-  enableVolumePermissions: true
   containerSecurityContext:
     runAsUser: 1001
   podSecurityContext:

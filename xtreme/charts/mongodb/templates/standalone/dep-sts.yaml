@@ -75,12 +75,12 @@ spec:
         runAsGroup: {{ .Values.global.defaultGroup }}
         {{- end }}
 
-      {{- if .Values.enableVolumePermissions }}
+      {{- if .Values.global.enableVolumePermissions }}
       initContainers:
       - name: mongodb-pl-perm
         image: {{ .Values.global.busybox.image.repository }}:{{ .Values.global.busybox.image.tag }}
         imagePullPolicy: {{ .Values.global.busybox.image.pullPolicy | quote }}
-        command: ["chown", "-R", "{{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }}", /data]
+        command: ["sh", "-c", "chown {{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }} /data{{ if .Values.global.recursiveVolumePermissions }}; if [ ! -e /data/.chown{{ .Values.containerSecurityContext.runAsUser }} ]; then chown -R {{ .Values.containerSecurityContext.runAsUser }}:{{ .Values.podSecurityContext.fsGroup }} /data && touch /data/.chown{{ .Values.containerSecurityContext.runAsUser }}; fi{{ end }}"]
         securityContext:
           runAsUser: 0
           allowPrivilegeEscalation: false
