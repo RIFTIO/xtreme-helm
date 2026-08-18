@@ -37,6 +37,10 @@ grafana:
   grafanaStorage:
     storageClassName: local-path
 
+kafka:
+  kafkaStorage:
+    storageClassName: local-path
+
 sdnc:
   sdnc-influxdb:
     influxStorage:

@@ -24,6 +24,9 @@ spec:
         - id: 0
           type: persistent-claim
           size: 5Gi
+          {{- if .Values.kafkaStorage.storageClassName }}
+          class: {{ .Values.kafkaStorage.storageClassName }}
+          {{- end }}
           kraftMetadata: shared
           deleteClaim: false
 ---
@@ -53,6 +56,9 @@ spec:
         - id: 0
           type: persistent-claim
           size: 5Gi
+          {{- if .Values.kafkaStorage.storageClassName }}
+          class: {{ .Values.kafkaStorage.storageClassName }}
+          {{- end }}
           kraftMetadata: shared
           deleteClaim: false
 
