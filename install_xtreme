@@ -653,6 +653,8 @@ if $install; then
          ${SCRIPT_DIR}/bin/strimzi-migrate-to-1.1.0.sh --ns "$NS" --yes
          log_info "deleting cluster role binding"
          kubectl delete clusterrolebinding $NS-strimzi-cluster-operator || true
+         log_info "deleting crd kafkamirrormakers.kafka.strimzi.io"
+         kubectl delete crd kafkamirrormakers.kafka.strimzi.io || true
       fi
 
    
