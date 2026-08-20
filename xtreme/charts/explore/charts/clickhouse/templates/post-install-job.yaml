@@ -24,6 +24,7 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name | quote }}
         helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       restartPolicy: Never
       containers:
       - name: post-install-job

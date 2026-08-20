@@ -26,10 +26,7 @@ spec:
       labels:
         {{- include "task-mgr.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: {{ include "task-mgr.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}

@@ -61,6 +61,7 @@ spec:
       labels:
         app: explore-kafka
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: explore-kafka
           image: {{ .Values.kafkaExplore.image.repository }}:{{ .Values.kafkaExplore.image.tag }}

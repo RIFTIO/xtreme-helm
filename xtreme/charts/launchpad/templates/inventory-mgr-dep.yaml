@@ -28,10 +28,7 @@ spec:
       labels:
         app: dzsx-inventory-mgr
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       serviceAccountName: default
 
       {{- if and .Values.global.ensureSecurityContext (not (has "appInventoryMgr" .Values.global.excludeAppsInSecurityContext)) }}

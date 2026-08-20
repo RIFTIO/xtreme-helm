@@ -17,6 +17,7 @@ spec:
       labels:
         app: open-webui
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       {{- if .Values.openWebui.initContainer.enabled }}
       # InitContainer: seeds the PVC from the baked webui model only once
       initContainers:

@@ -25,6 +25,7 @@ spec:
       labels:
         {{- include "lighty-rnc-app-helm.selectorLabels" . | nindent 8 }}
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
         - name: wait-for-deps
           image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"

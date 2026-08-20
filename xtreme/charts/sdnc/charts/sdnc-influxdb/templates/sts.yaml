@@ -23,12 +23,7 @@ spec:
         {{ toYaml .Values.podAnnotations | indent 8 }}
       {{- end }}
     spec:
-      {{- if .Values.image.pullSecrets }}
-      imagePullSecrets:
-      {{- range .Values.image.pullSecrets }}
-        - name: {{ . }}
-      {{- end}}
-      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       {{- if .Values.securityContext.runAsGroup }}
       securityContext:
         fsGroup: {{ .Values.securityContext.runAsGroup }}

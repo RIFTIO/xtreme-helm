@@ -10,6 +10,7 @@ metadata:
 spec:
   template:
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       containers:
       - name: {{ .Values.appName }}-pre-upgrade-hook
         image: "{{ .Values.image.name }}:{{ .Values.image.tag | default .Values.global.sdncImgtag }}"
