@@ -49,6 +49,7 @@ spec:
       labels:
         app: explore-redis
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: explore-redis
           image: {{ .Values.redisExplore.image.repository }}:{{ .Values.redisExplore.image.tag }}

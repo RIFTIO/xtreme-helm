@@ -101,11 +101,11 @@ spec:
           value: {{ .Values.launchpad.upgradeFrom }}
 
       initContainers:
-      {{- if .Values.enableVolumePermissions }}
+      {{- if .Values.global.enableVolumePermissions }}
       - name: set-rvr-ownership
         image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
         imagePullPolicy: {{ .Values.launchpad.image.pullPolicy }}
-        command: ["chown", "-R", "{{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }}", "/usr/rift/var"]
+        command: ["sh", "-c", "chown {{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }} /usr/rift/var{{ if .Values.global.recursiveVolumePermissions }}; if [ ! -e /usr/rift/var/.chown{{ .Values.launchpad.securityContext.runAsUser }} ]; then chown -R {{ .Values.launchpad.securityContext.runAsUser }}:{{ .Values.launchpad.securityContext.fsGroup }} /usr/rift/var && touch /usr/rift/var/.chown{{ .Values.launchpad.securityContext.runAsUser }}; fi{{ end }}"]
         securityContext:
             runAsUser: 0
         volumeMounts:

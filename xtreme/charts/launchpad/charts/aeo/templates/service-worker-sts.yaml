@@ -28,10 +28,7 @@ spec:
       labels:
         app: rw.aeo.svc.worker
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
 
       serviceAccountName: default
 

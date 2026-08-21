@@ -10,6 +10,7 @@ metadata:
 spec:
   template:
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       restartPolicy: Never
       serviceAccountName: {{ .Values.serviceAccount }}
       containers:

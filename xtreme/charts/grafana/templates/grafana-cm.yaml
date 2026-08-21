@@ -1,13 +1,15 @@
 # Copyright 2020 RIFT Inc
-{{- $cmName := "dashboard-provision" -}}
-{{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cmName) }}
+# dashboard-provision is intentionally NOT lookup-guarded and carries no
+# helm.sh/resource-policy: keep. Its content is coupled to the Grafana version's
+# provisioning schema (the pre-v5 list format crashes Grafana 12.x), so every
+# upgrade must be able to rewrite it. It is not admin-edited, so Helm owns it
+# outright and updates it in place on upgrade. install_xtreme deletes any
+# pre-existing copy before upgrading so Helm can recreate/adopt it cleanly.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: dashboard-provision
   namespace: {{ .Values.global.namespace.name }}
-  annotations:
-    helm.sh/resource-policy: keep
 data:
   all.yml: |
     apiVersion: 1
@@ -20,7 +22,6 @@ data:
         options:
           path: /config/dashboards
           foldersFromFilesStructure: true
-{{- end }}
 ---
 {{- $cm2Name := "datasource-provision" -}}
 {{- if not (lookup "v1" "ConfigMap" .Values.global.namespace.name $cm2Name) }}

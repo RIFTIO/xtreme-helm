@@ -44,14 +44,14 @@ check_dns() {
 
   printf "Checking %-35s -> expected %s ... " "$hostname" "$expected_ip"
 
-  if ! resolved=$(host -t A "$hostname" 2>/dev/null); then
+  if ! resolved=$(getent hosts "$hostname" 2>/dev/null); then
     echo "FAIL (DNS lookup failed — name not found)"
     FAIL=$((FAIL+1))
     return
   fi
 
   # host output: "hostname has address 1.2.3.4"
-  resolved_ip=$(echo "$resolved" | awk '/has address/{print $NF}' | head -1)
+  resolved_ip=$(echo "$resolved" | cut -f1 -d\  )
 
   if [[ -z "$resolved_ip" ]]; then
     echo "FAIL (no A record returned)"

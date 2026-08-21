@@ -107,7 +107,7 @@ haproxy-ingress:
 #                           (applicable only for LoaBalancer service type)
 #  image.tag: Docker tag for the image. If not specified Chart.AppVersion is applied.
 
-enableVolumePermissions: false
+# Volume-permission chown is controlled cluster-wide by global.enableVolumePermissions
 
 launchpad:
   image:

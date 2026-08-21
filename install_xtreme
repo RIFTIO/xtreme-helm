@@ -384,12 +384,13 @@ check_kafka_crd_versions() {
     fi
 }
 
+kafka_crds_mismatch=false
+
 if ! $dryrun && ! $clean && ( $init || $install ); then
-    log_info " checkig kafka crds"	
+    log_info " checkig kafka crds"
     if ! check_kafka_crd_versions; then
-          ${SCRIPT_DIR}/bin/delete_kafka_crds_pvcs.sh  --ns "$NS"
-    fi	  
-    	  
+	kafka_crds_mismatch=true
+    fi
 fi
 
 # Validate DOCKERHUB_TOKEN: required in prod, optional in dev
@@ -449,13 +450,15 @@ if $init; then
        log_info "Expanding chart archive: $chart"
        tar xzf ${chart}
     fi
-
-  log_info "Creating CRDs..."
-  for f in xtreme/crds/*
-  do 
-    log_info "Applying CRD: $f"
-    kubectl apply -f $f
-  done
+  #handle fresh installation where kafka crds mismatch is not expected. Apply CRDs will fail when pre-v1 crds exist in the system  
+  if [ "$kafka_crds_mismatch" = "false" ]; then
+  	log_info "Creating CRDs..."
+  	for f in xtreme/crds/*
+  	do 
+    		log_info "Applying CRD: $f"
+    		kubectl apply -f $f
+  	done
+  fi
   log_info "Initialization completed"
 fi
 
@@ -533,32 +536,23 @@ handle_mongodb_upgrade() {
     fi
 
     if $needs_wipe; then
-        if ! $delete_mongo_data; then
-            log_error "MongoDB data is incompatible with the new version and must be erased before upgrading. Re-run with --delete-mongo-data to proceed."
-        fi
-        log_warn "MongoDB data is incompatible with the new version and will be erased"
-        log_info "Deleting MongoDB StatefulSet $sts in namespace $ns"
-        kubectl delete sts "$sts" -n "$ns" --ignore-not-found=true
-        log_info "Deleting MongoDB PVC $pvc in namespace $ns"
-        kubectl delete pvc "$pvc" -n "$ns" --ignore-not-found=true
-        log_info "Waiting for PVC deletion to complete..."
-        kubectl wait --for=delete pvc/"$pvc" -n "$ns" --timeout=60s 2>/dev/null || true
-        log_info "MongoDB cleared — fresh database will be initialized by the upgrade"
+	log_info "Upgrading mongoDB to version 8.0.26 and migrating mongoDB data" 
+	${SCRIPT_DIR}/bin/mongodb-upgrade.sh -n "$NS" 
     fi
 }
 
-# The grafana chart creates datasource-provision/grafana-config ConfigMaps
-# behind a "lookup, only create if missing" guard, and the
-# helm.sh/resource-policy: keep annotation lives inside that same guarded
-# block. Any CM created before that annotation was added to the chart (13.6.1
-# and earlier) never gets it, so on upgrade the CM drops out of the rendered
-# manifest (lookup finds it, guard skips it) and helm's prune step deletes it
-# since nothing protects it. Stamp the annotation on the live objects before
-# upgrading so they survive.
+# datasource-provision and grafana-config are lookup-guarded in the grafana chart
+# ("create only if missing"), with helm.sh/resource-policy: keep inside that
+# guard, so the chart never rewrites them once they exist -- they hold
+# runtime/legacy content the chart no longer renders. Any copy created before the
+# keep annotation was added to the chart (13.6.1 and earlier) never gets it, so on
+# upgrade it drops out of the rendered manifest (lookup finds it, guard skips it)
+# and helm's prune step deletes it. Stamp the annotation on the live objects
+# before upgrading so they survive.
 # TODO: remove once 13.6.1 is past EOL and no installs predate the chart fix.
-patch_grafana_provisioning_cm_annotations() {
+preserve_grafana_runtime_cms() {
     local ns=$1
-    local cms=(dashboard-provision datasource-provision grafana-config)
+    local cms=(datasource-provision grafana-config)
 
     for cm in "${cms[@]}"; do
         if kubectl get configmap "$cm" -n "$ns" >/dev/null 2>&1; then
@@ -566,6 +560,21 @@ patch_grafana_provisioning_cm_annotations() {
             kubectl annotate configmap "$cm" -n "$ns" helm.sh/resource-policy=keep --overwrite >/dev/null
         fi
     done
+}
+
+# dashboard-provision is Helm-managed in the grafana chart (not guarded, no keep).
+# Existing installs may carry a copy that predates that change: stale content (the
+# pre-v5 dashboard provisioning format that crashes Grafana 12.x), a leftover keep
+# annotation, and/or ownership metadata that blocks helm from adopting it. Delete
+# it so the upgrade recreates it fresh, owned, and in the current format. Safe: the
+# chart fully provides this CM's content and grafana restarts during the upgrade.
+# TODO: remove once no installs predate the Grafana 12.x provisioning-format fix.
+reset_grafana_dashboard_provision_cm() {
+    local ns=$1
+    if kubectl get configmap dashboard-provision -n "$ns" >/dev/null 2>&1; then
+        log_info "Deleting stale dashboard-provision configmap in $ns so helm recreates it"
+        kubectl delete configmap dashboard-provision -n "$ns" --ignore-not-found >/dev/null
+    fi
 }
 
 if $install; then
@@ -615,7 +624,8 @@ if $install; then
       fi
 
       handle_mongodb_upgrade "$NS"
-      patch_grafana_provisioning_cm_annotations "$NS"
+      preserve_grafana_runtime_cms "$NS"
+      reset_grafana_dashboard_provision_cm "$NS"
 
       if $storage; then
           # Existing PVCs are already bound to whatever storageClassName the
@@ -637,7 +647,23 @@ if $install; then
               rm -f "$auto_storage_file"
           fi
       fi
+
+      if [ "$kafka_crds_mismatch" = "true" ]; then
+         log_info "Upgrading Kafka server to Strimzi 1.1.0 and Kafka 4.3.0"
+         ${SCRIPT_DIR}/bin/strimzi-migrate-to-1.1.0.sh --ns "$NS" --yes
+         log_info "deleting cluster role binding"
+         kubectl delete clusterrolebinding $NS-strimzi-cluster-operator || true
+         log_info "deleting crd kafkamirrormakers.kafka.strimzi.io"
+         kubectl delete crd kafkamirrormakers.kafka.strimzi.io || true
+      fi
+
+   
   fi
+  # install operation with pre-v1 crds not allowed. so we need to delete old crds and install new crds.
+  # The following section performs delete old crds and install new crds
+  if [ "$action" = "install" ] && [ "$kafka_crds_mismatch" = "true" ]; then
+      ${SCRIPT_DIR}/bin/delete_kafka_crds_pvcs.sh --ns "$NS"
+  fi      
 
   log_info "Running: helm $action ${release} ${chart} ${flags[*]}"
   helm "$action" "${release}" "${chart}" "${flags[@]}"

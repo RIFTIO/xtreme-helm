@@ -12,6 +12,7 @@ metadata:
 spec:
   template:
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: restart
           image: {{ .Values.launchpad.image.repository -}} : {{- .Values.launchpad.upgradeFrom }}
