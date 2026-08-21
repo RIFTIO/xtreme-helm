@@ -62,6 +62,7 @@ The software was not updated. All changes are in the helm chart
 * upgrades from earlier releases preserve mongo data 
 * the storage class can now be specified for all persistent volumes
 * the permissions are set correctly in all persistent volumes 
+* imagePullSecrets are now set for all Zhone container images 
 
 ## Changes in 13.7.0
 * there is a new option --image-puller
