@@ -16,7 +16,7 @@ In the real world
 
 # Introduction
 
-This is release 26.07 (13.7.0). It is an AEO release. Please pick a different branch or 
+This is release 26.07.01 (13.7.0). It is an AEO release. Please pick a different branch or 
 tag if you want NFVO. See below.
 
 
@@ -56,6 +56,12 @@ did not use --storage for your initial install, you must use --no-storage on the
 * trivy (dir) -- tools for verifying CVEs
 
 note that values-aeo.yaml has moved to xtreme/aeo-values.yaml
+
+## Changes in 26.07.01
+The software was not updated. All changes are in the helm chart
+* upgrades from earlier releases preserve mongo data 
+* the storage class can now be specified for all persistent volumes
+* the permissions are set correctly in all persistent volumes 
 
 ## Changes in 13.7.0
 * there is a new option --image-puller
