@@ -51,6 +51,7 @@ spec:
       labels:
         app: log-analytics
     spec:
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: log-analytics
           image: {{ .Values.logAnalytics.image.repository }}:{{ .Values.logAnalytics.image.tag }}

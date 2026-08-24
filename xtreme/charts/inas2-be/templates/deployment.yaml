@@ -21,10 +21,7 @@ spec:
       labels:
         {{- include "inas2-be.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      {{- include "common.imagePullSecrets" . | nindent 6 }}
       initContainers:
         - name: wait-for-deps
           image: "{{ .Values.initContainer.waitForDep.image.repository }}:{{ .Values.initContainer.waitForDep.image.tag }}"

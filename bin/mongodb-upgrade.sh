@@ -3251,14 +3251,19 @@ verify_result() {
     log "this database holds only system collections, so the inventory check"
     log "cannot tell you much; it will be meaningful where there is real data"
   elif [[ -s "${CFG[WORKDIR]}/inventory-before.txt" ]]; then
-    if diff -u "${CFG[WORKDIR]}/inventory-before.txt" "${CFG[WORKDIR]}/inventory-after.txt" \
-         > "${CFG[WORKDIR]}/inventory.diff"; then
-      ok "INVENTORY MATCH -- collection counts and index counts are identical"
+    local strict="false"
+    [[ "${CFG[STRATEGY]}" == "reinit" ]] && strict="true"
+    log "comparing inventories (${CFG[STRATEGY]}: $(is_true "$strict" && echo 'exact match required' || echo 'growth allowed, loss is not'))"
+
+    if compare_inventories "${CFG[WORKDIR]}/inventory-before.txt" \
+                           "${CFG[WORKDIR]}/inventory-after.txt" "$strict"; then
       rm -f "${CFG[WORKDIR]}/inventory.diff"
     else
-      err "INVENTORY MISMATCH -- see ${CFG[WORKDIR]}/inventory.diff"
-      sed 's/^/    /' "${CFG[WORKDIR]}/inventory.diff" | head -40 >&2
+      diff -u "${CFG[WORKDIR]}/inventory-before.txt" "${CFG[WORKDIR]}/inventory-after.txt" \
+        > "${CFG[WORKDIR]}/inventory.diff" 2>/dev/null || true
       err ""
+      err "Data appears to be missing, which is not explained by concurrent writes."
+      err "Full diff: ${CFG[WORKDIR]}/inventory.diff"
       err "The archive is still at ${BACKUP_PATH} and can be reloaded."
       die_code "$EX_VERIFY" "verification failed"
     fi
@@ -3266,6 +3271,78 @@ verify_result() {
     err "the baseline had no collections but the upgraded server does -- unexpected"
     die_code "$EX_VERIFY" "inventory mismatch"
   fi
+}
+
+
+# Compare the before/after inventories.
+#
+# An in-place upgrade keeps MongoDB serving between hops, so an application will
+# insert while it runs and counts legitimately grow. Demanding an exact match
+# reports healthy systems as failures. What must not happen is data going
+# missing: a collection disappearing, a count falling, or indexes changing.
+#
+# reinit is different -- the server is stopped for the dump, so nothing can be
+# written in between and an exact match is the correct test.
+compare_inventories() {
+  local before="$1" after="$2" strict="$3"
+  local -A cnt_b=() idx_b=() cnt_a=() idx_a=()
+  local line ns c i problems=0 growth=0 newcols=0
+
+  while IFS='|' read -r ns c i; do
+    [[ -n "$ns" ]] || continue
+    cnt_b["$ns"]="$c"; idx_b["$ns"]="$i"
+  done < "$before"
+  while IFS='|' read -r ns c i; do
+    [[ -n "$ns" ]] || continue
+    cnt_a["$ns"]="$c"; idx_a["$ns"]="$i"
+  done < "$after"
+
+  for ns in "${!cnt_b[@]}"; do
+    if [[ -z "${cnt_a[$ns]+isset}" ]]; then
+      err "  MISSING   ${ns} (had ${cnt_b[$ns]} documents, now absent)"
+      problems=$(( problems + 1 )); continue
+    fi
+    if [[ "${cnt_a[$ns]}" -lt "${cnt_b[$ns]}" ]]; then
+      err "  SHRANK    ${ns}: ${cnt_b[$ns]} -> ${cnt_a[$ns]} documents"
+      problems=$(( problems + 1 ))
+    elif [[ "${cnt_a[$ns]}" -gt "${cnt_b[$ns]}" ]]; then
+      if is_true "$strict"; then
+        err "  CHANGED   ${ns}: ${cnt_b[$ns]} -> ${cnt_a[$ns]} documents"
+        problems=$(( problems + 1 ))
+      else
+        log "  grew      ${ns}: ${cnt_b[$ns]} -> ${cnt_a[$ns]} documents"
+        growth=$(( growth + 1 ))
+      fi
+    fi
+    if [[ "${idx_a[$ns]}" != "${idx_b[$ns]}" ]]; then
+      err "  INDEXES   ${ns}: ${idx_b[$ns]} -> ${idx_a[$ns]}"
+      problems=$(( problems + 1 ))
+    fi
+  done
+
+  for ns in "${!cnt_a[@]}"; do
+    if [[ -z "${cnt_b[$ns]+isset}" ]]; then
+      if is_true "$strict"; then
+        err "  NEW       ${ns} (${cnt_a[$ns]} documents) did not exist before"
+        problems=$(( problems + 1 ))
+      else
+        log "  new       ${ns}: ${cnt_a[$ns]} documents"
+        newcols=$(( newcols + 1 ))
+      fi
+    fi
+  done
+
+  if (( problems > 0 )); then
+    return 1
+  fi
+  if (( growth > 0 || newcols > 0 )); then
+    ok "no data lost: every collection is present and no count fell"
+    log "${growth} collection(s) grew and ${newcols} appeared during the upgrade,"
+    log "which is expected while the application keeps writing"
+  else
+    ok "INVENTORY MATCH -- collection counts and index counts are identical"
+  fi
+  return 0
 }
 
 # ---------------------------------------------------------------------------
