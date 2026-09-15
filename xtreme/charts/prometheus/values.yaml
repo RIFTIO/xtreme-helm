@@ -34,7 +34,7 @@ replicator:
 prometheus:
   image:
     repository: rt.cloud.dzsi.local/quay.io/prometheus/prometheus
-    tag: "v3.5.4"
+    tag: "v3.5.5"
     pullPolicy: IfNotPresent
   resources: {}
   nodeSelector: {}
