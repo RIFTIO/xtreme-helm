@@ -100,6 +100,8 @@ spec:
               mountPath: {{ .Values.daexim.volume.pvc.mountPath }}
             {{- end }}
           env:
+            - name: RW_LAUNCHPAD_SVC_NAME
+              value: {{ include "launchpad.fqdn" . }}
             - name: HOSTNAME
               valueFrom:
                 fieldRef:
@@ -109,7 +111,6 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: CACHE_SCHEMA
               value: "false"
-
             - name: JAVA_OPTS
               value:  "{{ .Values.java.opts.xmx }}
                       {{ if .Values.lighty.jmx.enableJmxRemoting }}
