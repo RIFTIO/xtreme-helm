@@ -793,7 +793,7 @@ metrics:
   image:
     registry: rt.cloud.dzsi.local
     repository: docker-hub/percona/mongodb_exporter
-    tag: "0.51.0"
+    tag: "0.53.0"
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
