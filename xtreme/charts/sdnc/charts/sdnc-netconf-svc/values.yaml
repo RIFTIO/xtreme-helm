@@ -103,6 +103,13 @@ lighty:
              "httpAddress": "http://localhost:8888",
              "authType": "none"
            }
+         },
+         "ConfigMgr": {
+           "service": "ConfigMgr",
+           "connection": {
+             "httpAddress": "http://configmgr-svc:8888",
+             "authType": "none"
+           }
          }
        },
        "deviceModel": [

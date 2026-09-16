@@ -196,7 +196,7 @@ data:
             "dbUsername" : "foo"
         }
         {{- if contains "dzs-netconf-svc" .Values.image.name }}
-            ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "transportpce-svc" $transportpce_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_netconf) }}
+            ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "transportpce-svc" $transportpce_svc | replace "configmgr-svc" $configmgr_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_netconf) }}
         {{- end }}
         {{- if contains "dzs-config-mgr" .Values.image.name }}
             ,{{ .Values.lighty.serviceConfig | replace "nats-svc-name" $nats_svc | replace "netconf-svc-dzs-rnc" $netconf_svc | replace "inventory-mgr-dzs-rnc" $inventory_mgr | replace "transportpce-svc" $transportpce_svc | replace "inas2-be" $inas_svc | replace "mongodb-host" $mongo_db | replace "kafka-headless" $kafka_socket | replace "enableKafka" (toString .Values.global.enableKafka_configMgr) | replace "snmpgw-app" $snmpgw  }}

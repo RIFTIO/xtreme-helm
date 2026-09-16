@@ -109,6 +109,10 @@ spec:
                   fieldPath: status.podIP
             - name: RW_NATS_SVC_NAME
               value: {{ include "nats.fqdn" . }}
+            - name: RW_RESTCONF_PORT
+              value: "8008"
+            - name: RW_RESTCONF_HTTP
+              value: "http"
             - name: CACHE_SCHEMA
               value: "false"
             - name: JAVA_OPTS
