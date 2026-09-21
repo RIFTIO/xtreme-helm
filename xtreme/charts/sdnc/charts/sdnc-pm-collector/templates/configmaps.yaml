@@ -271,7 +271,19 @@ data:
                 "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
                 "unit": "number",
                 "displayType": "delta"
-              }
+              },
+              {
+                "name": "in-pkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:in-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-pkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:out-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+               }
             ]
           },
           {
@@ -421,7 +433,19 @@ data:
                 "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
                 "unit": "number",
                 "displayType": "delta"
-              }
+              },
+              {
+                "name": "in-pkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:in-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+              },
+              {
+                "name": "out-pkts",
+                "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:out-pkts",
+                "unit": "pps",
+                "displayType": "deltaRatePerSec"
+               }
             ]
           },
           {
@@ -471,6 +495,236 @@ data:
                 "displayType": "realValue"
               }
             ]
+          },
+          {
+                "profile-id": "VLAN Uplink Stats",
+                "profile-display-name": "VLAN Uplink Stats",
+                "resource-type": "_interface",
+                "bucket-type": "device",
+                "enabled": "true",
+                "description": "Per-VLAN traffic counters on uplink ports",
+                "interval": 15,
+                "timeout": 30,
+                "retry-count": 3,
+                "vlan-expansion": true,
+                "target-model": [{
+                    "vendor": "dzs",
+                    "system-type": "olt",
+                    "revision": "2022-03-08"
+                },{
+                    "vendor": "dzs",
+                    "system-type": "olt",
+                    "revision": "2023-08-07"
+                }],
+                "inventory-class": "port",
+                "inventory-field": "id",
+                "parameters": [
+                    {
+                        "name": "in-octets",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-octets",
+                        "unit": "bps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-octets",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-octets",
+                        "unit": "bps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-pkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:in-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-pkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:out-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-ucastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-ucastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-unicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-mcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-multicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-mcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-multicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-bcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-broadcast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-bcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-broadcast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-discards",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-discards",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "out-discards",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-discards",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "in-errors",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-errors",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "out-errors",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-errors",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "in-unknownprotos",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
+                        "unit": "number",
+                        "displayType": "delta"
+                    }
+                ]
+          },
+          {
+                "profile-id": "VLAN Uplink LAG Stats",
+                "profile-display-name": "VLAN Uplink LAG Stats",
+                "resource-type": "_interface",
+                "bucket-type": "device",
+                "enabled": "true",
+                "description": "Per-VLAN traffic counters on uplink LAGs",
+                "interval": 15,
+                "timeout": 30,
+                "retry-count": 3,
+                "vlan-expansion": true,
+                "target-model": [{
+                    "vendor": "dzs",
+                    "system-type": "olt",
+                    "revision": "2022-03-08"
+                },{
+                    "vendor": "dzs",
+                    "system-type": "olt",
+                    "revision": "2023-08-07"
+                }],
+                "inventory-class": "lag",
+                "inventory-field": "id",
+                "parameters": [
+                    {
+                        "name": "in-octets",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-octets",
+                        "unit": "bps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-octets",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-octets",
+                        "unit": "bps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-pkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:in-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-pkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:out-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-ucastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-ucastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-unicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-mcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-multicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-mcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-multicast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-bcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-broadcast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "out-bcastpkts",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-broadcast-pkts",
+                        "unit": "pps",
+                        "displayType": "deltaRatePerSec"
+                    },
+                    {
+                        "name": "in-discards",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-discards",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "out-discards",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-discards",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "in-errors",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-errors",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "out-errors",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/out-errors",
+                        "unit": "number",
+                        "displayType": "delta"
+                    },
+                    {
+                        "name": "in-unknownprotos",
+                        "path": "/ietf-interfaces:interfaces/interface[name]/statistics/in-unknown-protos",
+                        "unit": "number",
+                        "displayType": "delta"
+                    }
+                ]
           },
           {
             "profile-id": "EthernetRX",
