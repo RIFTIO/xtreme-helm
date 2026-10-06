@@ -287,6 +287,147 @@ data:
             ]
           },
           {
+            "profile-id": "XPON Channel Termination Stats",
+            "resource-type": "_interface",
+            "bucket-type": "device",
+            "enabled": "true",
+            "description": "",
+            "interval": 15,
+            "timeout": 30,
+            "retry-count": 3,
+            "target-model": [{
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2022-03-08"
+            },
+            {
+              "vendor": "dzs",
+              "system-type": "olt",
+              "revision": "2023-08-07"
+            }],
+            "inventory-class": "port",
+            "inventory-field": "id",
+            "inventory-condition": {
+              "model-name": ["gpon", "xgspon"]
+            },
+            "parameters": [
+               {
+                "name": "tx-bytes",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-bytes",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-bytes",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-bytes",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-packets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-packets",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-packets",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-packets",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-dropped-total",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-dropped-total",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-dropped-vid-miss",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-dropped-vid-miss",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-dropped-tpid-miss",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-dropped-tpid-miss",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-dropped-illegal-length",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-dropped-illegal-length",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-packets-dropped",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-packets-dropped",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-dropped-too-short",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-dropped-too-short",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-dropped-too-long",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-dropped-too-long",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-gem-dropped",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-gem-dropped",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "tx-cpu",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/tx-cpu",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-cpu",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-cpu",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "rx-cpu-omci-packets-dropped",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/rx-cpu-omci-packets-dropped",
+                "unit": "number",
+                "displayType": "delta"
+              },
+               {
+                "name": "fec-codewords",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/fec-codewords",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "fec-codewords-uncorrected",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/fec-codewords-uncorrected",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "bip-units",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/bip-units",
+                "unit": "number",
+                "displayType": "delta"
+              },
+              {
+                "name": "bip-errors",
+                "path": "/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-channel-termination-stat/bip-errors",
+                "unit": "number",
+                "displayType": "delta"
+              }
+            ]
+          },
+          {
             "profile-id": "Avg Port Stats",
             "resource-type": "_interface",
             "bucket-type": "device",
