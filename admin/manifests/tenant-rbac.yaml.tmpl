@@ -1,0 +1,143 @@
+# Per-tenant installer identity. Rendered by admin/mk-tenant.sh with envsubst:
+#   NS                 tenant namespace (the SA lives here)
+#   AEO_NS             aeo-NS
+#   CLUSTERROLE_NAMES  pre-indented "- name" lines of the chart's ClusterRoles for this tenant
+# Rendered output: admin/generated/NS-tenant.yaml
+# The 'bind' rule on clusterroles exists because the chart creates RoleBindings that
+# reference those ClusterRoles; RBAC only allows that if the creator holds every
+# permission in them, or has 'bind' on them by name.
+# Block style and field order match what the API server emits, so
+#   kubectl get role xtreme-installer -n NS -o yaml | yq .rules | diff - <(yq ea -N 'select(.kind=="Role" and .metadata.namespace=="NS") | .rules' admin/generated/NS-tenant.yaml)
+# is empty for an unmodified tenant.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: xtreme-installer
+  namespace: ${NS}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: xtreme-tenant-readonly-${NS}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: xtreme-tenant-readonly
+subjects:
+- kind: ServiceAccount
+  name: xtreme-installer
+  namespace: ${NS}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: xtreme-installer
+  namespace: ${NS}
+rules:
+- apiGroups:
+  - ""
+  - apps
+  - batch
+  - extensions
+  - networking.k8s.io
+  - policy
+  - autoscaling
+  - coordination.k8s.io
+  - discovery.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - kafka.strimzi.io
+  - core.strimzi.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+${CLUSTERROLE_NAMES}
+  resources:
+  - clusterroles
+  verbs:
+  - bind
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: xtreme-installer
+  namespace: ${NS}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: xtreme-installer
+subjects:
+- kind: ServiceAccount
+  name: xtreme-installer
+  namespace: ${NS}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: xtreme-installer
+  namespace: ${AEO_NS}
+rules:
+- apiGroups:
+  - ""
+  - apps
+  - batch
+  - extensions
+  - networking.k8s.io
+  - policy
+  - autoscaling
+  - coordination.k8s.io
+  - discovery.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - kafka.strimzi.io
+  - core.strimzi.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+${CLUSTERROLE_NAMES}
+  resources:
+  - clusterroles
+  verbs:
+  - bind
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: xtreme-installer
+  namespace: ${AEO_NS}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: xtreme-installer
+subjects:
+- kind: ServiceAccount
+  name: xtreme-installer
+  namespace: ${NS}

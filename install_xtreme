@@ -298,6 +298,15 @@ if $tenant && [ -f "admin/generated/${NS}.release" ]; then
     fi
 fi
 
+# Tenant mode: the kubeconfig mk-tenant.sh writes sets its context namespace to the
+# tenant, so a mismatch with --ns means the wrong tenant kubeconfig is in use.
+if $tenant; then
+    ctx_ns=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}' 2>/dev/null || true)
+    if [ -n "$ctx_ns" ] && [ "$ctx_ns" != "$NS" ]; then
+        log_error "--ns ${NS} but the current kubeconfig context is for namespace ${ctx_ns} — wrong tenant kubeconfig?"
+    fi
+fi
+
 # Enforce the minimum Kubernetes version now that --ignore-k8s-version is parsed
 check_k8s_version
 

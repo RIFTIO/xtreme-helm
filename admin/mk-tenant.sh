@@ -12,6 +12,13 @@
 #   TENANT_SERVER=https://host:6443  overrides the API endpoint written into the
 #                kubeconfig (needed when the admin kubeconfig is Rancher-proxied
 #                and the auto-detected control-plane address isn't reachable).
+#
+# Output per tenant, in admin/generated/ (git-ignored):
+#   <ns>-cluster.yaml   cluster-scoped objects rendered from the chart (applied)
+#   <ns>-tenant.yaml    SA/Role/RoleBinding/CRB rendered from admin/manifests/tenant-rbac.yaml.tmpl (applied)
+#   <ns>.kubeconfig     hand to the tenant
+#   <ns>.release        release name, checked by install_xtreme --tenant
+#   <ns>.server         admin API endpoint, checked by rm-tenant.sh
 set -euo pipefail
 DEFAULT_RELEASE=xtreme
 while getopts 'r:' o; do case $o in r) DEFAULT_RELEASE=$OPTARG;; *) exit 2;; esac; done
@@ -20,6 +27,7 @@ shift $((OPTIND-1))
 cd "$(dirname "$0")/.."
 OUT=admin/generated; mkdir -p $OUT
 VALUES=(-f xtreme/aeo-values.yaml -f storage.yaml)
+for tool in yq envsubst; do command -v $tool >/dev/null || { echo "$tool is required" >&2; exit 1; }; done
 
 kubectl get clusterrole xtreme-tenant-readonly >/dev/null 2>&1 \
   || { echo "xtreme-tenant-readonly not found — run admin/init-cluster.sh first" >&2; exit 1; }
@@ -32,39 +40,6 @@ if [[ "$SERVER" == */k8s/clusters/* ]]; then
   SERVER=${TENANT_SERVER:-https://$CP_IP:6443}
   echo "admin kubeconfig is Rancher-proxied; tenant kubeconfigs will use $SERVER"
 fi
-
-tenant_role() {   # $1 = namespace, $2 = clusterrole names (newline-separated)
-cat <<Y
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata: { name: xtreme-installer, namespace: $1 }
-rules:
-- apiGroups: ["", "apps", "batch", "extensions", "networking.k8s.io", "policy",
-              "autoscaling", "coordination.k8s.io", "discovery.k8s.io"]
-  resources: ["*"]
-  verbs: ["*"]
-- apiGroups: ["kafka.strimzi.io", "core.strimzi.io"]
-  resources: ["*"]
-  verbs: ["*"]
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["roles", "rolebindings"]
-  verbs: ["*"]
-# The chart creates RoleBindings that reference these ClusterRoles; RBAC only
-# allows that if the creator holds every permission in them, or has 'bind' on them.
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["clusterroles"]
-  verbs: ["bind"]
-  resourceNames:
-$(echo "$2" | sed 's/^/    - /')
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata: { name: xtreme-installer, namespace: $1 }
-roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: xtreme-installer }
-subjects: [{ kind: ServiceAccount, name: xtreme-installer, namespace: $NS }]
-Y
-}
 
 for arg in "$@"; do
   NS=${arg%%:*}
@@ -83,23 +58,10 @@ for arg in "$@"; do
     | yq ea 'select(.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "IngressClass")' - \
     > $OUT/$NS-cluster.yaml
   kubectl apply -f $OUT/$NS-cluster.yaml
-  CR_NAMES=$(yq ea 'select(.kind=="ClusterRole") | .metadata.name' $OUT/$NS-cluster.yaml)
+  CR_NAMES=$(yq ea -N 'select(.kind=="ClusterRole") | .metadata.name' $OUT/$NS-cluster.yaml)
 
-  {
-  cat <<Y
-apiVersion: v1
-kind: ServiceAccount
-metadata: { name: xtreme-installer, namespace: $NS }
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata: { name: xtreme-tenant-readonly-$NS }
-roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: xtreme-tenant-readonly }
-subjects: [{ kind: ServiceAccount, name: xtreme-installer, namespace: $NS }]
-Y
-  tenant_role $NS "$CR_NAMES"
-  tenant_role aeo-$NS "$CR_NAMES"
-  } > $OUT/$NS-tenant.yaml
+  NS=$NS AEO_NS=aeo-$NS CLUSTERROLE_NAMES="$(echo "$CR_NAMES" | sed 's/^/  - /')" \
+    envsubst '$NS $AEO_NS $CLUSTERROLE_NAMES' < admin/manifests/tenant-rbac.yaml.tmpl > $OUT/$NS-tenant.yaml
   kubectl apply -f $OUT/$NS-tenant.yaml
 
   TOKEN=$(kubectl -n $NS create token xtreme-installer --duration=8760h)

@@ -1,0 +1,29 @@
+# Shared by every xtreme tenant: read-only access install_xtreme's pre-flight
+# checks need (node kernel versions, Strimzi CRD versions, storageClasses).
+# Applied by admin/init-cluster.sh; bound per tenant by admin/mk-tenant.sh.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: xtreme-tenant-readonly
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - storageclasses
+    verbs:
+      - get
+      - list
