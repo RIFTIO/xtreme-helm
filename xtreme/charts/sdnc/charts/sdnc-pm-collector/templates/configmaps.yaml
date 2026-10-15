@@ -283,7 +283,19 @@ data:
                 "path": "/ietf-interfaces:interfaces/interface[name]/statistics/dzs-if-statistics:out-pkts",
                 "unit": "pps",
                 "displayType": "deltaRatePerSec"
-               }
+              },
+              {
+                "name": "oper-status",
+                "path": "/ietf-interfaces:interfaces/interface[name]/oper-status",
+                "unit": "state",
+                "displayType": "realValue"
+              },
+              {
+                "name": "last-change",
+                "path": "/ietf-interfaces:interfaces/interface[name]/last-change",
+                "unit": "time",
+                "displayType": "realValue"
+              }
             ]
           },
           {
@@ -2294,7 +2306,13 @@ data:
                  "path":"/ietf-interfaces:interfaces-state/interface[name]/statistics/dzs-xpon-statistics:xpon-v-ani-stat/tx-packets",
                  "unit": "number",
                  "displayType": "deltaRatePerSec"
-              }
+              },
+              {
+                "name": "oper-status",
+                "path": "/ietf-interfaces:interfaces/interface[name]/oper-status",
+                "unit": "state",
+                "displayType": "realValue"
+             }
            ]
           },
           {
