@@ -1,3 +1,5 @@
+#!/bin/bash 
+
 
 cd $(dirname $0)
 cd ..
@@ -6,26 +8,23 @@ cd trivy
 rm -f *json *txt
 ct=0
 
+runtrivy="docker-run --self trivy-runner:0.71.0"
+
 for image in $(cat images); do
     let ct++
     json=$(printf report%02d.json $ct)
     txt=$(printf report%02d.txt $ct)
     echo $image $json $txt ...
-    docker-run --self --no-docker trivy-runner:0.62.0   \
-    image   \
-    --severity HIGH,CRITICAL   \
-    --ignore-unfixed   \
-    --skip-files "**/bundle.js" \
-    --skip-files "**/*pb-c.h"\
-    --skip-files "**/*ypbc.h"\
-    --skip-files "**/*vapi"\
-    --skip-files "**/*gir"\
-    --exit-code 0   \
-    --format json  \
-    $image >$json
-    docker-run --self --no-docker trivy-runner:0.62.0   \
-    convert   \
-    --format table  \
-    --output $txt   \
-    $json
+    docker pull $image
+
+    $runtrivy image --scanners vuln --severity HIGH,CRITICAL  --ignore-unfixed   \
+    --skip-files "**/bundle.js" --skip-files "**/*pb-c.h" --skip-files "**/*ypbc.h" --skip-files "**/*vapi" --skip-files "**/*gir" \
+    --timeout 15m \
+    --exit-code 0 --format json $image >$json
+
+    test -s $json || exit 1
+
+    $runtrivy convert --scanners vuln --format table --output $txt $json 
+
+    test -s $txt || exit 
 done
