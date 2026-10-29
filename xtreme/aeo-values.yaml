@@ -1,6 +1,6 @@
 global:
-  sdncImgtag: 13.8.0.1013171
-  aeoImgTag: 13.8.0.1013174
+  sdncImgtag: 13.8.0.1013318
+  aeoImgTag: 13.8.0.1013304
   install:
     aeoTmfServer: false
   namespace:
@@ -9,4 +9,4 @@ global:
 launchpad:
   launchpad:
     appSelector: aeo
-    upgradeFrom: 13.8.0.1013174
+    upgradeFrom: 13.8.0.1013304
