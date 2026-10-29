@@ -1,4 +1,4 @@
-{{- if index .Values.global.sdnc "sdnc-file-mgr" "createClusterRole" }}
+{{- if and (index .Values.global.sdnc "sdnc-file-mgr" "createClusterRole") (not .Values.global.tenantMode) }}
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -9,7 +9,6 @@ rules:
 - apiGroups: [""]
   resources: ["services"]
   verbs: ["get"]
-{{- end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -25,3 +24,4 @@ subjects:
 - kind: ServiceAccount
   name: {{ include "file-mgr.serviceAccountName" . }}
   namespace: {{ include "sdnc.namespace" . }}
+{{- end }}

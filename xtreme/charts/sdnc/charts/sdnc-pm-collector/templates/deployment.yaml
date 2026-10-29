@@ -70,6 +70,11 @@ spec:
           volumeMounts:
             - name: {{ .Values.sdnc.volume.log.name }}
               mountPath: {{ .Values.sdnc.volume.log.pvc.mountPath }}
+            # PM export working directory on the same PVC (own subPath), so
+            # undelivered CSVs retained for retry survive pod restarts
+            - name: {{ .Values.sdnc.volume.log.name }}
+              mountPath: /data/pm-export
+              subPath: pm-export
             - name: config-volume
               mountPath: /config
           env:

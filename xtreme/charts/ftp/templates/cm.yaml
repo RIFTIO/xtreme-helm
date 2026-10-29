@@ -2,6 +2,7 @@ apiVersion: v1
 data:
   run-vsftpd.sh: |-
     #!/bin/bash
+    set -e
 
     # If no env var for FTP_USER has been specified, use 'admin':
     if [ "$FTP_USER" = "**String**" ]; then
@@ -20,12 +21,92 @@ data:
         export LOG_STDOUT='Yes.'
     fi
 
+    # ------------------------------------------------------------------
+    # PAM service for virtual users.
+    # vsftpd.conf points here via pam_service_name=vsftpd_virtual.
+    # NOTE: db= has no .db suffix -- pam_userdb appends it itself.
+    # ------------------------------------------------------------------
+    cat > /etc/pam.d/vsftpd_virtual <<'PAMEOF'
+    #%PAM-1.0
+    auth    required  pam_userdb.so  db=/etc/vsftpd/virtual_users
+    account required  pam_userdb.so  db=/etc/vsftpd/virtual_users
+    session required  pam_loginuid.so
+    PAMEOF
+    chmod 644 /etc/pam.d/vsftpd_virtual
+
+    # ------------------------------------------------------------------
+    # Write vsftpd.conf fresh every start.
+    # Rewriting rather than appending keeps the file from accumulating
+    # duplicate pasv_* directives across restarts.
+    # ------------------------------------------------------------------
+    cat > /etc/vsftpd/vsftpd.conf <<'CONFEOF'
+    background=NO
+    anonymous_enable=NO
+    local_enable=YES
+    write_enable=YES
+    local_umask=022
+    dirmessage_enable=YES
+
+    # Virtual users via pam_userdb
+    guest_enable=YES
+    virtual_use_local_privs=YES
+    pam_service_name=vsftpd_virtual
+
+    # Per-user home directories
+    user_sub_token=$USER
+    local_root=/home/vsftpd/$USER
+    chroot_local_user=YES
+    allow_writeable_chroot=YES
+
+    # user_list is an allow-list when userlist_deny=NO, which locks out
+    # every virtual user. Disable it entirely.
+    userlist_enable=NO
+
+    hide_ids=YES
+    xferlog_enable=YES
+    xferlog_file=/var/log/vsftpd/vsftpd.log
+    xferlog_std_format=YES
+
+    port_enable=YES
+    connect_from_port_20=YES
+    ftp_data_port=20
+
+    listen=YES
+    listen_ipv6=NO
+
+    # Required in containers: seccomp filtering kills transfers otherwise
+    seccomp_sandbox=NO
+
+    ### Variables set at container runtime
+    CONFEOF
+
+    # Real log file. Do NOT symlink this to /dev/stdout: that resolves to
+    # /proc/self/fd/1, which the unprivileged per-session child cannot open,
+    # producing "500 OOPS: failed to open xferlog log file" at connect time.
+    mkdir -p /var/log/vsftpd
+    touch /var/log/vsftpd/vsftpd.log
+    chown ftp:ftp /var/log/vsftpd/vsftpd.log
+    chmod 644 /var/log/vsftpd/vsftpd.log
+    
+
     # Create home dir and update vsftpd user db:
     mkdir -p "/home/vsftpd/${FTP_USER}"
     chown -R ftp:ftp /home/vsftpd/
 
+    # Build the virtual user database:
+    if ! command -v db_load >/dev/null 2>&1; then
+        echo "db_load not found. Installing libdb-utils..."
+        dnf install -y libdb-utils
+    fi
+
+    DB_LOAD=$(command -v db_load)
+
+    echo "Using db_load: ${DB_LOAD}"
+
     echo -e "${FTP_USER}\n${FTP_PASS}" > /etc/vsftpd/virtual_users.txt
-    /usr/bin/db_load -T -t hash -f /etc/vsftpd/virtual_users.txt /etc/vsftpd/virtual_users.db
+    chmod 600 /etc/vsftpd/virtual_users.txt
+    "${DB_LOAD}" -T -t hash -f /etc/vsftpd/virtual_users.txt /etc/vsftpd/virtual_users.db
+    chmod 600 /etc/vsftpd/virtual_users.db
 
     # Set passive mode parameters:
     PASV_ADDRESS=""
@@ -45,14 +126,26 @@ data:
     echo "pasv_address=${PASV_ADDRESS}" >> /etc/vsftpd/vsftpd.conf
     echo "pasv_max_port=${PASV_MAX_PORT}" >> /etc/vsftpd/vsftpd.conf
     echo "pasv_min_port=${PASV_MIN_PORT}" >> /etc/vsftpd/vsftpd.conf
-    echo "pasv_addr_resolve=${PASV_ADDR_RESOLVE}" >> /etc/vsftpd/vsftpd.conf
     echo "pasv_enable=${PASV_ENABLE}" >> /etc/vsftpd/vsftpd.conf
-    echo "file_open_mode=${FILE_OPEN_MODE}" >> /etc/vsftpd/vsftpd.conf
-    echo "local_umask=${LOCAL_UMASK}" >> /etc/vsftpd/vsftpd.conf
-    echo "xferlog_std_format=${XFERLOG_STD_FORMAT}" >> /etc/vsftpd/vsftpd.conf
-    echo "reverse_lookup_enable=${REVERSE_LOOKUP_ENABLE}" >> /etc/vsftpd/vsftpd.conf
     echo "pasv_promiscuous=${PASV_PROMISCUOUS}" >> /etc/vsftpd/vsftpd.conf
-    echo "port_promiscuous=${PORT_PROMISCUOUS}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${PASV_ADDR_RESOLVE}" ] && \
+        echo "pasv_addr_resolve=${PASV_ADDR_RESOLVE}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${FILE_OPEN_MODE}" ] && \
+        echo "file_open_mode=${FILE_OPEN_MODE}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${LOCAL_UMASK}" ] && \
+        echo "local_umask=${LOCAL_UMASK}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${XFERLOG_STD_FORMAT}" ] && \
+        echo "xferlog_std_format=${XFERLOG_STD_FORMAT}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${REVERSE_LOOKUP_ENABLE}" ] && \
+        echo "reverse_lookup_enable=${REVERSE_LOOKUP_ENABLE}" >> /etc/vsftpd/vsftpd.conf
+
+    [ -n "${PORT_PROMISCUOUS}" ] && \
+        echo "port_promiscuous=${PORT_PROMISCUOUS}" >> /etc/vsftpd/vsftpd.conf
 
     # Get log file path
     export LOG_FILE=`grep xferlog_file /etc/vsftpd/vsftpd.conf|cut -d= -f2`
@@ -75,11 +168,14 @@ data:
             · Redirect vsftpd log to STDOUT: No.
     EOB
     else
-        /usr/bin/ln -sf /dev/stdout $LOG_FILE
+        # Stream the log to container stdout. Do NOT use
+        # ln -sf /dev/stdout "$LOG_FILE" -- it replaces the real file and
+        # breaks vsftpd xferlog open.
+        tail -F "$LOG_FILE" &
     fi
 
-    # Run vsftpd:
-    &>/dev/null /usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf
+    echo "Starting vsftpd..."
+    exec /usr/sbin/vsftpd /etc/vsftpd/vsftpd.conf
 
 kind: ConfigMap
 metadata:

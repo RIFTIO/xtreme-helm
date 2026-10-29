@@ -52,6 +52,9 @@ did not use --storage for your initial install, you must use --no-storage on the
 * check_upgrade_from -- used by install_xtreme 
 * pool-has-multiple-ips.sh -- used by install_xtreme to decide if the load balancer pool holds more than one IP
 * delete_orphaned_secrets.sh -- used by install_xtreme
+* admin (dir) -- init-cluster.sh, mk-tenant.sh and rm-tenant.sh: the cluster-admin half of a tenant install
+                 (see TENANT INSTALL below). admin/generated/ holds per-tenant output including kubeconfigs
+                 and is git-ignored
 * docker (dir) -- source for some support containers 
 * trivy (dir) -- tools for verifying CVEs
 
@@ -74,6 +77,10 @@ The software was not updated. All changes are in the helm chart
   simply detecting k3s: they are only included when all services must share a single IP address
   (e.g. k3s ServiceLB/Klipper, or MetalLB with a single-IP pool). A k3s cluster with a real
   load balancer address pool (e.g. installed via Rancher) no longer gets them by default.
+* new tenant install mode: install_xtreme --tenant installs with a namespaced kubeconfig and no
+  cluster-admin, after a cluster admin has run admin/init-cluster.sh (once) and admin/mk-tenant.sh
+  (per tenant). See TENANT INSTALL below. Backed by a new chart value global.tenantMode which omits
+  every cluster-scoped object (ClusterRole, ClusterRoleBinding, IngressClass) from the render.
 
 
 ## Changes in 13.6.1
@@ -126,6 +133,71 @@ to watch it finish up
 * * Use ```kubectl get pods -A | egrep 'NAME|launchpad``` to figure out the ns (namespace) 
 * add --upgrade as an argument 
 * the installer will figure out your storage classes
+
+## TENANT INSTALL (no cluster-admin)
+
+Kubernetes will not let a namespaced user create cluster-scoped objects, and xtreme needs a few:
+the Strimzi CRDs, 11 ClusterRoles, 7 ClusterRoleBindings and an IngressClass. So the install is split
+in two. A cluster admin creates those; each tenant then installs, upgrades and uninstalls everything
+else with a kubeconfig that has rights only in its own two namespaces (<ns> and aeo-<ns>).
+
+### Admin: once per cluster
+
+```bash
+./admin/init-cluster.sh
+```
+
+Applies the Strimzi CRDs and creates the shared ClusterRole xtreme-tenant-readonly (get/list on
+nodes, CRDs and storageclasses, which install_xtreme's pre-flight checks need). Idempotent; rerun
+after a chart upgrade that changes the CRDs.
+
+### Admin: per tenant
+
+```bash
+./admin/mk-tenant.sh [-r <release>] <ns>[:<release>] [<ns>[:<release>] ...]
+```
+
+For each namespace this creates <ns> and aeo-<ns>, renders the chart and applies only its
+cluster-scoped objects, creates a ServiceAccount xtreme-installer with a Role in both namespaces,
+binds it to xtreme-tenant-readonly, and writes admin/generated/<ns>.kubeconfig (token valid one
+year). Give that file to the tenant. Rerunning is safe and mints a fresh token.
+
+The release name (per tenant as <ns>:<release>, else -r, else xtreme) MUST be the --release that tenant will use: some charts name
+their ServiceAccounts after it and the ClusterRoleBindings are bound to those names. Release names
+are per-namespace in helm, so every tenant can use the default. install_xtreme --tenant refuses a
+mismatch when run from this checkout.
+
+If the admin kubeconfig goes through the Rancher proxy (server .../k8s/clusters/<id>), the tenant
+kubeconfig is pointed at the first control-plane node on port 6443 instead, because the proxy does
+not accept ServiceAccount tokens. Set TENANT_SERVER=https://host:6443 if that address is not
+reachable from where the tenant runs.
+
+### Tenant
+
+With only that kubeconfig and a checkout of this repo:
+
+```bash
+export KUBECONFIG=/path/to/<ns>.kubeconfig
+./install_xtreme --dev --ns <ns> --release <release> --tenant --dry-run
+./install_xtreme --dev --ns <ns> --release <release> --tenant
+```
+
+--tenant implies --skip-crds and global.tenantMode=true, and turns off the single-IP autodetection
+(pass --values alias.yaml --values ports.yaml yourself if the cluster needs them). Upgrades work the
+same way; the script switches to upgrade when the release already exists.
+
+### Cleanup
+
+```bash
+./install_xtreme --ns <ns> --release <release> --tenant --clean   # tenant: release + namespaced leftovers
+./admin/rm-tenant.sh <ns> [<ns> ...]                               # admin: cluster RBAC, IngressClass, namespaces
+```
+
+rm-tenant.sh leaves the CRDs and xtreme-tenant-readonly in place since other tenants use them, and
+skips a namespace if the current kubeconfig points at a different cluster than the one that tenant
+was created on. To remove the shared pieces from a cluster with no tenants left:
+kubectl delete -f xtreme/crds/ && kubectl delete clusterrole xtreme-tenant-readonly.
+
 
 ## notes
 

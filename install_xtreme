@@ -115,6 +115,8 @@ check_k8s_version() {
 #   3. otherwise on K3s: Klipper shares the node's single IP
 #   4. otherwise: assume the cluster provides routable service addresses
 # Returns 0 (success) when all services must share one IP, 1 otherwise.
+# NOTE: this reads services and MetalLB pools cluster-wide, which a tenant
+# kubeconfig cannot do, so it is skipped in --tenant mode.
 cluster_shares_single_ip() {
     # MetalLB v0.13+ keeps its pools in IPAddressPool resources
     if kubectl get crd ipaddresspools.metallb.io >/dev/null 2>&1; then
@@ -197,6 +199,7 @@ ignore_k8s_version=false
 delete_mongo_data=false
 imagepuller=false
 purge_crds=false
+tenant=false
 
 help() {
 cat >&2 <<EOF
@@ -213,6 +216,10 @@ USAGE:
 --dry-run         do not install, just do a dry-run
 --clean           clean up (uninstalls the release and deletes the namespace; leaves CRDs in place since they are cluster-scoped and may be shared by other namespaces)
 --purge-crds      with --clean, also delete the CRDs (only safe if this is the only xtreme install on the cluster)
+--tenant          namespaced install with a tenant kubeconfig (no cluster-admin). Requires admin/init-cluster.sh
+                  (once per cluster) and admin/mk-tenant.sh to have been run for this namespace. Implies --skip-crds and global.tenantMode=true; disables
+                  single-IP autodetection (pass --values alias.yaml --values ports.yaml explicitly if needed).
+                  With --clean, only uninstalls the release; namespaces and cluster RBAC are removed by admin/rm-tenant.sh
 --check           just check if service is up
 --limitresource   enable resource limits and quotas (sets ensureResourceQuota=true)
 --pullpolicy      set pull policy
@@ -235,6 +242,13 @@ typical usage sequences
     --init, then --imagepuller, then --dry-run, then --install, then maybe --check, then --clean
 OR
     none of the above :)
+
+tenant (no cluster-admin) sequence
+    admin:  admin/init-cluster.sh                                  (once per cluster)
+    admin:  admin/mk-tenant.sh [-r release] <ns>[:<release>] [<ns>[:<release>] ...]
+    tenant: KUBECONFIG=admin/generated/<ns>.kubeconfig $0 --ns <ns> --release <ns> --tenant [--dry-run]
+    tenant: $0 --ns <ns> --release <ns> --tenant --clean
+    admin:  admin/rm-tenant.sh <ns>
 EOF
 exit 1
 }
@@ -253,6 +267,7 @@ while [[ $# -gt 0  && "$1" =~ ^-- ]]; do
         --dry-run) dryrun=true; init=false; install=false; check=false;;
         --clean) clean=true; init=false; install=false; check=false;;
         --purge-crds) purge_crds=true;;
+        --tenant) tenant=true; init=false;;
         --check) install=false; init=false;;
         --limitresource) limitresource=true;;
         --pullpolicy) pullpolicy=true;;
@@ -274,6 +289,24 @@ if [ $# -gt 0 ]; then
     help
 fi
 
+# Tenant mode: the sdnc-* ClusterRoleBindings created by admin/mk-tenant.sh bind to
+# ServiceAccounts named after the release, so the release must match what admin used.
+if $tenant && [ -f "admin/generated/${NS}.release" ]; then
+    expected_release=$(cat "admin/generated/${NS}.release")
+    if [ "$release" != "$expected_release" ]; then
+        log_error "--release ${release} does not match the release admin/mk-tenant.sh used for namespace ${NS} (${expected_release})"
+    fi
+fi
+
+# Tenant mode: the kubeconfig mk-tenant.sh writes sets its context namespace to the
+# tenant, so a mismatch with --ns means the wrong tenant kubeconfig is in use.
+if $tenant; then
+    ctx_ns=$(kubectl config view --minify -o jsonpath='{.contexts[0].context.namespace}' 2>/dev/null || true)
+    if [ -n "$ctx_ns" ] && [ "$ctx_ns" != "$NS" ]; then
+        log_error "--ns ${NS} but the current kubeconfig context is for namespace ${ctx_ns} — wrong tenant kubeconfig?"
+    fi
+fi
+
 # Enforce the minimum Kubernetes version now that --ignore-k8s-version is parsed
 check_k8s_version
 
@@ -288,7 +321,7 @@ else
 fi
 
 if [ -z "$values" ]; then
-    if cluster_shares_single_ip; then
+    if ! $tenant && cluster_shares_single_ip; then
         log_info "Cluster services must share a single IP address — enabling alias.yaml and ports.yaml"
         default_values="$default_values alias.yaml ports.yaml"
     fi
@@ -312,6 +345,7 @@ log_info "  dry-run: $dryrun"
 log_info "  check: $check"
 log_info "  init: $init"
 log_info "  clean: $clean"
+log_info "  tenant: $tenant"
 log_info "  imagepuller: $imagepuller"
 log_info "  limitresource: $limitresource"
 log_info "  chart: $chart"
@@ -373,14 +407,14 @@ check_kafka_crd_versions() {
         log_warn "  kubectl patch crd <name> --type=json -p='[{\"op\":\"remove\",\"path\":\"/spec/versions/N\"}]'"
         if $ignore_old_crds; then
             log_warn "Continuing anyway because --ignore-old-crds was specified."
-	    return 0
+            return 0
         else
             log_warn "One or more Strimzi CRDs have pre-v1 versions still installed."
-	    return 1
+            return 1
         fi
     else
         log_info "All Strimzi Kafka CRDs are at v1 only — OK"
-	return 0
+        return 0
     fi
 }
 
@@ -389,7 +423,7 @@ kafka_crds_mismatch=false
 if ! $dryrun && ! $clean && ( $init || $install ); then
     log_info " checkig kafka crds"
     if ! check_kafka_crd_versions; then
-	kafka_crds_mismatch=true
+        kafka_crds_mismatch=true
     fi
 fi
 
@@ -452,12 +486,12 @@ if $init; then
     fi
   #handle fresh installation where kafka crds mismatch is not expected. Apply CRDs will fail when pre-v1 crds exist in the system  
   if [ "$kafka_crds_mismatch" = "false" ]; then
-  	log_info "Creating CRDs..."
-  	for f in xtreme/crds/*
-  	do 
-    		log_info "Applying CRD: $f"
-    		kubectl apply -f $f
-  	done
+        log_info "Creating CRDs..."
+        for f in xtreme/crds/*
+        do 
+                log_info "Applying CRD: $f"
+                kubectl apply -f $f
+        done
   fi
   log_info "Initialization completed"
 fi
@@ -473,6 +507,15 @@ fi
 flags+=("--set" "global.namespace.name=$NS")
 if [ -n "${DOCKERHUB_TOKEN:-}" ]; then
     flags+=("--set" "global.dockerhubToken=$DOCKERHUB_TOKEN")
+fi
+
+# Tenant mode: CRDs, ClusterRoles/Bindings and the IngressClass were created by
+# admin/mk-tenant.sh, so the chart must not try to (re)create them. The IngressClass
+# is forced to a per-namespace name so tenants never share one.
+if $tenant; then
+    flags+=("--namespace" "$NS" "--skip-crds"
+            "--set" "global.tenantMode=true"
+            "--set" "global.ingress.class.namespaced=true")
 fi
 
 if $dryrun; then
@@ -536,8 +579,8 @@ handle_mongodb_upgrade() {
     fi
 
     if $needs_wipe; then
-	log_info "Upgrading mongoDB to version 8.0.26 and migrating mongoDB data" 
-	${SCRIPT_DIR}/bin/mongodb-upgrade.sh -n "$NS" 
+        log_info "Upgrading mongoDB to version 8.0.26 and migrating mongoDB data" 
+        ${SCRIPT_DIR}/bin/mongodb-upgrade.sh -n "$NS" 
     fi
 }
 
@@ -599,8 +642,13 @@ if $install; then
 
   log_info "Performing $action of Helm release..."
 
-  # Check if release already exists
-  if helm list -q --all-namespaces 2>/dev/null | grep -q "^${release}$"; then
+  # Check if release already exists (a tenant kubeconfig cannot list releases cluster-wide)
+  if $tenant; then
+    rel_list=$(helm list -q -n "$NS" 2>/dev/null || true)
+  else
+    rel_list=$(helm list -q --all-namespaces 2>/dev/null || true)
+  fi
+  if echo "$rel_list" | grep -q "^${release}$"; then
     if [ "$action" = "install" ]; then
       log_info "Release ${release} already exists, switching to upgrade"
       action="upgrade"
@@ -711,6 +759,28 @@ fi
 
 if $clean; then
   log_info "Starting comprehensive cleanup process..."
+
+  # Tenant mode: only the release and its namespaced leftovers. Namespaces, CRDs and
+  # cluster RBAC belong to admin and are removed by admin/rm-tenant.sh.
+  if $tenant; then
+    log_info "Tenant cleanup: uninstalling release ${release} from ${NS} (namespaces and CRDs are removed by admin/rm-tenant.sh)"
+    helm uninstall "${release}" -n "$NS" || log_warn "Helm uninstall failed or release not found"
+    helm uninstall "imagepuller-${release}" -n "$NS" 2>/dev/null || true
+    for crd_name in $(kubectl get crd -o name 2>/dev/null | grep "\.strimzi\.io" | sed 's#customresourcedefinition.apiextensions.k8s.io/##'); do
+      for res in $(kubectl get "$crd_name" -n "$NS" -o name 2>/dev/null); do
+        log_info "Clearing finalizers and deleting $res in namespace $NS"
+        kubectl patch "$res" -n "$NS" --type=merge -p '{"metadata":{"finalizers":[]}}' >/dev/null 2>&1 || true
+        kubectl delete "$res" -n "$NS" --ignore-not-found >/dev/null 2>&1 || true
+      done
+    done
+    for ns in "$NS" "aeo-$NS"; do
+      log_info "Deleting remaining PVCs, ConfigMaps and Secrets in $ns"
+      kubectl delete pvc,configmap,secret --all -n "$ns" --ignore-not-found >/dev/null 2>&1 || true
+    done
+    log_info "Tenant cleanup completed"
+    exit 0
+  fi
+
   log_info "Uninstalling Helm release: $release"
   helm uninstall ${release} || log_warn "Helm uninstall failed or release not found"
   helm uninstall imagepuller-${release} 2>/dev/null || true

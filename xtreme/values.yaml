@@ -12,6 +12,9 @@ redisfullnameOverride: ""
 natsfullnameOverride: ""
 
 global:
+  # true: omit cluster-scoped objects (ClusterRole, ClusterRoleBinding, IngressClass);
+  # admin applies them via admin/mk-tenant.sh so the install needs no cluster-admin.
+  tenantMode: false
   kubectl:
     image:
       repository: rt.cloud.dzsi.local/docker/rw.kubectl

@@ -2,12 +2,24 @@
 
 cd $(dirname $0)
 
+usage() {
+    echo "usage: $0 [-c]"
+    echo "  -c   only count CRITICAL vulnerabilities"
+    exit 1
+}
 
+filter='.'
+while getopts "ch" opt; do
+    case $opt in
+        c) filter='map(select(.Severity == "CRITICAL"))' ;;
+        *) usage ;;
+    esac
+done
 
 for file in *json; do
 
     name=$(jq '.ArtifactName' $file)
-    ct=$(cat $file | jq '.Results[] | select(.Vulnerabilities != null) | .Vulnerabilities | length' 2>/dev/null | awk '{SUM += $1} END {print SUM}')
+    ct=$(cat $file | jq ".Results[] | select(.Vulnerabilities != null) | .Vulnerabilities | $filter | length" 2>/dev/null | awk '{SUM += $1} END {print SUM}')
     if [ -z "$ct" ]; then
         ct=0
     fi

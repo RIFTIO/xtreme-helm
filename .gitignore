@@ -3,3 +3,4 @@ dockerhub-token
 *tgz
 .image.list
 auto-storage.yaml
+admin/generated/
