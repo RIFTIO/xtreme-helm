@@ -136,6 +136,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: RW_RELEASE_NAME
               value: {{ .Values.global.namespace.name }}
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:-UseBASE64Intrinsics"
             - name: JAVA_OPTS
               value: {{ .Values.java.opts }}
           command: ["sh", "-c"]
