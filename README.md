@@ -12,6 +12,8 @@ In the real world
     echo dckr_pat_xxxdfjklkjklfjk >dockerhub-token  # use the token you got from Zhone
     ./install_xtreme 
 
+Version 26.07.1 addresses the day-0 JAVA CVE 
+
 
 
 # Introduction
