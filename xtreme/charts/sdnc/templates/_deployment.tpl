@@ -109,7 +109,8 @@ spec:
               value: {{ include "nats.fqdn" . }}
             - name: CACHE_SCHEMA
               value: "false"
-
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:-UseBASE64Intrinsics"
             - name: JAVA_OPTS
               value:  "{{ .Values.java.opts.xmx }}
                       {{ if .Values.lighty.jmx.enableJmxRemoting }}

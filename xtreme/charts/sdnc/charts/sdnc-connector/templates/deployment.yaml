@@ -65,6 +65,8 @@ spec:
                 name: {{ .Values.global.inflxdb.secretName }}
                 {{- end }}
                 key: admin-token
+          - name: JDK_JAVA_OPTIONS
+            value: "-XX:-UseBASE64Intrinsics"
           - name: JAVA_OPTS
             value: "-Xmx2g"
           ports:

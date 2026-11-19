@@ -72,6 +72,8 @@ spec:
           env:
             - name: RW_NATS_SVC_NAME
               value: {{ include "nats.fqdn" . }}
+            - name: JDK_JAVA_OPTIONS
+              value: "-XX:-UseBASE64Intrinsics"
             - name: JAVA_OPTS
               value: {{ .Values.java.opts }}
           ports:
