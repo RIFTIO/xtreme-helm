@@ -6,6 +6,8 @@
 # The 'bind' rule on clusterroles exists because the chart creates RoleBindings that
 # reference those ClusterRoles; RBAC only allows that if the creator holds every
 # permission in them, or has 'bind' on them by name.
+# The core group lists its resources explicitly, with namespaces read-only: a '*' there
+# would let the tenant delete its own namespace, and with it this ServiceAccount.
 # Block style and field order match what the API server emits, so
 #   kubectl get role xtreme-installer -n NS -o yaml | yq .rules | diff - <(yq ea -N 'select(.kind=="Role" and .metadata.namespace=="NS") | .rules' admin/generated/NS-tenant.yaml)
 # is empty for an unmodified tenant.
@@ -36,6 +38,31 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  resources:
+  - configmaps
+  - endpoints
+  - events
+  - limitranges
+  - persistentvolumeclaims
+  - pods
+  - pods/exec
+  - pods/log
+  - pods/status
+  - resourcequotas
+  - secrets
+  - serviceaccounts
+  - services
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - apps
   - batch
   - extensions
@@ -93,6 +120,31 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  resources:
+  - configmaps
+  - endpoints
+  - events
+  - limitranges
+  - persistentvolumeclaims
+  - pods
+  - pods/exec
+  - pods/log
+  - pods/status
+  - resourcequotas
+  - secrets
+  - serviceaccounts
+  - services
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - apps
   - batch
   - extensions

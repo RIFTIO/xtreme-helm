@@ -307,6 +307,16 @@ if $tenant; then
     fi
 fi
 
+# Without --tenant this script needs cluster-admin (namespaces, CRDs, ClusterRoles).
+# A tenant kubeconfig run without --tenant would delete its own namespace on --clean,
+# which also deletes the installer ServiceAccount and so invalidates the kubeconfig.
+if ! $tenant; then
+    can_admin=$(kubectl auth can-i create namespaces 2>/dev/null || true)
+    if [ "$can_admin" != "yes" ]; then
+        log_error "this kubeconfig is not cluster-admin. If it is a tenant kubeconfig from admin/mk-tenant.sh, re-run with --tenant"
+    fi
+fi
+
 # Enforce the minimum Kubernetes version now that --ignore-k8s-version is parsed
 check_k8s_version
 
